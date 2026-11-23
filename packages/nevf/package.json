@@ -1,18 +1,22 @@
 {
   "name": "nevf",
-  "version": "0.1.0",
-  "description": "NevF.js \u2014 tiny fine-grained reactive UI framework (signals, components, SSR, router). No build step.",
+  "version": "0.2.0",
+  "description": "NevF.js — tiny fine-grained reactive UI framework (signals, components, SSR, router). No build step.",
   "type": "module",
   "main": "./src/index.js",
   "module": "./src/index.js",
   "exports": {
-    ".": "./src/index.js",
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./src/index.js"
+    },
     "./jsx-runtime": "./src/jsx-runtime.js",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.js",
     "./package.json": "./package.json"
   },
   "files": [
-    "src"
+    "src",
+    "types"
   ],
   "sideEffects": false,
   "keywords": [
@@ -39,5 +43,6 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "types": "./types/index.d.ts"
 }
