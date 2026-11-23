@@ -95,9 +95,9 @@ describe('nev export', () => {
       'pages/index.js': page('home'),
       'pages/about.js': page('about'),
       'pages/blog/[slug].js': `import { h } from '@adityadevid/nevf'; export default (p) => h('article', null, p.data.title);`,
-      'pages/blog/[slug].server.js': `import { HttpError } from 'nevjs'; export const load = (c) => { if (c.params.slug === 'nope') throw new HttpError(404); return { title: 'Post ' + c.params.slug }; };`,
+      'pages/blog/[slug].server.js': `import { HttpError } from '@adityadevid/nevjs'; export const load = (c) => { if (c.params.slug === 'nope') throw new HttpError(404); return { title: 'Post ' + c.params.slug }; };`,
       'pages/old.js': page('old'),
-      'pages/old.server.js': `import { redirect } from 'nevjs'; export const load = () => redirect('/about');`,
+      'pages/old.server.js': `import { redirect } from '@adityadevid/nevjs'; export const load = () => redirect('/about');`,
       'components/widget.js': `export const w = 1;`,
       'lib/secret.server.js': `export const k = 'TOP-SECRET';`,
       'public/hello.txt': 'hi',
@@ -171,7 +171,7 @@ describe('templates', () => {
       assert.ok(fs.existsSync(path.join(dest, 'Dockerfile')));
       const pkg = JSON.parse(fs.readFileSync(path.join(dest, 'package.json'), 'utf8'));
       assert.match(pkg.name, /^tpl-/);
-      assert.equal(pkg.dependencies.nevjs, '^0.2.0');
+      assert.equal(pkg.dependencies['@adityadevid/nevjs'], '^0.2.0');
       const { app } = await createNev({ root: dest, silent: true });
       assert.equal((await app.request('/')).status, 200);
       if (name === 'api') {

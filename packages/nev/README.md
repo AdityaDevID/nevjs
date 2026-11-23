@@ -1,9 +1,9 @@
-# nevjs — Nev.js
+# @adityadevid/nevjs — Nev.js
 
 Zero-build fullstack framework: file-based routing, SSR, server loaders, API routes, client-side navigation, static export. Built on [NevF](https://www.npmjs.com/package/nevf) + [NevB](https://www.npmjs.com/package/nevb) (+ [NevG](https://www.npmjs.com/package/nevg)).
 
 ```bash
-npx nevjs create my-site            # templates: default, api, game
+npx @adityadevid/nevjs create my-site            # templates: default, api, game
 cd my-site && npm install && npm run dev
 ```
 

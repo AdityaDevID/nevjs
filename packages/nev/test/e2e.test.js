@@ -153,7 +153,7 @@ describe('browser (Chromium)', { skip: playwright ? false : 'playwright is not i
     const root = makeApp({
       'pages/index.js': `import { h, Link } from '@adityadevid/nevf'; export default () => h(Link, { href: '/old', id: 'old' }, 'old')`,
       'pages/old.js': `import { h } from '@adityadevid/nevf'; export default () => h('p', null, 'never shown')`,
-      'pages/old.server.js': `import { redirect } from 'nevjs'; export const load = () => redirect('/new')`,
+      'pages/old.server.js': `import { redirect } from '@adityadevid/nevjs'; export const load = () => redirect('/new')`,
       'pages/new.js': `import { h } from '@adityadevid/nevf'; export default () => h('h1', null, 'new page')`,
     });
     const nev = await startServer({ root, port: 0, host: '127.0.0.1', silent: true });

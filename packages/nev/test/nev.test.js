@@ -90,13 +90,13 @@ const appFiles = {
   'pages/xss.js': `import { h } from '@adityadevid/nevf'; export default (p) => h('p', null, p.data.text)`,
   'pages/xss.server.js': `export const load = () => ({ text: '</script><script>alert(1)</script>' })`,
   'pages/secret.js': `import { h } from '@adityadevid/nevf'; export default () => h('p', null, 'secret')`,
-  'pages/secret.server.js': `import { redirect } from 'nevjs'; export const load = () => redirect('/login', 303)`,
+  'pages/secret.server.js': `import { redirect } from '@adityadevid/nevjs'; export const load = () => redirect('/login', 303)`,
   'pages/boom.js': `import { h } from '@adityadevid/nevf'; export default () => h('p', null, 'boom')`,
   'pages/boom.server.js': `export const load = () => { throw new Error('db password is hunter2') }`,
   'pages/forbidden.js': `import { h } from '@adityadevid/nevf'; export default () => h('p', null, 'x')`,
-  'pages/forbidden.server.js': `import { HttpError } from 'nevjs'; export const load = () => { throw new HttpError(403, 'Members only') }`,
+  'pages/forbidden.server.js': `import { HttpError } from '@adityadevid/nevjs'; export const load = () => { throw new HttpError(403, 'Members only') }`,
   'pages/missing.js': `import { h } from '@adityadevid/nevf'; export default () => h('p', null, 'x')`,
-  'pages/missing.server.js': `import { HttpError } from 'nevjs'; export const load = () => { throw new HttpError(404) }`,
+  'pages/missing.server.js': `import { HttpError } from '@adityadevid/nevjs'; export const load = () => { throw new HttpError(404) }`,
   'pages/render-fail.js': `export default () => { throw new Error('render exploded') }`,
   'pages/docs/[...path].js': `import { h } from '@adityadevid/nevf'; export default (p) => h('p', null, 'docs:', p.params.path)`,
   'pages/cookie.js': `import { h } from '@adityadevid/nevf'; export default () => h('p', null, 'c')`,
@@ -433,7 +433,7 @@ describe('cli', () => {
     try {
       const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'));
       assert.equal(pkg.name, 'my-cool_app');
-      assert.ok(pkg.dependencies.nevjs);
+      assert.ok(pkg.dependencies['@adityadevid/nevjs']);
       assert.ok(fs.existsSync(path.join(dir, '.gitignore')));
       assert.ok(!fs.existsSync(path.join(dir, '_gitignore')));
       assert.ok(fs.existsSync(path.join(dir, 'pages', 'blog', '[slug].server.js')));
