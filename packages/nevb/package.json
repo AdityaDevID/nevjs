@@ -1,5 +1,5 @@
 {
-  "name": "nevb",
+  "name": "@adityadevid/nevb",
   "version": "0.2.0",
   "description": "NevB.js — tiny web-standard backend framework: router, middleware, validation, static files. Zero dependencies.",
   "type": "module",

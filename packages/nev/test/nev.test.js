@@ -83,23 +83,23 @@ describe('html helpers', () => {
 
 const appFiles = {
   'nev.config.js': `export default { title: 'T', titleTemplate: '%s · T', head: { links: [{ rel: 'stylesheet', href: '/s.css' }] } }`,
-  'pages/_layout.js': `import { h } from 'nevf'; export default (p) => h('div', { class: 'layout' }, p.children)`,
-  'pages/index.js': `import { h } from 'nevf'; export const head = () => ({ title: 'Home' }); export default () => h('h1', null, 'Home')`,
-  'pages/users/[id].js': `import { h } from 'nevf'; export default (p) => h('p', null, 'user ', p.params.id, ' q=', p.query.q ?? '-', ' data=', p.data.who)`,
+  'pages/_layout.js': `import { h } from '@adityadevid/nevf'; export default (p) => h('div', { class: 'layout' }, p.children)`,
+  'pages/index.js': `import { h } from '@adityadevid/nevf'; export const head = () => ({ title: 'Home' }); export default () => h('h1', null, 'Home')`,
+  'pages/users/[id].js': `import { h } from '@adityadevid/nevf'; export default (p) => h('p', null, 'user ', p.params.id, ' q=', p.query.q ?? '-', ' data=', p.data.who)`,
   'pages/users/[id].server.js': `export const load = (c) => ({ who: 'server-' + c.params.id })`,
-  'pages/xss.js': `import { h } from 'nevf'; export default (p) => h('p', null, p.data.text)`,
+  'pages/xss.js': `import { h } from '@adityadevid/nevf'; export default (p) => h('p', null, p.data.text)`,
   'pages/xss.server.js': `export const load = () => ({ text: '</script><script>alert(1)</script>' })`,
-  'pages/secret.js': `import { h } from 'nevf'; export default () => h('p', null, 'secret')`,
+  'pages/secret.js': `import { h } from '@adityadevid/nevf'; export default () => h('p', null, 'secret')`,
   'pages/secret.server.js': `import { redirect } from 'nevjs'; export const load = () => redirect('/login', 303)`,
-  'pages/boom.js': `import { h } from 'nevf'; export default () => h('p', null, 'boom')`,
+  'pages/boom.js': `import { h } from '@adityadevid/nevf'; export default () => h('p', null, 'boom')`,
   'pages/boom.server.js': `export const load = () => { throw new Error('db password is hunter2') }`,
-  'pages/forbidden.js': `import { h } from 'nevf'; export default () => h('p', null, 'x')`,
+  'pages/forbidden.js': `import { h } from '@adityadevid/nevf'; export default () => h('p', null, 'x')`,
   'pages/forbidden.server.js': `import { HttpError } from 'nevjs'; export const load = () => { throw new HttpError(403, 'Members only') }`,
-  'pages/missing.js': `import { h } from 'nevf'; export default () => h('p', null, 'x')`,
+  'pages/missing.js': `import { h } from '@adityadevid/nevf'; export default () => h('p', null, 'x')`,
   'pages/missing.server.js': `import { HttpError } from 'nevjs'; export const load = () => { throw new HttpError(404) }`,
   'pages/render-fail.js': `export default () => { throw new Error('render exploded') }`,
-  'pages/docs/[...path].js': `import { h } from 'nevf'; export default (p) => h('p', null, 'docs:', p.params.path)`,
-  'pages/cookie.js': `import { h } from 'nevf'; export default () => h('p', null, 'c')`,
+  'pages/docs/[...path].js': `import { h } from '@adityadevid/nevf'; export default (p) => h('p', null, 'docs:', p.params.path)`,
+  'pages/cookie.js': `import { h } from '@adityadevid/nevf'; export default () => h('p', null, 'c')`,
   'pages/cookie.server.js': `export const load = (c) => { c.setCookie('seen', '1'); return {} }`,
   'api/echo.js': `
     export const middleware = [(c, next) => { c.header('x-mw', 'yes'); return next() }]
@@ -136,7 +136,7 @@ describe('server: pages, loaders, SSR', async () => {
     assert.match(html, /<title>Home · T<\/title>/);
     assert.match(html, /<div id="nev-root"><div class="layout"><h1>Home<\/h1><\/div><\/div>/);
     assert.match(html, /<link rel="stylesheet" href="\/s\.css">/);
-    assert.match(html, /"nevf":"\/__nev\/pkg\/nevf\/index\.js"/);
+    assert.match(html, /"@adityadevid\/nevf":"\/__nev\/pkg\/@adityadevid\/nevf\/index\.js"/);
     assert.match(html, /<script type="module" src="\/__nev\/client\.js">/);
     const boot = JSON.parse(/id="__NEV_DATA__">([^<]*)</.exec(html)[1]);
     assert.equal(boot.page.page, '/__nev/app/pages/index.js');
@@ -341,9 +341,9 @@ describe('server: what the browser may download', async () => {
     assert.equal(await status('/__nev/app/lib/util.js'), 200);
     assert.equal(await status('/__nev/client.js'), 200);
     assert.equal(await status('/__nev/tree.js'), 200);
-    assert.equal(await status('/__nev/pkg/nevf/index.js'), 200);
-    assert.equal(await status('/__nev/pkg/nevf/reactive.js'), 200);
-    assert.equal(await status('/__nev/pkg/nevg/index.js'), 200);
+    assert.equal(await status('/__nev/pkg/@adityadevid/nevf/index.js'), 200);
+    assert.equal(await status('/__nev/pkg/@adityadevid/nevf/reactive.js'), 200);
+    assert.equal(await status('/__nev/pkg/@adityadevid/nevg/index.js'), 200);
   });
 
   test('server code, config, API files and secrets are refused', async () => {
@@ -357,9 +357,9 @@ describe('server: what the browser may download', async () => {
       '/__nev/app/public/hello.txt',
       '/__nev/app/../package.json',
       '/__nev/app/%2e%2e/package.json',
-      '/__nev/pkg/nevf/../../package.json',
-      '/__nev/pkg/nevf/package.json',
-      '/__nev/pkg/nevb/index.js', // not a browser package
+      '/__nev/pkg/@adityadevid/nevf/../../package.json',
+      '/__nev/pkg/@adityadevid/nevf/package.json',
+      '/__nev/pkg/@adityadevid/nevb/index.js', // not a browser package
       '/__nev/nev.js',
       '/__nev/package.json',
     ]) {
@@ -387,7 +387,7 @@ describe('config', () => {
   test('setup(app) runs before Nev and can add routes and middleware', async () => {
     const root = makeApp({
       'nev.config.js': `export default { setup(app) { app.use((c, next) => { c.header('x-custom', '1'); return next() }); app.get('/health', () => ({ ok: true })) } }`,
-      'pages/index.js': `import { h } from 'nevf'; export default () => h('p', null, 'x')`,
+      'pages/index.js': `import { h } from '@adityadevid/nevf'; export default () => h('p', null, 'x')`,
     });
     const { app } = await createNev({ root, silent: true });
     const res = await app.request('/health');

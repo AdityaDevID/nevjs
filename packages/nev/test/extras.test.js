@@ -9,7 +9,7 @@ import { buildSitemap, buildRobots, siteOrigin } from '../src/seo.js';
 import { makeApp, cleanup, TMP } from './helpers.js';
 
 after(cleanup);
-const page = (text) => `import { h } from 'nevf'; export default () => h('main', null, ${JSON.stringify(text)});`;
+const page = (text) => `import { h } from '@adityadevid/nevf'; export default () => h('main', null, ${JSON.stringify(text)});`;
 
 describe('middleware.js', () => {
   test('runs before pages and APIs; matcher limits it; never touches /__nev', async () => {
@@ -91,10 +91,10 @@ describe('sitemap + robots', () => {
 describe('nev export', () => {
   const site = () =>
     makeApp({
-      'pages/_layout.js': `import { h, Link } from 'nevf'; export default (p) => h('div', null, h(Link, { href: '/about' }, 'about'), h(Link, { href: '/blog/hello' }, 'post'), p.children);`,
+      'pages/_layout.js': `import { h, Link } from '@adityadevid/nevf'; export default (p) => h('div', null, h(Link, { href: '/about' }, 'about'), h(Link, { href: '/blog/hello' }, 'post'), p.children);`,
       'pages/index.js': page('home'),
       'pages/about.js': page('about'),
-      'pages/blog/[slug].js': `import { h } from 'nevf'; export default (p) => h('article', null, p.data.title);`,
+      'pages/blog/[slug].js': `import { h } from '@adityadevid/nevf'; export default (p) => h('article', null, p.data.title);`,
       'pages/blog/[slug].server.js': `import { HttpError } from 'nevjs'; export const load = (c) => { if (c.params.slug === 'nope') throw new HttpError(404); return { title: 'Post ' + c.params.slug }; };`,
       'pages/old.js': page('old'),
       'pages/old.server.js': `import { redirect } from 'nevjs'; export const load = () => redirect('/about');`,
@@ -125,7 +125,7 @@ describe('nev export', () => {
     assert.ok(exists('__nev/client.js'));
     assert.ok(exists('__nev/app/components/widget.js'));
     assert.ok(exists('__nev/app/pages/index.js'));
-    assert.ok(exists('__nev/pkg/nevf/index.js'));
+    assert.ok(exists('__nev/pkg/@adityadevid/nevf/index.js'));
     assert.equal(exists('__nev/app/lib/secret.server.js'), false, 'server files never exported');
     const everything = [];
     (function walk(d) { for (const e of fs.readdirSync(d, { withFileTypes: true })) e.isDirectory() ? walk(path.join(d, e.name)) : everything.push(fs.readFileSync(path.join(d, e.name), 'utf8')); })(out);
@@ -191,7 +191,7 @@ describe('templates', () => {
     console.log = () => {};
     try { create(dest, 'game'); } finally { console.log = log; }
     const { Menu, Play } = await import(path.join(dest, 'components/coin-dash.js'));
-    const { Game, SaveData, createRng } = await import('nevg');
+    const { Game, SaveData, createRng } = await import('@adityadevid/nevg');
     const game = new Game({ raf: () => 0, caf: () => {}, width: 320, height: 160 });
     const store = new Map();
     const save = new SaveData('t', { best: 0 }, { storage: { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v), removeItem: (k) => store.delete(k) } });

@@ -1,5 +1,5 @@
-export * from 'nevb';
-import type { App, Context } from 'nevb';
+export * from '@adityadevid/nevb';
+import type { App, Context } from '@adityadevid/nevb';
 
 export interface NevConfig {
   title?: string; titleTemplate?: string; lang?: string;

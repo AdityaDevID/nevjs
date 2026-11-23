@@ -2,7 +2,7 @@
 //
 // Use these in *.server.js files, api/ files, nev.config.js and scripts.
 // Do NOT import "nev" from files under pages/ or components/ — those also run in the
-// browser; import from "nevf" there.
+// browser; import from "@adityadevid/nevf" there.
 export { createNev, startServer, redirect } from './server.js';
 export { defineConfig, loadConfig } from './config.js';
 export { exportSite } from './export.js';
@@ -39,4 +39,4 @@ export {
   hashPassword,
   verifyPassword,
   randomId,
-} from 'nevb';
+} from '@adityadevid/nevb';

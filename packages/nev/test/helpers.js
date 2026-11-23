@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-// Apps must live inside the repo so that `import 'nevf'` / `import 'nev'` resolve through node_modules.
+// Apps must live inside the repo so that `import '@adityadevid/nevf'` / `import 'nev'` resolve through node_modules.
 export const TMP = path.join(here, '.tmp');
 
 let counter = 0;

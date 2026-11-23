@@ -4,5 +4,5 @@
   "private": true,
   "type": "module",
   "scripts": { "dev": "nev dev", "start": "nev start", "export": "nev export" },
-  "dependencies": { "nevjs": "^0.2.0", "nevf": "^0.2.0", "nevg": "^0.2.0" }
+  "dependencies": { "nevjs": "^0.2.0", "@adityadevid/nevf": "^0.2.0", "@adityadevid/nevg": "^0.2.0" }
 }

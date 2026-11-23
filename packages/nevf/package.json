@@ -1,5 +1,5 @@
 {
-  "name": "nevf",
+  "name": "@adityadevid/nevf",
   "version": "0.2.0",
   "description": "NevF.js — tiny fine-grained reactive UI framework (signals, components, SSR, router). No build step.",
   "type": "module",

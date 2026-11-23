@@ -3,11 +3,11 @@
 Tiny fine-grained reactive UI framework: signals, components, stores, context, SSR, router. **No build step, zero dependencies.**
 
 ```bash
-npm install nevf
+npm install @adityadevid/nevf
 ```
 
 ```js
-import { h, signal, render } from 'nevf';
+import { h, signal, render } from '@adityadevid/nevf';
 
 function Counter() {
   const n = signal(0);

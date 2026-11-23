@@ -1,5 +1,5 @@
 {
-  "name": "nevg",
+  "name": "@adityadevid/nevg",
   "version": "0.2.0",
   "description": "NevG.js — tiny 2D game framework: fixed-timestep loop, scenes, entities, collisions, tweens, tilemaps, input. Canvas 2D, zero dependencies.",
   "type": "module",

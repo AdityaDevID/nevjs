@@ -98,9 +98,9 @@ describe('browser (Chromium)', { skip: playwright ? false : 'playwright is not i
       await page.waitForSelector('h1:has-text("File-based routing")');
 
       // 404 handled in the client
-      await page.evaluate(async () => (await import('nevf')).navigate('/blog/nope'));
+      await page.evaluate(async () => (await import('@adityadevid/nevf')).navigate('/blog/nope'));
       await page.waitForSelector('h1:has-text("404")');
-      await page.evaluate(async () => (await import('nevf')).navigate('/no/such/page'));
+      await page.evaluate(async () => (await import('@adityadevid/nevf')).navigate('/no/such/page'));
       await page.waitForSelector('h1:has-text("404")');
       assert.equal(await page.evaluate(() => window.__marker), 'same-document');
 
@@ -151,10 +151,10 @@ describe('browser (Chromium)', { skip: playwright ? false : 'playwright is not i
 
   test('a loader redirect is followed by client-side navigation', { timeout: 60_000 }, async () => {
     const root = makeApp({
-      'pages/index.js': `import { h, Link } from 'nevf'; export default () => h(Link, { href: '/old', id: 'old' }, 'old')`,
-      'pages/old.js': `import { h } from 'nevf'; export default () => h('p', null, 'never shown')`,
+      'pages/index.js': `import { h, Link } from '@adityadevid/nevf'; export default () => h(Link, { href: '/old', id: 'old' }, 'old')`,
+      'pages/old.js': `import { h } from '@adityadevid/nevf'; export default () => h('p', null, 'never shown')`,
       'pages/old.server.js': `import { redirect } from 'nevjs'; export const load = () => redirect('/new')`,
-      'pages/new.js': `import { h } from 'nevf'; export default () => h('h1', null, 'new page')`,
+      'pages/new.js': `import { h } from '@adityadevid/nevf'; export default () => h('h1', null, 'new page')`,
     });
     const nev = await startServer({ root, port: 0, host: '127.0.0.1', silent: true });
     const browser = await playwright.chromium.launch();
@@ -178,7 +178,7 @@ describe('browser (Chromium)', { skip: playwright ? false : 'playwright is not i
 describe('nev dev (auto-restart + live reload)', () => {
   test('editing a file restarts the server and drops the live-reload stream', { timeout: 60_000 }, async () => {
     const root = makeApp({
-      'pages/index.js': `import { h } from 'nevf'; export default () => h('h1', null, 'version one')`,
+      'pages/index.js': `import { h } from '@adityadevid/nevf'; export default () => h('h1', null, 'version one')`,
     });
     const port = await freePort();
     const child = spawn(process.execPath, [binFile, 'dev', root, '--port', String(port)], { stdio: ['ignore', 'pipe', 'pipe'] });
@@ -201,7 +201,7 @@ describe('nev dev (auto-restart + live reload)', () => {
         () => 'closed',
       );
 
-      fs.writeFileSync(path.join(root, 'pages', 'index.js'), `import { h } from 'nevf'; export default () => h('h1', null, 'version two')`);
+      fs.writeFileSync(path.join(root, 'pages', 'index.js'), `import { h } from '@adityadevid/nevf'; export default () => h('h1', null, 'version two')`);
       await waitFor(async () => /version two/.test(await text()), { timeout: 20_000 });
       const state = await Promise.race([ended, sleep(5000).then(() => 'still open')]);
       assert.equal(state === 'data' ? 'closed' : state, 'closed', 'the SSE connection must drop so the browser can reload');
@@ -214,7 +214,7 @@ describe('nev dev (auto-restart + live reload)', () => {
   });
 
   test('a syntax error does not kill the supervisor; fixing the file recovers', { timeout: 60_000 }, async () => {
-    const good = (n) => `import { h } from 'nevf'; export default () => h('h1', null, '${n}')`;
+    const good = (n) => `import { h } from '@adityadevid/nevf'; export default () => h('h1', null, '${n}')`;
     const root = makeApp({ 'pages/index.js': good('ok one') });
     const port = await freePort();
     const child = spawn(process.execPath, [binFile, 'dev', root, '--port', String(port)], { stdio: ['ignore', 'pipe', 'pipe'] });

@@ -3,11 +3,11 @@
 Tiny web-standard backend framework: router, middleware, validation, sessions, JWT, static files, SSE. **Zero dependencies**, Node ≥ 20, runs anywhere `fetch(Request) → Response` does.
 
 ```bash
-npm install nevb
+npm install @adityadevid/nevb
 ```
 
 ```js
-import { App, logger, compress, session, validate, v } from 'nevb';
+import { App, logger, compress, session, validate, v } from '@adityadevid/nevb';
 
 const app = new App();
 app.use(logger(), compress(), session({ secret: process.env.SESSION_SECRET }));

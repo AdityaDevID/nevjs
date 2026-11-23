@@ -14,8 +14,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { compile } from 'nevb';
-import { sortRoutes } from 'nevf';
+import { compile } from '@adityadevid/nevb';
+import { sortRoutes } from '@adityadevid/nevf';
 
 const EXT = /\.(?:m?js)$/;
 const SERVER = /\.server\.m?js$/;

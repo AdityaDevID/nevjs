@@ -2,8 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { App, Context, HttpError, logger, secureHeaders, serveStatic, matchSegs, splitPath, compile } from 'nevb';
-import { renderToString, setLocation, parseQuery } from 'nevf';
+import { App, Context, HttpError, logger, secureHeaders, serveStatic, matchSegs, splitPath, compile } from '@adityadevid/nevb';
+import { renderToString, setLocation, parseQuery } from '@adityadevid/nevf';
 import { buildTree } from '../client/tree.js';
 import { loadConfig } from './config.js';
 import { scanPages, scanApi } from './routes.js';
@@ -67,20 +67,20 @@ export async function createNev(options = {}) {
 
   const importMap = {};
   const packages = [];
-  const pkgNames = ['nevf', ...config.browserPackages.filter((n) => n !== 'nevf')];
+  const pkgNames = ['@adityadevid/nevf', ...config.browserPackages.filter((n) => n !== '@adityadevid/nevf')];
   for (const name of pkgNames) {
     const pkg = resolvePackage(name, root);
     if (!pkg) {
-      if (name === 'nevf') throw new Error('[nev] Cannot find the "nevf" package. Run `npm install`.');
+      if (name === '@adityadevid/nevf') throw new Error('[nev] Cannot find the "@adityadevid/nevf" package. Run `npm install`.');
       console.warn(`[nev] browserPackages: cannot resolve "${name}" — skipped`);
       continue;
     }
     const prefix = `/__nev/pkg/${name}`;
     importMap[name] = `${prefix}/${pkg.file}`;
     packages.push({ name, dir: pkg.dir, prefix });
-    if (name === 'nevf') {
-      importMap['nevf/jsx-runtime'] = `${prefix}/jsx-runtime.js`;
-      importMap['nevf/jsx-dev-runtime'] = `${prefix}/jsx-dev-runtime.js`;
+    if (name === '@adityadevid/nevf') {
+      importMap['@adityadevid/nevf/jsx-runtime'] = `${prefix}/jsx-runtime.js`;
+      importMap['@adityadevid/nevf/jsx-dev-runtime'] = `${prefix}/jsx-dev-runtime.js`;
     }
     app.use(serveStatic({ root: pkg.dir, prefix, maxAge: dev ? 0 : 3600, filter: (p) => /\.m?js$/.test(p) }));
   }
