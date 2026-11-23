@@ -11,6 +11,7 @@
     "test": "node --test \"packages/*/test/*.test.js\"",
     "test:f": "node --test \"packages/nevf/test/*.test.js\"",
     "test:b": "node --test \"packages/nevb/test/*.test.js\"",
+    "test:g3": "node --test \"packages/nevgthree/test/*.test.js\"",
     "test:g": "node --test \"packages/nevg/test/*.test.js\"",
     "test:fullstack": "node --test \"packages/nev/test/*.test.js\""
   },
@@ -18,7 +19,8 @@
     "node": ">=20"
   },
   "devDependencies": {
-    "jsdom": "^25.0.0"
+    "jsdom": "^25.0.0",
+    "three": "^0.187.0"
   },
   "author": "AdityaDevID",
   "repository": {
