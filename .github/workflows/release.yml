@@ -70,10 +70,10 @@ jobs:
           cache: npm
 
       # ── Validasi di awal ────────────────────────────────────────────
-      - name: Validasi (tag, versi baru, NPM_TOKEN)
+      - name: Validasi (tag, versi baru, NPM_SECRET)
         id: validate
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_SECRET }}
         run: |
           set -euo pipefail
           fail() { echo "::error title=$1::$2"; exit 1; }
@@ -124,9 +124,9 @@ jobs:
             fi
           fi
 
-          # 3) NPM_TOKEN harus ada (hanya perlu kalau benar-benar publish)
+          # 3) NPM_SECRET harus ada (hanya perlu kalau benar-benar publish)
           if [ "$DRY_RUN" != "true" ] && [ -n "$TODO" ] && [ -z "$NPM_TOKEN" ]; then
-            fail "NPM_TOKEN tidak ada" "Tambahkan secret NPM_TOKEN: Settings → Secrets and variables → Actions → New repository secret."
+            fail "NPM_SECRET tidak ada" "Tambahkan secret NPM_SECRET: Settings → Secrets and variables → Actions → New repository secret."
           fi
 
           if [ -f "release-notes/$TAG.md" ]; then
@@ -141,7 +141,7 @@ jobs:
       - name: npm publish
         if: ${{ !inputs.dry_run && steps.validate.outputs.todo != '' }}
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_SECRET }}
           TODO: ${{ steps.validate.outputs.todo }}
         run: |
           set -euo pipefail
