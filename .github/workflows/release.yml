@@ -10,6 +10,18 @@ on:
         required: true
         type: string
         default: v0.2.2
+      package:
+        description: "Paket yang dirilis (all = semua, urut nevb nevf nevg nevgthree nev)"
+        required: true
+        type: choice
+        default: all
+        options:
+          - all
+          - nevb
+          - nevf
+          - nevg
+          - nevgthree
+          - nev
       dry_run:
         description: "Dry run: hanya tes + pack (tanpa npm publish dan tanpa GitHub Release)"
         required: true
@@ -59,6 +71,7 @@ jobs:
       TAG: ${{ inputs.tag }}
       DRY_RUN: ${{ inputs.dry_run }}
       PRERELEASE: ${{ inputs.prerelease }}
+      SELECTED: ${{ inputs.package }}
       PACKAGES: nevb nevf nevg nevgthree nev   # urutan publish
     steps:
       - uses: actions/checkout@v4
@@ -87,7 +100,16 @@ jobs:
             echo "::warning title=Bukan branch main::Workflow dijalankan dari '${GITHUB_REF_NAME}'. Tag akan dibuat dari commit branch ini."
           fi
 
-          # 2) Cari paket yang versinya belum ada di npm
+          # 2) Tentukan paket yang dipilih, lalu cari yang versinya belum ada di npm
+          if [ "$SELECTED" = "all" ]; then
+            SEL="$PACKAGES"
+          elif [[ " $PACKAGES " == *" $SELECTED "* ]]; then
+            SEL="$SELECTED"
+          else
+            fail "Paket tidak dikenal" "Paket '$SELECTED' tidak ada. Pilihan: all $PACKAGES"
+          fi
+          echo "pkgs=$SEL" >> "$GITHUB_OUTPUT"
+          echo "Paket dipilih: $SEL"
           exists() {  # exists <nama> <versi>
             local out rc=0
             out=$(npm view "$1@$2" version 2>&1) || rc=$?
@@ -97,11 +119,11 @@ jobs:
           }
           TODO=""
           {
-            echo "### Rencana rilis \`$TAG\`"
+            echo "### Rencana rilis \`$TAG\` (paket: $SEL)"
             echo "| Paket | Versi | Status |"
             echo "|---|---|---|"
           } >> "$GITHUB_STEP_SUMMARY"
-          for p in $PACKAGES; do
+          for p in $SEL; do
             name=$(node -p "require('./packages/$p/package.json').name")
             ver=$(node -p "require('./packages/$p/package.json').version")
             if exists "$name" "$ver"; then
@@ -152,10 +174,12 @@ jobs:
 
       # ── npm pack (.tgz tiap paket) ──────────────────────────────────
       - name: npm pack
+        env:
+          PKGS: ${{ steps.validate.outputs.pkgs }}
         run: |
           set -euo pipefail
           mkdir -p dist
-          for p in $PACKAGES; do
+          for p in $PKGS; do
             (cd "packages/$p" && npm pack --pack-destination ../../dist)
           done
           ls -la dist
