@@ -9,6 +9,8 @@ class Schema {
     this._optional = false;
     this._default = undefined;
     this._hasDefault = false;
+    this._nullable = false;
+    this._after = [];
   }
 
   _clone() {
@@ -16,6 +18,34 @@ class Schema {
     s._optional = this._optional;
     s._default = this._default;
     s._hasDefault = this._hasDefault;
+    s._nullable = this._nullable;
+    s._after = this._after.slice();
+    return s;
+  }
+
+  /** Accept `null` as a valid value (kept as null). */
+  nullable() {
+    const s = this._clone();
+    s._nullable = true;
+    return s;
+  }
+
+  /** Extra check: fn(value) returns true / false / an error message string. */
+  refine(fn, message = 'is invalid') {
+    const s = this._clone();
+    s._after.push((val, path, ctx) => {
+      const r = fn(val);
+      if (r === true || r === undefined) return val;
+      ctx.errors.push({ path, message: typeof r === 'string' ? r : message });
+      return val;
+    });
+    return s;
+  }
+
+  /** Convert the validated value: v.string().transform((s) => s.toLowerCase()). */
+  transform(fn) {
+    const s = this._clone();
+    s._after.push((val) => fn(val));
     return s;
   }
 
@@ -34,6 +64,7 @@ class Schema {
   }
 
   _run(value, path, ctx) {
+    if (value === null && this._nullable) return null;
     const empty = value === undefined || value === null || (ctx.coerce && value === '');
     if (empty) {
       if (this._hasDefault) return typeof this._default === 'function' ? this._default() : this._default;
@@ -41,7 +72,14 @@ class Schema {
       ctx.errors.push({ path, message: 'is required' });
       return undefined;
     }
-    return this._check(value, path, ctx);
+    const before = ctx.errors.length;
+    let out = this._check(value, path, ctx);
+    if (ctx.errors.length > before) return out;
+    for (const step of this._after) {
+      out = step(out, path, ctx);
+      if (ctx.errors.length > before) break;
+    }
+    return out;
   }
 
   /** @returns {{ ok: boolean, value: any, errors: {path: string, message: string}[] }} */
@@ -137,6 +175,80 @@ export const v = {
 
   any() {
     return new Schema('any', (val) => val);
+  },
+
+  literal(expected) {
+    return new Schema('literal', (val, path, ctx) =>
+      val === expected ? val : fail(ctx, path, `must be ${JSON.stringify(expected)}`),
+    );
+  },
+
+  /** First schema that accepts the value wins: v.union([v.string(), v.number()]) */
+  union(options) {
+    return new Schema('union', (val, path, ctx) => {
+      for (const opt of options) {
+        const sub = { coerce: ctx.coerce, errors: [] };
+        const out = opt._run(val, path, sub);
+        if (!sub.errors.length) return out;
+      }
+      return fail(ctx, path, 'does not match any allowed type');
+    });
+  },
+
+  /** Object with arbitrary keys: v.record(v.number()) */
+  record(item) {
+    return new Schema('record', (val, path, ctx) => {
+      if (typeof val !== 'object' || val === null || Array.isArray(val)) return fail(ctx, path, 'must be an object');
+      const out = {};
+      for (const key of Object.keys(val)) {
+        if (key === '__proto__') continue;
+        const r = item._run(val[key], path ? `${path}.${key}` : key, ctx);
+        if (r !== undefined) out[key] = r;
+      }
+      return out;
+    });
+  },
+
+  /** Fixed-length list with a schema per position: v.tuple([v.number(), v.string()]) */
+  tuple(items) {
+    return new Schema('tuple', (val, path, ctx) => {
+      if (!Array.isArray(val)) return fail(ctx, path, 'must be an array');
+      if (val.length !== items.length) return fail(ctx, path, `must have exactly ${items.length} items`);
+      return items.map((s, i) => s._run(val[i], `${path}[${i}]`, ctx));
+    });
+  },
+
+  /** ISO date string / timestamp / Date → Date. */
+  date({ min, max } = {}) {
+    return new Schema('date', (val, path, ctx) => {
+      const d = val instanceof Date ? val : typeof val === 'string' || typeof val === 'number' ? new Date(val) : null;
+      if (!d || Number.isNaN(d.getTime())) return fail(ctx, path, 'must be a valid date');
+      if (min != null && d < new Date(min)) return fail(ctx, path, `must be on or after ${new Date(min).toISOString()}`);
+      if (max != null && d > new Date(max)) return fail(ctx, path, `must be on or before ${new Date(max).toISOString()}`);
+      return d;
+    });
+  },
+
+  /** http(s) URL (override with { protocols: ['https:'] }). */
+  url({ protocols = ['http:', 'https:'] } = {}) {
+    return new Schema('url', (val, path, ctx) => {
+      if (typeof val !== 'string') return fail(ctx, path, 'must be a string');
+      try {
+        const u = new URL(val);
+        if (!protocols.includes(u.protocol)) return fail(ctx, path, `must use ${protocols.join(' or ')}`);
+        return val;
+      } catch {
+        return fail(ctx, path, 'must be a valid URL');
+      }
+    });
+  },
+
+  uuid() {
+    return new Schema('uuid', (val, path, ctx) =>
+      typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val)
+        ? val
+        : fail(ctx, path, 'must be a valid UUID'),
+    );
   },
 };
 

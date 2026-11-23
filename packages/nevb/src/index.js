@@ -12,3 +12,11 @@ export { cors } from './middleware/cors.js';
 export { rateLimit } from './middleware/rate-limit.js';
 export { secureHeaders } from './middleware/secure-headers.js';
 export { serveStatic } from './middleware/static.js';
+export { session, MemoryStore } from './middleware/session.js';
+export { jwtAuth } from './middleware/jwt.js';
+export { compress } from './middleware/compress.js';
+export { csrf } from './middleware/csrf.js';
+export { requestId, basicAuth, bearerAuth, timeout, cacheControl, etag, health } from './middleware/misc.js';
+export {
+  sign, unsign, hmac, signJWT, verifyJWT, hashPassword, verifyPassword, randomId, safeEqual,
+} from './crypto.js';
