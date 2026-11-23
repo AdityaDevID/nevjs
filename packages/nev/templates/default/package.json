@@ -1,0 +1,16 @@
+{
+  "name": "{{name}}",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nev dev",
+    "start": "nev start",
+    "routes": "nev routes"
+  },
+  "dependencies": {
+    "nevjs": "^0.1.0",
+    "nevf": "^0.1.0",
+    "nevg": "^0.1.0"
+  }
+}

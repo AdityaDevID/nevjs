@@ -1,0 +1,49 @@
+{
+  "name": "nevjs",
+  "version": "0.1.0",
+  "description": "Nev.js \u2014 zero-build fullstack framework: file-based routing, SSR, API routes, loaders and client-side navigation, built on NevF + NevB (+ NevG).",
+  "type": "module",
+  "main": "./src/index.js",
+  "bin": {
+    "nev": "./bin/nev.js"
+  },
+  "exports": {
+    ".": "./src/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "bin",
+    "src",
+    "client",
+    "templates"
+  ],
+  "dependencies": {
+    "nevb": "^0.1.0",
+    "nevf": "^0.1.0",
+    "nevg": "^0.1.0"
+  },
+  "keywords": [
+    "nev",
+    "fullstack",
+    "ssr",
+    "framework",
+    "file-based-routing"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "author": "AdityaDevID",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AdityaDevID/nevjs.git",
+    "directory": "packages/nev"
+  },
+  "homepage": "https://github.com/AdityaDevID/nevjs#readme",
+  "bugs": {
+    "url": "https://github.com/AdityaDevID/nevjs/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
