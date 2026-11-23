@@ -9,8 +9,8 @@
     "routes": "nev routes"
   },
   "dependencies": {
-    "nevjs": "^0.1.0",
-    "nevf": "^0.1.0",
-    "nevg": "^0.1.0"
+    "nevjs": "^0.2.0",
+    "nevf": "^0.2.0",
+    "nevg": "^0.2.0"
   }
 }
