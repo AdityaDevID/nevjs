@@ -1,4 +1,4 @@
-import { HttpError } from 'nevjs';
+import { HttpError } from '@adityadevid/nevjs';
 import { findPost } from '../../lib/posts.server.js';
 
 export function load(c) {

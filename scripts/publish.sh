@@ -9,4 +9,4 @@ for p in nevb nevf nevg nev; do
   echo "── publishing packages/$p"
   (cd "packages/$p" && npm publish --access public "$@")
 done
-echo "Done. Try:  npx nevjs create demo"
+echo "Done. Try:  npx @adityadevid/nevjs create demo"

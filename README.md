@@ -7,7 +7,7 @@ Keluarga framework JavaScript **tanpa build step** — tulis file, jalankan, sel
 | **`@adityadevid/nevf`** (NevF.js) | UI reaktif: signals, komponen, SSR, router | Solid / Preact |
 | **`@adityadevid/nevb`** (NevB.js) | Backend HTTP: router, middleware, validasi, static, SSE | Hono / Express |
 | **`@adityadevid/nevg`** (NevG.js) | Game 2D: loop, scene, entity, collision, tween, tilemap, input | Phaser mini |
-| **`nevjs`** (Nev.js) | Fullstack: routing berbasis file, SSR, loader, API routes, CLI | Next.js mini |
+| **`@adityadevid/nevjs`** (Nev.js) | Fullstack: routing berbasis file, SSR, loader, API routes, CLI | Next.js mini |
 
 Semuanya ES module murni, nol dependensi (kecuali saling memakai), Node ≥ 20.
 
@@ -24,8 +24,8 @@ npm install                 # lihat catatan di bawah bila paket belum ada di npm
 npm run dev                 # http://localhost:3000
 ```
 
-> Status: **pra-1.0 (0.2.x)** — API masih bisa berubah. Paket npm: `@adityadevid/nevf`, `@adityadevid/nevb`, `@adityadevid/nevg`, dan **`nevjs`** (fullstack; perintah CLI-nya tetap `nev`).
-> Pasang dari npm: `npx nevjs create situs-saya` (template: `default`, `api`, `game`). Lihat [CHANGELOG](CHANGELOG.md).
+> Status: **pra-1.0 (0.2.x)** — API masih bisa berubah. Paket npm: `@adityadevid/nevf`, `@adityadevid/nevb`, `@adityadevid/nevg`, dan **`@adityadevid/nevjs`** (fullstack; perintah CLI-nya tetap `nev`).
+> Pasang dari npm: `npx @adityadevid/nevjs create situs-saya` (template: `default`, `api`, `game`). Lihat [CHANGELOG](CHANGELOG.md).
 
 ---
 
@@ -67,7 +67,7 @@ export default function Post({ data, params, query, url }) {
 
 ```js
 // pages/blog/[slug].server.js
-import { HttpError, redirect } from 'nevjs';
+import { HttpError, redirect } from '@adityadevid/nevjs';
 import { findPost } from '../../lib/posts.server.js';
 
 export function load(c) {                       // c = Context NevB (c.params, c.query, c.cookies, c.setCookie, ...)
@@ -82,7 +82,7 @@ export function load(c) {                       // c = Context NevB (c.params, c
 
 ```js
 // api/guestbook.js
-import { v, validate, rateLimit } from 'nevjs';
+import { v, validate, rateLimit } from '@adityadevid/nevjs';
 
 export const middleware = [rateLimit({ windowMs: 60_000, max: 60 })];
 export const get  = () => ({ entries: [] });                       // object → JSON
@@ -95,7 +95,7 @@ export const post = [
 **`nev.config.js`**
 
 ```js
-import { defineConfig, cors } from 'nevjs';
+import { defineConfig, cors } from '@adityadevid/nevjs';
 export default defineConfig({
   title: 'Situs Saya', titleTemplate: '%s · Situs Saya', lang: 'id',
   head: { meta: [], links: [{ rel: 'stylesheet', href: '/style.css' }], scripts: [] },
@@ -130,7 +130,7 @@ bekerja, `<title>` ikut berubah. Tidak ada bundler — browser meng-import modul
 - Data loader disisipkan ke HTML dengan escape (`</script>` tidak bisa menutup tag).
 - Error tak terduga di produksi hanya menampilkan "Internal Server Error"; detail/stack hanya di mode dev.
 - `/__nev/data` menolak path absolut / `//host` (bukan open proxy / SSRF).
-- `session` (cookie bertanda tangan / store server), `jwtAuth`, `csrf`, `hashPassword` (PBKDF2), `compress`, `basicAuth` tersedia dari `nevjs`.
+- `session` (cookie bertanda tangan / store server), `jwtAuth`, `csrf`, `hashPassword` (PBKDF2), `compress`, `basicAuth` tersedia dari `@adityadevid/nevjs`.
 - Header aman default (`nosniff`, `X-Frame-Options`, `Referrer-Policy`, …). Tambah CSP/HSTS lewat `secureHeaders({...})` di `setup`.
 
 ---
