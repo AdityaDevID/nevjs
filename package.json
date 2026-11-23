@@ -8,12 +8,12 @@
     "packages/*"
   ],
   "scripts": {
-    "test": "node --test \"packages/*/test/*.test.js\"",
-    "test:f": "node --test \"packages/nevf/test/*.test.js\"",
-    "test:b": "node --test \"packages/nevb/test/*.test.js\"",
-    "test:g3": "node --test \"packages/nevgthree/test/*.test.js\"",
-    "test:g": "node --test \"packages/nevg/test/*.test.js\"",
-    "test:fullstack": "node --test \"packages/nev/test/*.test.js\""
+    "test": "node scripts/test.mjs",
+    "test:f": "node scripts/test.mjs nevf",
+    "test:b": "node scripts/test.mjs nevb",
+    "test:g": "node scripts/test.mjs nevg",
+    "test:g3": "node scripts/test.mjs nevgthree",
+    "test:fullstack": "node scripts/test.mjs nev"
   },
   "engines": {
     "node": ">=20"

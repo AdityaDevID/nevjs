@@ -6,6 +6,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false   # a failure on one Node version must not cancel the other
       matrix:
         node: [20, 22]
     steps:
