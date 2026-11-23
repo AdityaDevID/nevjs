@@ -4,9 +4,9 @@ Keluarga framework JavaScript **tanpa build step** — tulis file, jalankan, sel
 
 | Paket | Fungsi | Mirip dengan |
 | --- | --- | --- |
-| **`nevf`** (NevF.js) | UI reaktif: signals, komponen, SSR, router | Solid / Preact |
-| **`nevb`** (NevB.js) | Backend HTTP: router, middleware, validasi, static, SSE | Hono / Express |
-| **`nevg`** (NevG.js) | Game 2D: loop, scene, entity, collision, tween, tilemap, input | Phaser mini |
+| **`@adityadevid/nevf`** (NevF.js) | UI reaktif: signals, komponen, SSR, router | Solid / Preact |
+| **`@adityadevid/nevb`** (NevB.js) | Backend HTTP: router, middleware, validasi, static, SSE | Hono / Express |
+| **`@adityadevid/nevg`** (NevG.js) | Game 2D: loop, scene, entity, collision, tween, tilemap, input | Phaser mini |
 | **`nevjs`** (Nev.js) | Fullstack: routing berbasis file, SSR, loader, API routes, CLI | Next.js mini |
 
 Semuanya ES module murni, nol dependensi (kecuali saling memakai), Node ≥ 20.
@@ -24,7 +24,7 @@ npm install                 # lihat catatan di bawah bila paket belum ada di npm
 npm run dev                 # http://localhost:3000
 ```
 
-> Status: **pra-1.0 (0.2.x)** — API masih bisa berubah. Paket npm: `nevf`, `nevb`, `nevg`, dan **`nevjs`** (fullstack; perintah CLI-nya tetap `nev`).
+> Status: **pra-1.0 (0.2.x)** — API masih bisa berubah. Paket npm: `@adityadevid/nevf`, `@adityadevid/nevb`, `@adityadevid/nevg`, dan **`nevjs`** (fullstack; perintah CLI-nya tetap `nev`).
 > Pasang dari npm: `npx nevjs create situs-saya` (template: `default`, `api`, `game`). Lihat [CHANGELOG](CHANGELOG.md).
 
 ---
@@ -54,7 +54,7 @@ situs-saya/
 
 ```js
 // pages/blog/[slug].js
-import { h, Link } from 'nevf';
+import { h, Link } from '@adityadevid/nevf';
 
 export const head = ({ data }) => ({ title: data.post.title, meta: [{ name: 'description', content: data.post.summary }] });
 
@@ -100,7 +100,7 @@ export default defineConfig({
   title: 'Situs Saya', titleTemplate: '%s · Situs Saya', lang: 'id',
   head: { meta: [], links: [{ rel: 'stylesheet', href: '/style.css' }], scripts: [] },
   clientDirs: ['pages', 'components', 'lib', 'shared'],   // folder yang boleh diunduh browser
-  browserPackages: ['nevg'],                              // paket tambahan yang bisa di-import di browser
+  browserPackages: ['@adityadevid/nevg'],                              // paket tambahan yang bisa di-import di browser
   setup(app) { app.use(cors({ origin: ['https://contoh.com'] })); },   // middleware/route sendiri (jalan duluan)
 });
 ```
@@ -140,7 +140,7 @@ bekerja, `<title>` ikut berubah. Tidak ada bundler — browser meng-import modul
 Komponen dijalankan **sekali**; yang berubah hanyalah fungsi/signal yang kamu pasang di tempatnya.
 
 ```js
-import { h, signal, computed, effect, render, Show, For } from 'nevf';
+import { h, signal, computed, effect, render, Show, For } from '@adityadevid/nevf';
 
 function Todo() {
   const items = signal([]);
@@ -165,7 +165,7 @@ render(h(Todo), document.body);
 | `effect(fn)` · `batch` · `untrack` | efek samping, gabung update, baca tanpa berlangganan |
 | `onMount` · `onCleanup` · `createRoot` | siklus hidup (onMount tidak jalan di server) |
 | `resource(fetcher)` | `{ data, loading, error, refetch }` |
-| `h(type, props, ...children)` · `Fragment` | node; tipe = tag atau komponen. JSX: `jsxImportSource: "nevf"` (perlu transpiler sendiri) |
+| `h(type, props, ...children)` · `Fragment` | node; tipe = tag atau komponen. JSX: `jsxImportSource: "@adityadevid/nevf"` (perlu transpiler sendiri) |
 | `Show` · `For` · `Switch/Match` · `ErrorBoundary` | alur kontrol; `For` mencocokkan item per identitas |
 | `renderToString(vnode)` | SSR sinkron |
 | `Router` · `Link` · `navigate` · `location` · `useQuery` | router SPA (`:param`, `*wildcard`) |
@@ -178,7 +178,7 @@ Nilai fungsi/signal pada prop atau anak otomatis reaktif.
 ## NevB.js — backend
 
 ```js
-import { App, logger, cors, validate, v, serveStatic, abort } from 'nevb';
+import { App, logger, cors, validate, v, serveStatic, abort } from '@adityadevid/nevb';
 
 const app = new App();
 app.use(logger(), cors());
@@ -200,7 +200,7 @@ await app.listen(3000);
 ## NevG.js — game 2D
 
 ```js
-import { Game, Scene, Rect } from 'nevg';
+import { Game, Scene, Rect } from '@adityadevid/nevg';
 
 class Play extends Scene {
   init() {

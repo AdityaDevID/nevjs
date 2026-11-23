@@ -1,4 +1,4 @@
-import { h } from 'nevf';
+import { h } from '@adityadevid/nevf';
 
 export const head = () => ({ title: 'About', meta: [{ name: 'description', content: 'About this site' }] });
 

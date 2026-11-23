@@ -1,4 +1,4 @@
-import { h, Link } from 'nevf';
+import { h, Link } from '@adityadevid/nevf';
 
 export default function ErrorPage(props) {
   const e = props.error ?? {};

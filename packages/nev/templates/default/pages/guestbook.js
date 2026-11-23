@@ -1,4 +1,4 @@
-import { h, signal, resource, For, Show, batch } from 'nevf';
+import { h, signal, resource, For, Show, batch } from '@adityadevid/nevf';
 
 export const head = () => ({ title: 'Guestbook' });
 

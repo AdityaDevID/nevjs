@@ -1,4 +1,4 @@
-import { h, Link } from 'nevf';
+import { h, Link } from '@adityadevid/nevf';
 
 export const head = ({ data }) => ({
   title: data.post.title,

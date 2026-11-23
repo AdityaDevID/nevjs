@@ -1,7 +1,7 @@
 // Nev.js browser runtime: takes over the server-rendered page and handles
 // client-side navigation (no full reloads), loader data and dev live-reload.
 
-import { h, render, signal, batch, effect, untrack, location } from 'nevf';
+import { h, render, signal, batch, effect, untrack, location } from '@adityadevid/nevf';
 import { buildTree } from '/__nev/tree.js';
 
 const boot = JSON.parse(document.getElementById('__NEV_DATA__').textContent);

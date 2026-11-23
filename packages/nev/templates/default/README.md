@@ -27,6 +27,6 @@ npm run routes   # list every page and API route
 
 ### Rules of thumb
 
-* Files under `pages/`, `components/`, `lib/` and `shared/` can run in the browser — import from `nevf` there, never from `nevjs`.
+* Files under `pages/`, `components/`, `lib/` and `shared/` can run in the browser — import from `@adityadevid/nevf` there, never from `nevjs`.
 * Anything secret goes in a `*.server.js` file. Those files are refused when the browser asks for them.
-* Use `Link` from `nevf` for navigation; plain `<a>` tags do a full page load.
+* Use `Link` from `@adityadevid/nevf` for navigation; plain `<a>` tags do a full page load.

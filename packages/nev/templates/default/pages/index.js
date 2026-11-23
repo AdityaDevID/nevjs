@@ -1,4 +1,4 @@
-import { h, Link } from 'nevf';
+import { h, Link } from '@adityadevid/nevf';
 import Counter from '../components/Counter.js';
 
 export const head = () => ({ title: 'Home' });

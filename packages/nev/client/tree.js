@@ -1,5 +1,5 @@
 // Shared by the server (SSR) and the browser: nest a page inside its layouts.
-import { h } from 'nevf';
+import { h } from '@adityadevid/nevf';
 
 export function buildTree(layouts, Page, props) {
   let node = h(Page, props);

@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "nevjs": "^0.2.0",
-    "nevf": "^0.2.0",
-    "nevg": "^0.2.0"
+    "@adityadevid/nevf": "^0.2.0",
+    "@adityadevid/nevg": "^0.2.0"
   }
 }

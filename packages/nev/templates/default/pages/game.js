@@ -1,5 +1,5 @@
-import { h, createRef, onMount } from 'nevf';
-import { Game, Scene, Rect, Label, createRng } from 'nevg';
+import { h, createRef, onMount } from '@adityadevid/nevf';
+import { Game, Scene, Rect, Label, createRng } from '@adityadevid/nevg';
 
 export const head = () => ({ title: 'Game' });
 

@@ -1,4 +1,4 @@
-import { h, onMount } from 'nevf';
+import { h, onMount } from '@adityadevid/nevf';
 import { createCoinDash } from '../components/coin-dash.js';
 
 export const head = () => ({ title: 'Coin Dash' });

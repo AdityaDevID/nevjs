@@ -1,4 +1,4 @@
-import { h, signal } from 'nevf';
+import { h, signal } from '@adityadevid/nevf';
 
 // A component body runs once; only the parts that read a signal update.
 export default function Counter(props) {

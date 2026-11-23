@@ -1,4 +1,4 @@
-import { h } from 'nevf';
+import { h } from '@adityadevid/nevf';
 
 export default function Home() {
   return h('main', { style: { fontFamily: 'sans-serif', padding: '2rem' } },

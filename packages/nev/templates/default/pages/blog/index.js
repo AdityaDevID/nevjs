@@ -1,4 +1,4 @@
-import { h, Link, For } from 'nevf';
+import { h, Link, For } from '@adityadevid/nevf';
 
 export const head = () => ({ title: 'Blog' });
 

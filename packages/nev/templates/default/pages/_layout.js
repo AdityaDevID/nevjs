@@ -1,4 +1,4 @@
-import { h, Link, location } from 'nevf';
+import { h, Link, location } from '@adityadevid/nevf';
 
 const links = [
   ['/', 'Home'],
