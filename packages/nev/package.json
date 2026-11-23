@@ -1,26 +1,30 @@
 {
   "name": "nevjs",
-  "version": "0.1.0",
-  "description": "Nev.js \u2014 zero-build fullstack framework: file-based routing, SSR, API routes, loaders and client-side navigation, built on NevF + NevB (+ NevG).",
+  "version": "0.2.0",
+  "description": "Nev.js — zero-build fullstack framework: file-based routing, SSR, API routes, loaders and client-side navigation, built on NevF + NevB (+ NevG).",
   "type": "module",
   "main": "./src/index.js",
   "bin": {
     "nev": "./bin/nev.js"
   },
   "exports": {
-    ".": "./src/index.js",
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./src/index.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
     "bin",
     "src",
     "client",
-    "templates"
+    "templates",
+    "types"
   ],
   "dependencies": {
-    "nevb": "^0.1.0",
-    "nevf": "^0.1.0",
-    "nevg": "^0.1.0"
+    "nevb": "^0.2.0",
+    "nevf": "^0.2.0",
+    "nevg": "^0.2.0"
   },
   "keywords": [
     "nev",
@@ -45,5 +49,6 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "types": "./types/index.d.ts"
 }

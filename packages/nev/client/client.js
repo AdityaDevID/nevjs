@@ -115,6 +115,14 @@ async function resolveView(loc) {
 async function go(loc) {
   const key = loc.pathname + loc.search;
   if (key === currentKey) return; // hash-only change
+  if (boot.static) {
+    // statically exported site: there is no /__nev/data endpoint, so pages with a loader need a real page load
+    const f = findRoute(loc.pathname);
+    if (f && f.route.load) {
+      window.location.assign(key + loc.hash);
+      return;
+    }
+  }
   const mine = ++ticket;
   try {
     const next = await resolveView(loc);

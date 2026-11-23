@@ -15,7 +15,7 @@ Semuanya ES module murni, nol dependensi (kecuali saling memakai), Node ≥ 20.
 git clone https://github.com/AdityaDevID/nevjs.git
 cd nevjs
 npm install
-npm test                    # 140+ tes untuk keempat paket
+npm test                    # 240+ tes untuk keempat paket
 
 # bikin proyek fullstack baru
 node packages/nev/bin/nev.js create ../situs-saya
@@ -24,10 +24,8 @@ npm install                 # lihat catatan di bawah bila paket belum ada di npm
 npm run dev                 # http://localhost:3000
 ```
 
-> Status: **pra-1.0 (0.1.x)** — API masih bisa berubah. Paket npm: `nevf`, `nevb`, `nevg`, dan **`nevjs`** (fullstack; perintah CLI-nya tetap `nev`).
-> Selama belum dipublikasikan ke npm, arahkan dependensi proyek barumu ke salinan lokal, mis.
-> `"nevjs": "file:../nevjs/packages/nev"`, `"nevf": "file:../nevjs/packages/nevf"`, `"nevg": "file:../nevjs/packages/nevg"`.
-> Setelah dipublikasikan: `npx nevjs create situs-saya`.
+> Status: **pra-1.0 (0.2.x)** — API masih bisa berubah. Paket npm: `nevf`, `nevb`, `nevg`, dan **`nevjs`** (fullstack; perintah CLI-nya tetap `nev`).
+> Pasang dari npm: `npx nevjs create situs-saya` (template: `default`, `api`, `game`). Lihat [CHANGELOG](CHANGELOG.md).
 
 ---
 
@@ -114,7 +112,13 @@ nev create <folder>            proyek baru dari template
 nev dev [folder] [--port N]    restart otomatis + live reload browser saat file berubah
 nev start [folder] [--port N]  mode produksi (PORT env juga dibaca)
 nev routes [folder]            tampilkan semua route
+nev export [folder] [--out D]  render semua halaman jadi HTML statis (GitHub Pages, Netlify, S3, …)
 ```
+
+**Baru di 0.2** — `middleware.js` di root proyek (jalan sebelum semua route; `export const matcher = ['/admin/*']` untuk membatasi),
+`/sitemap.xml` + `/robots.txt` otomatis bila `site: 'https://situsmu.com'` diisi di `nev.config.js` (`sitemapPaths` untuk halaman dinamis),
+`nev export` (loader dijalankan saat export; halaman ber-loader berpindah dengan page load penuh di situs statis; taruh di root domain),
+template `api` dan `game`, serta Dockerfile di semua template.
 
 **Cara kerjanya.** Server me-render halaman ke HTML (SSR), menyisipkan import map + data JSON, lalu `client.js`
 mengambil alih: link `Link` berpindah halaman tanpa reload (mengambil data loader via `/__nev/data`), tombol back/forward
@@ -126,6 +130,7 @@ bekerja, `<title>` ikut berubah. Tidak ada bundler — browser meng-import modul
 - Data loader disisipkan ke HTML dengan escape (`</script>` tidak bisa menutup tag).
 - Error tak terduga di produksi hanya menampilkan "Internal Server Error"; detail/stack hanya di mode dev.
 - `/__nev/data` menolak path absolut / `//host` (bukan open proxy / SSRF).
+- `session` (cookie bertanda tangan / store server), `jwtAuth`, `csrf`, `hashPassword` (PBKDF2), `compress`, `basicAuth` tersedia dari `nevjs`.
 - Header aman default (`nosniff`, `X-Frame-Options`, `Referrer-Policy`, …). Tambah CSP/HSTS lewat `secureHeaders({...})` di `setup`.
 
 ---
@@ -220,6 +225,13 @@ Headless: tanpa `canvas`, jalankan `game.step()` — dipakai untuk tes.
 
 ---
 
+## Tambahan 0.2 (ringkas)
+
+- **NevB**: `session` `MemoryStore` `jwtAuth` `signJWT/verifyJWT` `hashPassword/verifyPassword` `compress` `csrf` `requestId` `basicAuth` `bearerAuth` `timeout` `cacheControl` `etag` `health`; validasi `union literal record tuple date url uuid` + `.nullable() .refine() .transform()`.
+- **NevF**: `createStore` (store reaktif dalam), `createContext/useContext`, `createForm`, `lazy`, `Portal`, `Dynamic`, hooks `persisted debounced throttled interval timeout listen mediaQuery toggle previous`.
+- **NevG**: `ParticleEmitter`, `findPath` (A*), `Body` (fisika arcade), `StateMachine`, `Cooldown`, `Pool`, `SaveData`, `Button`, `ProgressBar`, `transition`, `Gamepads`, helper vektor.
+- Semua paket menyertakan deklarasi TypeScript (`types/index.d.ts`).
+
 ## Batasan yang perlu kamu tahu
 
 - **Tanpa bundler/minifier**: tiap modul diminta terpisah (HTTP/2 membantu). Cocok untuk app kecil–menengah; belum ada code-splitting otomatis atau TypeScript/JSX bawaan.
@@ -227,7 +239,7 @@ Headless: tanpa `canvas`, jalankan `game.step()` — dipakai untuk tes.
 - Layout dibuat ulang saat berpindah halaman (state di dalam layout tidak dipertahankan).
 - SSR sinkron: ambil data di `load`, bukan di dalam komponen. Belum ada streaming SSR.
 - `nev dev` me-restart seluruh proses saat file berubah (state memori hilang) — penyederhanaan yang disengaja.
-- Nev adalah server Node: jalankan di VPS/Railway/Render/Fly/Docker. Untuk Vercel/Netlify (serverless) perlu adapter yang belum ada.
+- Nev adalah server Node: jalankan di VPS/Railway/Render/Fly/Docker (ada Dockerfile di template). Untuk hosting statis pakai `nev export`; adapter serverless (Vercel functions) belum ada.
 - Contoh template memakai penyimpanan in-memory (guestbook) — ganti dengan database sungguhan (mis. Supabase) di `lib/*.server.js`.
 
 ## Pengujian
