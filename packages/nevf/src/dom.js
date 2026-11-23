@@ -344,6 +344,16 @@ export function render(vnode, container) {
 }
 
 /**
+ * Mount a tree into `container` as part of the *current* owner: it is disposed together
+ * with it and sees its contexts. Used by <Portal>. Returns the host-side dispose().
+ */
+export function mountInto(vnode, container) {
+  const frag = document.createDocumentFragment();
+  runInScope(() => insert(frag, vnode, null, { svg: false }));
+  container.appendChild(frag);
+}
+
+/**
  * Take over server-rendered markup. The tree is rebuilt off-screen and swapped
  * in atomically (no flash). DOM nodes are not reused — see README.
  */
