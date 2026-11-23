@@ -4,7 +4,7 @@ export class Emitter {
   on(event: string, fn: (...a: any[]) => void): () => void; once(event: string, fn: (...a: any[]) => void): () => void;
   off(event: string, fn?: (...a: any[]) => void): void; emit(event: string, ...a: any[]): void; clear(): void;
 }
-export interface GameOptions { canvas?: string | HTMLCanvasElement; width?: number; height?: number; fps?: number; pixelArt?: boolean; fit?: 'contain' | 'cover' | false; maxFrameTime?: number; input?: Input; assets?: Assets; raf?: any; caf?: any; now?: () => number }
+export interface GameOptions { canvas?: string | HTMLCanvasElement; width?: number; height?: number; fps?: number; pixelArt?: boolean; fit?: 'contain' | 'cover' | false; maxFrameTime?: number; maxDpr?: number; input?: Input; assets?: Assets; raf?: any; caf?: any; now?: () => number }
 export class Game extends Emitter {
   constructor(o?: GameOptions);
   width: number; height: number; fps: number; scene: Scene | null; input: Input; assets: Assets; sound: Sound; tweens: Tweens; running: boolean; timeScale: number;

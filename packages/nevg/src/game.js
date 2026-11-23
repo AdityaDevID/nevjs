@@ -21,6 +21,7 @@ export class Game extends Emitter {
     pixelArt = false,
     fit = 'contain', // 'contain' | 'cover' | 'none' — how the canvas scales inside its parent
     maxFrameTime = 0.25,
+    maxDpr = 3, // cap on devicePixelRatio (lower it for heavy scenes / phones)
     assets,
     input,
     raf,
@@ -35,6 +36,7 @@ export class Game extends Emitter {
     this.pixelArt = pixelArt;
     this.fit = fit;
     this.maxFrameTime = maxFrameTime;
+    this.maxDpr = maxDpr;
     this.input = input ?? new Input();
     this.assets = assets ?? new Assets();
     this.sound = new Sound();
@@ -68,7 +70,7 @@ export class Game extends Emitter {
     const el = typeof canvas === 'string' ? document.querySelector(canvas) : canvas;
     if (!el) throw new Error(`[nevg] Canvas not found: ${canvas}`);
     this.canvas = el;
-    this.ctx = el.getContext('2d');
+    this.ctx = this._createContext(el);
     this.dpr = 1;
     this._applySize();
     const resize = () => this._applySize();
@@ -105,10 +107,15 @@ export class Game extends Emitter {
     });
   }
 
+  /** Hook for subclasses that draw with something other than a 2D context (e.g. WebGL). */
+  _createContext(el) {
+    return el.getContext('2d');
+  }
+
   _applySize() {
     const el = this.canvas;
     if (!el) return;
-    const dpr = Math.max(1, Math.min(3, (typeof window !== 'undefined' && window.devicePixelRatio) || 1));
+    const dpr = Math.max(1, Math.min(this.maxDpr, (typeof window !== 'undefined' && window.devicePixelRatio) || 1));
     this.dpr = dpr;
     let cssW = this.width;
     let cssH = this.height;

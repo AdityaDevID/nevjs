@@ -1,0 +1,26 @@
+{
+  "name": "@adityadevid/nevgthree",
+  "version": "0.1.0",
+  "description": "NevGThree — 3D game layer for NevG.js on top of three.js: Game3D, Scene3D, Entity3D, camera rigs, arcade 3D physics, terrain, touch controls. Zero build.",
+  "type": "module",
+  "main": "./src/index.js",
+  "module": "./src/index.js",
+  "exports": {
+    ".": { "types": "./types/index.d.ts", "default": "./src/index.js" },
+    "./package.json": "./package.json"
+  },
+  "files": ["src", "types"],
+  "sideEffects": false,
+  "keywords": ["nev", "nevg", "nevgthree", "game", "3d", "three", "webgl"],
+  "license": "MIT",
+  "engines": { "node": ">=20" },
+  "peerDependencies": {
+    "@adityadevid/nevg": "^0.2.2",
+    "three": ">=0.160.0"
+  },
+  "author": "AdityaDevID",
+  "repository": { "type": "git", "url": "git+https://github.com/AdityaDevID/nevjs.git", "directory": "packages/nevgthree" },
+  "homepage": "https://github.com/AdityaDevID/nevjs#readme",
+  "publishConfig": { "access": "public" },
+  "types": "./types/index.d.ts"
+}

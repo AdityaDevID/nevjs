@@ -177,7 +177,7 @@ export class Scene extends Emitter {
   // ---- engine internals -----------------------------------------------------
   _enter(game) {
     this.game = game;
-    this.camera.resize(game.width, game.height);
+    this.camera.resize?.(game.width, game.height);
     if (!this._started) {
       this._started = true;
       this.init();
@@ -216,7 +216,7 @@ export class Scene extends Emitter {
     updateTree(this.entities);
 
     this._collide();
-    this.camera.update(dt);
+    this.camera.update?.(dt);
     this._sweep();
   }
 
