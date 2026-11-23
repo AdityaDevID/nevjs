@@ -1,15 +1,19 @@
 {
   "name": "nevb",
-  "version": "0.1.0",
-  "description": "NevB.js \u2014 tiny web-standard backend framework: router, middleware, validation, static files. Zero dependencies.",
+  "version": "0.2.0",
+  "description": "NevB.js — tiny web-standard backend framework: router, middleware, validation, static files. Zero dependencies.",
   "type": "module",
   "main": "./src/index.js",
   "exports": {
-    ".": "./src/index.js",
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./src/index.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
-    "src"
+    "src",
+    "types"
   ],
   "keywords": [
     "nev",
@@ -35,5 +39,6 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "types": "./types/index.d.ts"
 }

@@ -298,7 +298,7 @@ export class Scene extends Emitter {
         continue;
       }
       // Cull top-level entities that are fully off-screen (rotation-safe margin).
-      if (!e.children.length && e.rotation === 0) {
+      if (!e.noCull && !e.children.length && e.rotation === 0) {
         if (e.x > view.x + view.w || e.y > view.y + view.h || e.x + e.w < view.x || e.y + e.h < view.y) continue;
       }
       drawEntity(e);
