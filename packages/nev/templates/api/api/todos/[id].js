@@ -1,4 +1,4 @@
-import { v, validate, HttpError } from 'nevjs';
+import { v, validate, HttpError } from '@adityadevid/nevjs';
 import { todos } from '../../lib/todos.server.js';
 
 const find = (c) => {

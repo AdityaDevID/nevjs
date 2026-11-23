@@ -1,4 +1,4 @@
-import { defineConfig } from 'nevjs';
+import { defineConfig } from '@adityadevid/nevjs';
 
 export default defineConfig({
   title: 'Coin Dash',

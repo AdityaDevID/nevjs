@@ -1,4 +1,4 @@
-import { v, validate, rateLimit } from 'nevjs';
+import { v, validate, rateLimit } from '@adityadevid/nevjs';
 import { listEntries, addEntry } from '../lib/guestbook.server.js';
 
 // Runs before every handler in this file.

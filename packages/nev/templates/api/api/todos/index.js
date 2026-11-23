@@ -1,4 +1,4 @@
-import { v, validate } from 'nevjs';
+import { v, validate } from '@adityadevid/nevjs';
 import { todos, nextId } from '../../lib/todos.server.js';
 
 export const get = () => ({ todos });
