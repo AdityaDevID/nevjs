@@ -1,16 +1,20 @@
 {
   "name": "nevg",
-  "version": "0.1.0",
-  "description": "NevG.js \u2014 tiny 2D game framework: fixed-timestep loop, scenes, entities, collisions, tweens, tilemaps, input. Canvas 2D, zero dependencies.",
+  "version": "0.2.0",
+  "description": "NevG.js — tiny 2D game framework: fixed-timestep loop, scenes, entities, collisions, tweens, tilemaps, input. Canvas 2D, zero dependencies.",
   "type": "module",
   "main": "./src/index.js",
   "module": "./src/index.js",
   "exports": {
-    ".": "./src/index.js",
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./src/index.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
-    "src"
+    "src",
+    "types"
   ],
   "sideEffects": false,
   "keywords": [
@@ -37,5 +41,6 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "types": "./types/index.d.ts"
 }
