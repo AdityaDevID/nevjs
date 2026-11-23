@@ -5,6 +5,7 @@
 // browser; import from "nevf" there.
 export { createNev, startServer, redirect } from './server.js';
 export { defineConfig, loadConfig } from './config.js';
+export { exportSite } from './export.js';
 export { scanPages, scanApi, fileToPattern } from './routes.js';
 
 // Everything you need to write API handlers, re-exported from NevB.
@@ -21,4 +22,21 @@ export {
   serveStatic,
   parseCookies,
   serializeCookie,
+  session,
+  MemoryStore,
+  jwtAuth,
+  compress,
+  csrf,
+  requestId,
+  basicAuth,
+  bearerAuth,
+  timeout,
+  cacheControl,
+  etag,
+  health,
+  signJWT,
+  verifyJWT,
+  hashPassword,
+  verifyPassword,
+  randomId,
 } from 'nevb';

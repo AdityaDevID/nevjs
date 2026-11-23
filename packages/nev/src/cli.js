@@ -12,10 +12,11 @@ const HELP = `
 Nev.js ${pkg.version} — zero-build fullstack framework
 
 Usage:
-  nev create <folder> [--template default]   Create a new project
+  nev create <folder> [--template default|api|game]   Create a new project
   nev dev [folder] [--port 3000] [--host H]  Start with auto-restart + browser live reload
   nev start [folder] [--port 3000] [--host H]  Start in production mode
   nev routes [folder]                        Print the page and API routes
+  nev export [folder] [--out out]            Render every page to static HTML (GitHub Pages, Netlify, S3, …)
 
 Environment: PORT overrides the configured port.
 `;
@@ -23,12 +24,13 @@ Environment: PORT overrides the configured port.
 export function parseArgs(argv) {
   const flags = {};
   const positional = [];
-  const valued = new Set(['port', 'p', 'host', 'template']);
+  const valued = new Set(['port', 'p', 'host', 'template', 'out', 'o']);
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a.startsWith('--') || (a.startsWith('-') && a.length === 2)) {
       let [key, value] = a.replace(/^-+/, '').split('=');
       if (key === 'p') key = 'port';
+      if (key === 'o') key = 'out';
       if (value === undefined && valued.has(key)) {
         value = argv[++i];
         if (value === undefined) throw new Error(`Missing value for --${key}`);
@@ -51,8 +53,8 @@ function copyDir(src, dest, vars) {
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
     if (entry.name === 'node_modules') continue;
     const from = path.join(src, entry.name);
-    // npm never publishes ".gitignore", so the template ships it as "_gitignore"
-    const to = path.join(dest, entry.name === '_gitignore' ? '.gitignore' : entry.name);
+    // npm never publishes dotfiles like ".gitignore", so templates ship them as "_gitignore" / "_dockerignore"
+    const to = path.join(dest, entry.name.startsWith('_') && /^_(gitignore|dockerignore|npmrc|env\.example)$/.test(entry.name) ? '.' + entry.name.slice(1) : entry.name);
     if (entry.isDirectory()) copyDir(from, to, vars);
     else if (/\.(json|md)$/.test(entry.name)) {
       let text = fs.readFileSync(from, 'utf8');
@@ -182,6 +184,17 @@ export async function main(argv) {
     case 'routes': {
       const { createNev } = await import('./server.js');
       printRoutes(await createNev({ root, silent: true }));
+      return;
+    }
+    case 'export': {
+      const { exportSite } = await import('./export.js');
+      const result = await exportSite({ root, out: typeof flags.out === 'string' ? flags.out : undefined, crawl: flags['no-crawl'] ? false : undefined });
+      for (const p of result.pages) console.log(`  ✓ ${p}`);
+      for (const w of result.warnings) console.log(`  ! ${w}`);
+      for (const e of result.errors) console.error(`  ✗ ${e.path}  ${e.message}`);
+      console.log(`\n  Exported ${result.pages.length} page${result.pages.length === 1 ? '' : 's'} (${result.files} files) → ${path.relative(process.cwd(), result.out) || '.'}`);
+      console.log('  Serve it from the root of a domain (e.g. `npx serve out`). API routes are not part of a static export.\n');
+      if (result.errors.length) process.exitCode = 1;
       return;
     }
     default:

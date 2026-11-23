@@ -14,6 +14,9 @@ const DEFAULTS = {
   browserPackages: ['nevg'], // extra packages importable in the browser ('nevf' is always available)
   port: 3000,
   setup: null, // (app) => void — add your own middleware/routes before Nev's
+  site: null, // 'https://example.com' → enables /sitemap.xml + /robots.txt (and absolute URLs in the sitemap)
+  sitemapPaths: null, // extra sitemap URLs (array or async fn) — dynamic pages like /blog/:slug
+  export: {}, // nev export: { out: 'out', paths: [...] | async fn, crawl: true }
 };
 
 /** Load <root>/nev.config.js (optional) and merge it over the defaults. */

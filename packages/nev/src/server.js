@@ -2,12 +2,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { App, Context, HttpError, logger, secureHeaders, serveStatic, matchSegs, splitPath } from 'nevb';
+import { App, Context, HttpError, logger, secureHeaders, serveStatic, matchSegs, splitPath, compile } from 'nevb';
 import { renderToString, setLocation, parseQuery } from 'nevf';
 import { buildTree } from '../client/tree.js';
 import { loadConfig } from './config.js';
 import { scanPages, scanApi } from './routes.js';
 import { renderDocument, formatTitle } from './html.js';
+import { siteOrigin, collectSitemapEntries, buildSitemap, buildRobots } from './seo.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const clientDir = path.join(here, '..', 'client');
@@ -65,6 +66,7 @@ export async function createNev(options = {}) {
   app.use(serveStatic({ root: path.join(root, 'public'), index: false, maxAge: dev ? 0 : 3600 }));
 
   const importMap = {};
+  const packages = [];
   const pkgNames = ['nevf', ...config.browserPackages.filter((n) => n !== 'nevf')];
   for (const name of pkgNames) {
     const pkg = resolvePackage(name, root);
@@ -75,6 +77,7 @@ export async function createNev(options = {}) {
     }
     const prefix = `/__nev/pkg/${name}`;
     importMap[name] = `${prefix}/${pkg.file}`;
+    packages.push({ name, dir: pkg.dir, prefix });
     if (name === 'nevf') {
       importMap['nevf/jsx-runtime'] = `${prefix}/jsx-runtime.js`;
       importMap['nevf/jsx-dev-runtime'] = `${prefix}/jsx-dev-runtime.js`;
@@ -170,6 +173,7 @@ export async function createNev(options = {}) {
       boot: {
         ...manifest,
         dev,
+        static: !!options.static,
         page: { page: spec.url, layouts: spec.layouts.map((l) => l.url), params, data, error },
       },
     });
@@ -211,6 +215,38 @@ export async function createNev(options = {}) {
       if (params) return { route, params };
     }
     return null;
+  }
+
+  // 5b. project-level middleware: <root>/middleware.js ------------------------------------------------
+  //   export default (c, next) => { ... }            // or an array of them
+  //   export const matcher = ['/admin/*', '/api/*']   // optional: only run for these paths
+  const mwFile = ['middleware.js', 'middleware.mjs'].map((f) => path.join(root, f)).find((f) => fs.existsSync(f));
+  if (mwFile) {
+    const mod = await importModule(mwFile);
+    const list = [].concat(mod.default ?? mod.middleware ?? []);
+    if (!list.length || !list.every((f) => typeof f === 'function')) {
+      throw new Error('[nev] middleware.js must export a function (or an array of functions) as its default export');
+    }
+    const matchers = mod.matcher ? [].concat(mod.matcher).map((p) => compile(p.replace(/\/\*$/, '/*rest'))) : null;
+    for (const fn of list) {
+      app.use((c, next) => {
+        if (c.path.startsWith('/__nev/')) return next();
+        if (matchers && !matchers.some((m) => matchSegs(m, splitPath(c.path), true))) return next();
+        return fn(c, next);
+      });
+    }
+  }
+
+  // 5c. sitemap.xml + robots.txt (only when `site` is configured; files in public/ win) ------------------------
+  const origin = siteOrigin(config);
+  if (origin && config.sitemap !== false) {
+    app.get('/sitemap.xml', async (c) => {
+      const entries = await collectSitemapEntries(config, pages);
+      return c.text(buildSitemap(origin, entries), 200, { 'content-type': 'application/xml; charset=utf-8' });
+    });
+  }
+  if (origin && config.robots !== false) {
+    app.get('/robots.txt', (c) => c.text(buildRobots(config, origin)));
   }
 
   // 6. loader data for client-side navigation ---------------------------------------------------
@@ -307,7 +343,7 @@ export async function createNev(options = {}) {
     }
   });
 
-  return { app, config, pages, api: apiRoutes, importMap, root, dev };
+  return { app, config, pages, api: apiRoutes, importMap, packages, clientDir, root, dev };
 }
 
 /** createNev() + listen. Resolves { app, server, port, ... }. */
