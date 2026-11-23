@@ -1,26 +1,47 @@
 name: CI
+
+# Tes otomatis: tiap push ke main dan tiap pull request.
 on:
-  push: { branches: [main] }
+  push:
+    branches: [main]
   pull_request:
+
+permissions:
+  contents: read
+
+# Push/commit baru di PR yang sama membatalkan run lama.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
+    name: Test (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
-      fail-fast: false   # a failure on one Node version must not cancel the other
+      fail-fast: false   # gagal di satu versi Node tidak membatalkan yang lain
       matrix:
         node: [20, 22]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: "${{ matrix.node }}" }
-      - run: npm install
-      - run: npm test   # browser tests are skipped automatically when Playwright is absent
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm test   # tes browser dilewati otomatis kalau Playwright tidak ada
+
   browser:
+    name: Test browser (Playwright)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - run: npm install
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
       - run: npm install --no-save playwright && npx playwright install --with-deps chromium
       - run: npm test

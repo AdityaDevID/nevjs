@@ -1,48 +1,193 @@
 name: Release
-# Push a tag like v0.2.2 (or publish a release from the GitHub app) → tests → npm publish → GitHub Release with notes + .tgz builds.
+
+# Rilis MANUAL: Actions → Release → Run workflow → isi tag (mis. v0.2.2).
+# TIDAK terpicu oleh push tag. Alur: tes → validasi → npm publish → npm pack → GitHub Release.
 on:
-  push:
-    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag rilis, format vX.Y.Z (contoh: v0.2.2)"
+        required: true
+        type: string
+        default: v0.2.2
+      dry_run:
+        description: "Dry run: hanya tes + pack (tanpa npm publish dan tanpa GitHub Release)"
+        required: true
+        type: boolean
+        default: false
+      prerelease:
+        description: "Tandai GitHub Release sebagai pre-release"
+        required: true
+        type: boolean
+        default: false
+
 permissions:
-  contents: write   # create/update the GitHub Release
-  id-token: write   # npm provenance
+  contents: read
+
+# Cegah dua rilis berjalan bersamaan.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
-  publish:
+  test:
+    name: Test (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 22, registry-url: 'https://registry.npmjs.org' }
-      - run: npm install
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
       - run: npm test
-      - name: Publish to npm (skips versions that already exist)
+
+  publish:
+    name: Publish & Release
+    needs: test            # hanya jalan kalau semua tes lulus
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write      # membuat tag + GitHub Release
+      id-token: write      # npm provenance
+    env:
+      TAG: ${{ inputs.tag }}
+      DRY_RUN: ${{ inputs.dry_run }}
+      PRERELEASE: ${{ inputs.prerelease }}
+      PACKAGES: nevb nevf nevg nevgthree nev   # urutan publish
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      # ── Validasi di awal ────────────────────────────────────────────
+      - name: Validasi (tag, versi baru, NPM_TOKEN)
+        id: validate
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          for p in nevb nevf nevg nevgthree nev; do
+          set -euo pipefail
+          fail() { echo "::error title=$1::$2"; exit 1; }
+
+          # 1) Format tag harus vX.Y.Z
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            fail "Format tag salah" "Tag '$TAG' tidak valid. Pakai format vX.Y.Z, contoh: v0.2.2"
+          fi
+
+          if [ "${GITHUB_REF_NAME}" != "main" ]; then
+            echo "::warning title=Bukan branch main::Workflow dijalankan dari '${GITHUB_REF_NAME}'. Tag akan dibuat dari commit branch ini."
+          fi
+
+          # 2) Cari paket yang versinya belum ada di npm
+          exists() {  # exists <nama> <versi>
+            local out rc=0
+            out=$(npm view "$1@$2" version 2>&1) || rc=$?
+            if [ "$rc" -eq 0 ]; then [ -n "$out" ] && return 0 || return 1; fi
+            if grep -q 'E404' <<<"$out"; then return 1; fi
+            echo "::error title=Gagal cek npm::npm view $1@$2 gagal: $out"; exit 1
+          }
+          TODO=""
+          {
+            echo "### Rencana rilis \`$TAG\`"
+            echo "| Paket | Versi | Status |"
+            echo "|---|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          for p in $PACKAGES; do
             name=$(node -p "require('./packages/$p/package.json').name")
             ver=$(node -p "require('./packages/$p/package.json').version")
-            if npm view "$name@$ver" version >/dev/null 2>&1; then
-              echo "skip $name@$ver (already published)"
+            if exists "$name" "$ver"; then
+              echo "skip   $name@$ver (sudah ada di npm)"
+              echo "| $name | $ver | dilewati (sudah ada) |" >> "$GITHUB_STEP_SUMMARY"
             else
-              (cd packages/$p && npm publish --access public --provenance)
+              echo "terbit $name@$ver"
+              echo "| $name | $ver | **akan terbit** |" >> "$GITHUB_STEP_SUMMARY"
+              TODO="$TODO $p"
             fi
           done
+          TODO="${TODO# }"
+          echo "todo=$TODO" >> "$GITHUB_OUTPUT"
+
+          if [ -z "$TODO" ]; then
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "::warning title=Tidak ada versi baru::Semua versi paket sudah ada di npm (dry run, dilanjutkan)."
+            else
+              fail "Tidak ada versi baru" "Semua versi paket sudah terbit di npm. Naikkan versi di package.json dulu, lalu commit."
+            fi
+          fi
+
+          # 3) NPM_TOKEN harus ada (hanya perlu kalau benar-benar publish)
+          if [ "$DRY_RUN" != "true" ] && [ -n "$TODO" ] && [ -z "$NPM_TOKEN" ]; then
+            fail "NPM_TOKEN tidak ada" "Tambahkan secret NPM_TOKEN: Settings → Secrets and variables → Actions → New repository secret."
+          fi
+
+          if [ -f "release-notes/$TAG.md" ]; then
+            echo "::notice::Catatan rilis: release-notes/$TAG.md"
+          else
+            echo "::warning title=Catatan rilis tidak ada::release-notes/$TAG.md tidak ditemukan; memakai --generate-notes."
+          fi
+
+      - run: npm ci
+
+      # ── npm publish (urut; lewati versi yang sudah ada) ─────────────
+      - name: npm publish
+        if: ${{ !inputs.dry_run && steps.validate.outputs.todo != '' }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: Pack builds (.tgz)
+          TODO: ${{ steps.validate.outputs.todo }}
         run: |
+          set -euo pipefail
+          for p in $TODO; do
+            echo "── publish packages/$p"
+            (cd "packages/$p" && npm publish --access public --provenance)
+          done
+
+      # ── npm pack (.tgz tiap paket) ──────────────────────────────────
+      - name: npm pack
+        run: |
+          set -euo pipefail
           mkdir -p dist
-          for p in nevb nevf nevg nevgthree nev; do (cd packages/$p && npm pack --pack-destination ../../dist); done
+          for p in $PACKAGES; do
+            (cd "packages/$p" && npm pack --pack-destination ../../dist)
+          done
           ls -la dist
-      - name: GitHub Release (notes from release-notes/<tag>.md, builds attached)
+
+      # Dry run: simpan .tgz sebagai artifact supaya bisa diperiksa.
+      - name: Simpan hasil pack (dry run)
+        if: ${{ inputs.dry_run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: nevjs-${{ inputs.tag }}-dryrun
+          path: dist/*.tgz
+          retention-days: 7
+
+      # ── GitHub Release ──────────────────────────────────────────────
+      - name: GitHub Release
+        if: ${{ !inputs.dry_run }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ github.ref_name }}
         run: |
+          set -euo pipefail
           NOTES="release-notes/${TAG}.md"
-          if [ -f "$NOTES" ]; then NOTEARG=(--notes-file "$NOTES"); else NOTEARG=(--generate-notes); fi
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release edit "$TAG" --title "$TAG" "${NOTEARG[@]}"
+            echo "Release $TAG sudah ada → edit + upload --clobber"
+            EDIT=(--title "$TAG" --prerelease="$PRERELEASE")
+            # `gh release edit` tidak punya --generate-notes: catatan lama dibiarkan kalau file tidak ada.
+            if [ -f "$NOTES" ]; then EDIT+=(--notes-file "$NOTES"); fi
+            gh release edit "$TAG" "${EDIT[@]}"
           else
-            gh release create "$TAG" --title "$TAG" "${NOTEARG[@]}"
+            echo "Membuat release $TAG (tag dibuat otomatis kalau belum ada)"
+            if [ -f "$NOTES" ]; then NOTEARG=(--notes-file "$NOTES"); else NOTEARG=(--generate-notes); fi
+            gh release create "$TAG" --title "$TAG" --target "$GITHUB_SHA" \
+              --prerelease="$PRERELEASE" "${NOTEARG[@]}"
           fi
           gh release upload "$TAG" dist/*.tgz --clobber
+          echo "Release: $(gh release view "$TAG" --json url -q .url)" >> "$GITHUB_STEP_SUMMARY"
