@@ -1,0 +1,39 @@
+{
+  "name": "nevb",
+  "version": "0.1.0",
+  "description": "NevB.js \u2014 tiny web-standard backend framework: router, middleware, validation, static files. Zero dependencies.",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src"
+  ],
+  "keywords": [
+    "nev",
+    "nevb",
+    "backend",
+    "http",
+    "router",
+    "middleware"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "author": "AdityaDevID",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AdityaDevID/nevjs.git",
+    "directory": "packages/nevb"
+  },
+  "homepage": "https://github.com/AdityaDevID/nevjs#readme",
+  "bugs": {
+    "url": "https://github.com/AdityaDevID/nevjs/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
