@@ -1,8 +1,8 @@
 {
   "name": "nev-monorepo",
   "private": true,
-  "version": "0.1.0",
-  "description": "Nev.js \u2014 a zero-build JavaScript framework family: NevF (frontend), NevB (backend), NevG (game), Nev (fullstack).",
+  "version": "0.2.0",
+  "description": "Nev.js — a zero-build JavaScript framework family: NevF (frontend), NevB (backend), NevG (game), Nev (fullstack).",
   "type": "module",
   "workspaces": [
     "packages/*"
