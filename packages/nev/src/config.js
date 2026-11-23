@@ -11,7 +11,7 @@ const DEFAULTS = {
   lang: 'en',
   head: { meta: [], links: [], scripts: [] }, // added to every page <head>
   clientDirs: ['pages', 'components', 'lib', 'shared'], // folders the browser may import from
-  browserPackages: ['@adityadevid/nevg'], // extra packages importable in the browser ('@adityadevid/nevf' is always available)
+  browserPackages: ['@adityadevid/nevg'], // (3D games: add '@adityadevid/nevgthree' and 'three') extra packages importable in the browser ('@adityadevid/nevf' is always available)
   port: 3000,
   setup: null, // (app) => void — add your own middleware/routes before Nev's
   site: null, // 'https://example.com' → enables /sitemap.xml + /robots.txt (and absolute URLs in the sitemap)

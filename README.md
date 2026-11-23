@@ -7,6 +7,7 @@ Keluarga framework JavaScript **tanpa build step** — tulis file, jalankan, sel
 | **`@adityadevid/nevf`** (NevF.js) | UI reaktif: signals, komponen, SSR, router | Solid / Preact |
 | **`@adityadevid/nevb`** (NevB.js) | Backend HTTP: router, middleware, validasi, static, SSE | Hono / Express |
 | **`@adityadevid/nevg`** (NevG.js) | Game 2D: loop, scene, entity, collision, tween, tilemap, input | Phaser mini |
+| **`@adityadevid/nevgthree`** (NevGThree) | Game 3D di atas three.js: scene, entity, fisika, kamera, kontrol sentuh, terrain | Phaser 3D mini |
 | **`@adityadevid/nevjs`** (Nev.js) | Fullstack: routing berbasis file, SSR, loader, API routes, CLI | Next.js mini |
 
 Semuanya ES module murni, nol dependensi (kecuali saling memakai), Node ≥ 20.
@@ -15,7 +16,7 @@ Semuanya ES module murni, nol dependensi (kecuali saling memakai), Node ≥ 20.
 git clone https://github.com/AdityaDevID/nevjs.git
 cd nevjs
 npm install
-npm test                    # 240+ tes untuk keempat paket
+npm test                    # 270+ tes untuk kelima paket
 
 # bikin proyek fullstack baru
 node packages/nev/bin/nev.js create ../situs-saya
@@ -25,7 +26,7 @@ npm run dev                 # http://localhost:3000
 ```
 
 > Status: **pra-1.0 (0.2.x)** — API masih bisa berubah. Paket npm: `@adityadevid/nevf`, `@adityadevid/nevb`, `@adityadevid/nevg`, dan **`@adityadevid/nevjs`** (fullstack; perintah CLI-nya tetap `nev`).
-> Pasang dari npm: `npx @adityadevid/nevjs create situs-saya` (template: `default`, `api`, `game`). Lihat [CHANGELOG](CHANGELOG.md).
+> Pasang dari npm: `npx @adityadevid/nevjs create situs-saya` (template: `default`, `api`, `game`, `game3d`). Lihat [CHANGELOG](CHANGELOG.md).
 
 ---
 
@@ -222,6 +223,30 @@ new Game({ canvas: '#game', width: 320, height: 180, pixelArt: true }).start(new
 Headless: tanpa `canvas`, jalankan `game.step()` — dipakai untuk tes.
 
 > Entity yang bergerak lewat `moveAndCollide` sebaiknya menyimpan kecepatannya sendiri; `vx/vy` bawaan dipakai untuk gerak sederhana tanpa tabrakan.
+
+---
+
+## NevGThree — game 3D
+
+Lapisan 3D untuk NevG (butuh `three`). Loop, scene, entity, input, tween, dan timer sama persis dengan NevG; dunianya 3D.
+
+```js
+import { Game3D, Scene3D, Mesh3D, Body3D, Terrain, OrbitRig, Controls3D } from '@adityadevid/nevgthree';
+
+class Play extends Scene3D {
+  init() {
+    this.lights();                                   // matahari + cahaya langit + bayangan
+    this.add(new Terrain({ seed: 7 }));              // pulau low-poly, jadi scene.ground
+    this.me = this.add(new Mesh3D({ shape: 'capsule', size: [0.8, 1.8, 0.8], position: [0, 5, 0] }));
+    new Body3D(this.me);                             // gravitasi, lompat, lereng
+    this.controls = new Controls3D(this.game);       // WASD + mouse + joystick sentuh di HP
+    this.rig = new OrbitRig(this.camera, { target: this.me, scene: this });
+  }
+}
+new Game3D({ canvas: '#game', shadows: true }).start(new Play());
+```
+
+Coba langsung: `nev create game-saya --template game3d` (Crystal Run 3D: kumpulkan kristal, combo, dash, HUD NevF). Detail API ada di [packages/nevgthree](packages/nevgthree/README.md).
 
 ---
 

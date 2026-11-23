@@ -160,7 +160,7 @@ describe('nev export', () => {
 });
 
 describe('templates', () => {
-  for (const name of ['default', 'api', 'game']) {
+  for (const name of ['default', 'api', 'game', 'game3d']) {
     test(`"${name}" scaffolds a project that boots`, async () => {
       const dest = path.join(TMP, `tpl-${name}-${process.pid}`);
       const log = console.log;
@@ -184,6 +184,26 @@ describe('templates', () => {
       fs.rmSync(dest, { recursive: true, force: true });
     });
   }
+
+  test('game3d template: three.js, NevGThree and three/addons reach the browser', async () => {
+    const dest = path.join(TMP, `tpl-game3d-serve-${process.pid}`);
+    const log = console.log;
+    console.log = () => {};
+    try { create(dest, 'game3d'); } finally { console.log = log; }
+    const { app } = await createNev({ root: dest, silent: true });
+    const html = await (await app.request('/')).text();
+    const map = JSON.parse(html.match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports;
+    for (const k of ['three', 'three/addons/', '@adityadevid/nevgthree', '@adityadevid/nevg']) assert.ok(map[k], `import map has ${k}`);
+    const three = await app.request(map.three);
+    assert.equal(three.status, 200);
+    assert.match(three.headers.get('content-type'), /javascript/);
+    assert.equal((await app.request(map.three.replace('three.module.js', 'three.core.js'))).status, 200, 'sibling module of three is served');
+    assert.equal((await app.request(map['three/addons/'] + 'loaders/GLTFLoader.js')).status, 200);
+    assert.equal((await app.request(map['@adityadevid/nevgthree'])).status, 200);
+    assert.equal((await app.request('/__nev/pkg/three/three.webgpu.js')).status, 404, 'heavy WebGPU build is not served');
+    assert.equal((await app.request('/__nev/app/components/crystal-run.js')).status, 200);
+    fs.rmSync(dest, { recursive: true, force: true });
+  });
 
   test('the game template plays headlessly (menu → play → collect coins)', async () => {
     const dest = path.join(TMP, `tpl-game-run-${process.pid}`);

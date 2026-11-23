@@ -1,6 +1,6 @@
 {
   "name": "@adityadevid/nevjs",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Nev.js — zero-build fullstack framework: file-based routing, SSR, API routes, loaders and client-side navigation, built on NevF + NevB (+ NevG).",
   "type": "module",
   "main": "./src/index.js",
@@ -24,7 +24,7 @@
   "dependencies": {
     "@adityadevid/nevb": "^0.2.0",
     "@adityadevid/nevf": "^0.2.0",
-    "@adityadevid/nevg": "^0.2.0"
+    "@adityadevid/nevg": "^0.2.2"
   },
   "keywords": [
     "nev",

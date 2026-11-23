@@ -141,7 +141,7 @@ export async function exportSite(options = {}) {
   }
   result.files += copyFiltered(nev.clientDir, path.join(out, '__nev'), (rel) => /\.js$/.test(rel));
   for (const pkg of nev.packages) {
-    result.files += copyFiltered(pkg.dir, path.join(out, pkg.prefix.replace(/^\//, '')), (rel) => /\.m?js$/.test(rel));
+    result.files += copyFiltered(pkg.dir, path.join(out, pkg.prefix.replace(/^\//, '')), pkg.filter ?? ((rel) => /\.m?js$/.test(rel)));
   }
   write('.nojekyll', ''); // GitHub Pages would otherwise ignore the "__nev" folder
 

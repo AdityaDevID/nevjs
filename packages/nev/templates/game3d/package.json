@@ -1,0 +1,14 @@
+{
+  "name": "{{name}}",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "nev dev", "start": "nev start", "export": "nev export" },
+  "dependencies": {
+    "@adityadevid/nevjs": "^0.2.0",
+    "@adityadevid/nevf": "^0.2.0",
+    "@adityadevid/nevg": "^0.2.2",
+    "@adityadevid/nevgthree": "^0.1.0",
+    "three": "^0.187.0"
+  }
+}

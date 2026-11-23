@@ -82,7 +82,19 @@ export async function createNev(options = {}) {
       importMap['@adityadevid/nevf/jsx-runtime'] = `${prefix}/jsx-runtime.js`;
       importMap['@adityadevid/nevf/jsx-dev-runtime'] = `${prefix}/jsx-dev-runtime.js`;
     }
-    app.use(serveStatic({ root: pkg.dir, prefix, maxAge: dev ? 0 : 3600, filter: (p) => /\.m?js$/.test(p) }));
+    // three.js: skip the (huge) WebGPU/TSL/CommonJS builds; the default build is all a WebGL game needs
+    const filter = name === 'three' ? (p) => /\.m?js$/.test(p) && !/webgpu|tsl|\.cjs|\.min\./i.test(p) : (p) => /\.m?js$/.test(p);
+    packages[packages.length - 1].filter = filter;
+    app.use(serveStatic({ root: pkg.dir, prefix, maxAge: dev ? 0 : 3600, filter }));
+    if (name === 'three') {
+      // `three/addons/...` (GLTFLoader, controls, …) lives next to the build folder
+      const addons = path.join(pkg.dir, '..', 'examples', 'jsm');
+      if (fs.existsSync(addons)) {
+        importMap['three/addons/'] = `${prefix}/addons/`;
+        packages.push({ name: 'three/addons', dir: addons, prefix: `${prefix}/addons`, filter: (p) => /\.m?js$/.test(p) });
+        app.use(serveStatic({ root: addons, prefix: `${prefix}/addons`, maxAge: dev ? 0 : 3600, filter: (p) => /\.m?js$/.test(p) }));
+      }
+    }
   }
 
   const clientDirs = config.clientDirs;

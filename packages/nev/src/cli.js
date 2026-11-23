@@ -12,7 +12,7 @@ const HELP = `
 Nev.js ${pkg.version} — zero-build fullstack framework
 
 Usage:
-  nev create <folder> [--template default|api|game]   Create a new project
+  nev create <folder> [--template default|api|game|game3d]   Create a new project
   nev dev [folder] [--port 3000] [--host H]  Start with auto-restart + browser live reload
   nev start [folder] [--port 3000] [--host H]  Start in production mode
   nev routes [folder]                        Print the page and API routes

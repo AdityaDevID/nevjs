@@ -1,9 +1,10 @@
 name: Release
+# Push a tag like v0.2.2 (or publish a release from the GitHub app) → tests → npm publish → GitHub Release with notes + .tgz builds.
 on:
   push:
     tags: ['v*']
 permissions:
-  contents: read
+  contents: write   # create/update the GitHub Release
   id-token: write   # npm provenance
 jobs:
   publish:
@@ -14,9 +15,34 @@ jobs:
         with: { node-version: 22, registry-url: 'https://registry.npmjs.org' }
       - run: npm install
       - run: npm test
-      - run: |
-          for p in nevb nevf nevg nev; do
-            (cd packages/$p && npm publish --access public --provenance)
+      - name: Publish to npm (skips versions that already exist)
+        run: |
+          for p in nevb nevf nevg nevgthree nev; do
+            name=$(node -p "require('./packages/$p/package.json').name")
+            ver=$(node -p "require('./packages/$p/package.json').version")
+            if npm view "$name@$ver" version >/dev/null 2>&1; then
+              echo "skip $name@$ver (already published)"
+            else
+              (cd packages/$p && npm publish --access public --provenance)
+            fi
           done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Pack builds (.tgz)
+        run: |
+          mkdir -p dist
+          for p in nevb nevf nevg nevgthree nev; do (cd packages/$p && npm pack --pack-destination ../../dist); done
+          ls -la dist
+      - name: GitHub Release (notes from release-notes/<tag>.md, builds attached)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          NOTES="release-notes/${TAG}.md"
+          if [ -f "$NOTES" ]; then NOTEARG=(--notes-file "$NOTES"); else NOTEARG=(--generate-notes); fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "$TAG" "${NOTEARG[@]}"
+          else
+            gh release create "$TAG" --title "$TAG" "${NOTEARG[@]}"
+          fi
+          gh release upload "$TAG" dist/*.tgz --clobber
