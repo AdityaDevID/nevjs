@@ -113,7 +113,8 @@ nev create <folder>            proyek baru dari template
 nev dev [folder] [--port N]    restart otomatis + live reload browser saat file berubah
 nev start [folder] [--port N]  mode produksi (PORT env juga dibaca)
 nev routes [folder]            tampilkan semua route
-nev export [folder] [--out D]  render semua halaman jadi HTML statis (GitHub Pages, Netlify, S3, …)
+nev export [folder] [--out D] [--target netlify|cloudflare]  HTML statis (+ _redirects/_headers bila --target)
+nev build [folder] --target vercel|netlify                    build untuk Vercel / Netlify
 ```
 
 **Baru di 0.2** — `middleware.js` di root proyek (jalan sebelum semua route; `export const matcher = ['/admin/*']` untuk membatasi),
@@ -306,14 +307,23 @@ export async function action(c) {
 }
 ```
 
+**Baru di 0.5**
+
+- **Streaming SSR (opt-in)** — di `pages/x.server.js` tulis `export const streaming = true` (atau `streaming: true` di `nev.config.js` untuk semua halaman; halaman bisa menolak dengan `streaming = false`). `<head>` (title, meta, CSS, `modulepreload`) dikirim **sebelum** `load` selesai, body menyusul begitu data siap — browser sudah bisa mengunduh CSS/JS selama loader lambat. Diuji lewat koneksi HTTP nyata.
+  Konsekuensinya: status HTTP sudah terkirim `200` sebelum loader selesai, jadi `redirect()` dari loader menjadi redirect sisi-browser (`location.replace`), sedangkan `notFound()`/error me-render halaman 404/500 **dengan status 200**. Pakai streaming untuk halaman yang jarang 404; halaman dengan `head` berupa fungsi (butuh data) otomatis kembali ke mode biasa, begitu juga `nev export` dan permintaan `HEAD`. Ini streaming *dokumen*, bukan streaming per-komponen (belum ada Suspense/`defer`).
+- **`<link rel="modulepreload">`** untuk client, NevF, halaman, dan layout otomatis di semua halaman (setelah import map).
+- **Netlify** — `nev build --target netlify` membuat `.nev/netlify` (`publish/` statis + satu Netlify Function v2 + `netlify.toml`); deploy: `cd .nev/netlify && npx netlify deploy --prod`. Dites dengan menjalankan function hasil build dari folder di luar repo; **belum dicoba di akun Netlify sungguhan**.
+- **Cloudflare Pages / Netlify statis** — `nev export --target netlify|cloudflare` juga menulis `_redirects` dan `_headers` dari `redirects`/`headers` di config.
+- **Cloudflare Workers belum didukung**: Workers tidak punya file system, sedangkan Nev membaca folder `pages/` dan `api/` saat start. `nev build --target cloudflare` menjelaskan ini dan mengarahkan ke `nev export --target cloudflare` (hosting statis).
+
 ## Batasan yang perlu kamu tahu
 
 - **Tanpa bundler/minifier**: tiap modul diminta terpisah (HTTP/2 membantu). Cocok untuk app kecil–menengah; belum ada code-splitting otomatis atau TypeScript/JSX bawaan.
 - **Hydration** saat ini membangun ulang DOM (bukan memakai ulang node SSR) — hasilnya sama, tapi fokus/scroll input bisa reset bila JS lambat dimuat.
 - Layout dibuat ulang saat berpindah halaman (state di dalam layout tidak dipertahankan).
-- SSR sinkron: ambil data di `load`, bukan di dalam komponen. Belum ada streaming SSR.
+- SSR sinkron: ambil data di `load`, bukan di dalam komponen. Streaming hanya level dokumen (lihat 0.5); belum ada Suspense/`defer`.
 - `nev dev` me-restart seluruh proses saat file berubah (state memori hilang) — penyederhanaan yang disengaja.
-- Nev adalah server Node: jalankan di VPS/Railway/Render/Fly/Docker (ada Dockerfile di template). Untuk hosting statis pakai `nev export`. Untuk serverless ada `createHandler()` (handler Web-standar), tetapi **belum diuji di platform nyata** dan belum ada adapter otomatis.
+- Nev adalah server Node: jalankan di VPS/Railway/Render/Fly/Docker (ada Dockerfile di template). Untuk hosting statis pakai `nev export`. Untuk serverless ada adapter Vercel dan Netlify (`nev build --target …`) serta `createHandler()` (handler Web-standar); semuanya **belum diuji di platform nyata**. Cloudflare Workers belum didukung.
 - Contoh template memakai penyimpanan in-memory (guestbook) — ganti dengan database sungguhan (mis. Supabase) di `lib/*.server.js`.
 
 ## Pengujian
