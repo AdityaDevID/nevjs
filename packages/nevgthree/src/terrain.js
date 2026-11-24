@@ -34,14 +34,6 @@ function makeNoise(seed) {
   };
 }
 
-/**
- * Low-poly heightfield terrain, deterministic from a seed. Gives exact ground contact:
- * heightAt(x, z) interpolates the very same triangles that are drawn.
- *
- *   const t = new Terrain({ size: 120, seed: 7, height: 7, island: true })
- *   scene.add(t)              // becomes scene.ground automatically
- *   t.heightAt(10, -4)
- */
 export class Terrain extends THREE.Mesh {
   constructor({ size = 120, segments = 60, height = 7, seed = 1, scale = 0.045, flatRadius = 9, island = true, waterLevel = 0.6, colors = {} } = {}) {
     super();
@@ -59,11 +51,11 @@ export class Terrain extends THREE.Mesh {
       for (let i = 0; i < N; i++) {
         const x = i * step - half;
         const z = j * step - half;
-        let h = Math.pow(n(x * scale + 100, z * scale + 100, 4), 1.4) * 1.6; // 0..~1.4
+        let h = Math.pow(n(x * scale + 100, z * scale + 100, 4), 1.4) * 1.6;
         const d = Math.hypot(x, z);
         if (island) h *= clamp(1 - Math.pow(d / (half * 0.98), 3), 0, 1) * 1.15 + (d < half ? 0 : 0);
         const flat = clamp((d - flatRadius * 0.5) / (flatRadius * 0.9), 0, 1);
-        h = lerp(0.12, h, flat * flat * (3 - 2 * flat)); // gentle clearing in the middle
+        h = lerp(0.12, h, flat * flat * (3 - 2 * flat));
         H[j * N + i] = h * height - (island ? 0.3 : 0);
       }
     }
@@ -72,7 +64,6 @@ export class Terrain extends THREE.Mesh {
     this.step = step;
     this.half = half;
 
-    // Non-indexed triangles: flat shading with per-vertex colors, 2 triangles per quad (diagonal b–d).
     const pos = [];
     const col = [];
     const color = new THREE.Color();
@@ -113,7 +104,6 @@ export class Terrain extends THREE.Mesh {
     this.receiveShadow = true;
   }
 
-  /** Ground height at world (x, z) — matches the rendered triangles. Outside the map: very low. */
   heightAt(x, z) {
     const { N, step, half, H } = this;
     const fx = (x + half) / step;
@@ -123,21 +113,18 @@ export class Terrain extends THREE.Mesh {
     const j = Math.min(N - 2, Math.floor(fz));
     const u = fx - i;
     const v = fz - j;
-    const a = H[j * N + i]; // (i, j)
-    const b = H[(j + 1) * N + i]; // (i, j+1)
-    const c = H[(j + 1) * N + i + 1]; // (i+1, j+1)
-    const d = H[j * N + i + 1]; // (i+1, j)
-    // triangles (a, b, d) and (b, c, d) share the diagonal b–d: u + v = 1
+    const a = H[j * N + i];
+    const b = H[(j + 1) * N + i];
+    const c = H[(j + 1) * N + i + 1];
+    const d = H[j * N + i + 1];
     if (u + v <= 1) return a + (d - a) * u + (b - a) * v;
     return c + (b - c) * (1 - u) + (d - c) * (1 - v);
   }
 
-  /** Is there ground above water here? */
   isLand(x, z, margin = 0) {
     return this.heightAt(x, z) > this.waterLevel + margin;
   }
 
-  /** Random land points (seeded) — for placing trees, crystals… */
   scatter(count, { rng = createRng(1), minHeight = this.waterLevel + 0.5, maxHeight = Infinity, avoid = [], radius = this.half * 0.9 } = {}) {
     const out = [];
     for (let tries = 0; out.length < count && tries < count * 40; tries++) {
@@ -152,7 +139,6 @@ export class Terrain extends THREE.Mesh {
   }
 }
 
-/** Translucent water plane. */
 export function createWater({ size = 400, level = 0.6, color = '#3aa7d9', opacity = 0.72 } = {}) {
   const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color, transparent: true, opacity, roughness: 0.25, metalness: 0.1 }));
   m.position.y = level;

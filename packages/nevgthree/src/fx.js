@@ -1,12 +1,6 @@
 import * as THREE from 'three';
 import { Entity3D } from './entity3d.js';
 
-/**
- * Pooled additive particles (one draw call). Add it to the scene once, then burst().
- *
- *   const fx = scene.add(new Particles3D({ max: 400 }))
- *   fx.burst(position, { count: 24, color: '#7df9ff', speed: 5, life: 0.7 })
- */
 export class Particles3D extends Entity3D {
   constructor({ max = 300, size = 0.28, gravity = 6, texture = null } = {}) {
     const geo = new THREE.BufferGeometry();

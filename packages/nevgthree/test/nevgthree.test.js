@@ -174,7 +174,6 @@ describe('Body3D physics', () => {
     run(game, 2);
     assert.ok(body.onGround);
     body.vel.set(0, 0, 0);
-    // buffered: press slightly before landing
     p.position.y = 0.3;
     body.onGround = false;
     body.jump(10);
@@ -274,10 +273,10 @@ describe('cameras, controls, fx, props', () => {
     const rig = new OrbitRig(cam, { target, distance: 6, height: 1, yaw: 0, pitch: 0, smoothing: 0 });
     rig.update(0.016);
     near(cam.position.x, 10);
-    near(cam.position.z, 11); // camera sits behind (+z) looking toward -z
+    near(cam.position.z, 11);
     near(rig.relative(0, 1).z, -1);
     near(rig.relative(1, 0).x, 1);
-    rig.rotate(Math.PI / 2, 0); // yaw turns the view
+    rig.rotate(Math.PI / 2, 0);
     near(Math.abs(rig.forward.x), 1);
     rig.rotate(0, 10);
     assert.ok(rig.pitch <= rig.maxPitch);
@@ -323,7 +322,7 @@ describe('cameras, controls, fx, props', () => {
     const s = new Scene3D();
     game.start(s);
     const fx = s.add(new Particles3D({ max: 10 }));
-    fx.burst(new THREE.Vector3(1, 1, 1), { count: 25, life: 0.3 }); // more than max: wraps around the pool
+    fx.burst(new THREE.Vector3(1, 1, 1), { count: 25, life: 0.3 });
     game.step();
     assert.ok(fx.p.every((p) => p.life > 0));
     run(game, 1);

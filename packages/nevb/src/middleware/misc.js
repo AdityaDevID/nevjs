@@ -1,7 +1,6 @@
 import { HttpError } from '../http-error.js';
 import { safeEqual } from '../crypto.js';
 
-/** Attach a request id (reuses a sane incoming `x-request-id`). Available as c.state.requestId. */
 export function requestId({ header = 'x-request-id' } = {}) {
   return (c, next) => {
     const incoming = c.headers.get(header);
@@ -12,10 +11,6 @@ export function requestId({ header = 'x-request-id' } = {}) {
   };
 }
 
-/**
- * HTTP Basic auth.
- *   basicAuth({ users: { admin: 'secret' } })   or   basicAuth({ verify: async (user, pass, c) => boolean })
- */
 export function basicAuth(options = {}) {
   const realm = options.realm ?? 'Restricted';
   const verify =
@@ -46,9 +41,6 @@ export function basicAuth(options = {}) {
   };
 }
 
-/**
- * Static API-token auth: bearerAuth({ token: 'abc' }) / bearerAuth({ tokens: [...] }) / bearerAuth({ verify }).
- */
 export function bearerAuth(options = {}) {
   const tokens = [].concat(options.token ?? options.tokens ?? []);
   if (!options.verify && !tokens.length) throw new TypeError('bearerAuth() needs token, tokens or verify');
@@ -65,7 +57,6 @@ export function bearerAuth(options = {}) {
   };
 }
 
-/** Fail with 504 when the rest of the chain takes longer than `ms` (the handler itself is not cancelled). */
 export function timeout(ms, message = 'Gateway Timeout') {
   return async (c, next) => {
     let timer;
@@ -81,10 +72,6 @@ export function timeout(ms, message = 'Gateway Timeout') {
   };
 }
 
-/**
- * Set Cache-Control on responses that do not set their own.
- *   cacheControl({ maxAge: 3600, public: true, staleWhileRevalidate: 60 })   cacheControl({ noStore: true })
- */
 export function cacheControl(o = {}) {
   const parts = [];
   if (o.noStore) parts.push('no-store');
@@ -104,7 +91,6 @@ export function cacheControl(o = {}) {
   };
 }
 
-/** Weak ETag for dynamic GET responses + 304 handling (If-None-Match). */
 export function etag() {
   return async (c, next) => {
     const res = await next();
@@ -127,7 +113,6 @@ export function etag() {
   };
 }
 
-/** GET /health (or custom path) → { status: 'ok', uptime }. Optional async `check()` → 503 when it throws / returns false. */
 export function health({ path = '/health', check } = {}) {
   return async (c, next) => {
     if (c.path !== path || (c.method !== 'GET' && c.method !== 'HEAD')) return next();
@@ -140,12 +125,6 @@ export function health({ path = '/health', check } = {}) {
   };
 }
 
-/**
- * Canonical trailing slashes (good for SEO: one URL per page).
- *   trailingSlash('never')   /about/ → 308 → /about      (default)
- *   trailingSlash('always')  /about  → 308 → /about/     (paths with a file extension are left alone)
- * The root "/" is never touched and the query string is kept. Only GET/HEAD are redirected.
- */
 export function trailingSlash(mode = 'never') {
   if (mode !== 'never' && mode !== 'always') throw new TypeError(`trailingSlash: mode must be "never" or "always", got "${mode}"`);
   return (c, next) => {
@@ -155,7 +134,6 @@ export function trailingSlash(mode = 'never') {
     let target = null;
     if (mode === 'never' && p.endsWith('/')) target = p.replace(/\/+$/, '') || '/';
     else if (mode === 'always' && !p.endsWith('/') && !/\.[A-Za-z0-9]{1,8}$/.test(p)) target = p + '/';
-    // never redirect to "//host" (open redirect)
     if (!target || target.startsWith('//')) return next();
     return c.redirect(target + c.url.search, 308);
   };

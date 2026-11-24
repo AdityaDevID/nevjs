@@ -3,18 +3,9 @@ import { Entity } from '@adityadevid/nevg';
 
 const _v = new THREE.Vector3();
 
-/**
- * A game object backed by a three.js Object3D.
- *
- *   scene.add(new Mesh3D({ shape: 'box', size: [1, 2, 1], color: '#6ee7b7', position: [0, 0, 0] }))
- *
- * `position` is the FEET of the entity (anchor 0) — or its center with anchor: 0.5.
- * `size` is the collision box (full extents). It collides with other entities that have a size.
- * Use `rot` (Euler) and `scale3` (Vector3) for orientation; 2D fields (x, y, w, h) are unused.
- */
 export class Entity3D extends Entity {
   constructor({ object = null, position, rotation, scale, size = [1, 1, 1], anchor = 0, castShadow = true, receiveShadow = false, ...rest } = {}) {
-    super({ w: 0, h: 0, ...rest }); // w/h = 0 keeps the entity out of the 2D collision pass
+    super({ w: 0, h: 0, ...rest });
     this.object = object ?? new THREE.Group();
     this.object.userData.entity = this;
     this.size = Array.isArray(size) ? new THREE.Vector3(...size) : new THREE.Vector3().copy(size);
@@ -30,9 +21,9 @@ export class Entity3D extends Entity {
         o.receiveShadow = receiveShadow;
       }
     });
-    this.body = null; // set a Body3D to give it gravity/collision
-    this.spin = rest.spin ?? null; // [rx, ry, rz] radians per second
-    this.bob = rest.bob ?? null; // { amp, speed }
+    this.body = null;
+    this.spin = rest.spin ?? null;
+    this.bob = rest.bob ?? null;
     this._bobBase = null;
     this._t = 0;
   }
@@ -50,7 +41,6 @@ export class Entity3D extends Entity {
     return this.object.scale;
   }
 
-  /** World-space AABB of the collision box. */
   get box() {
     const p = this.object.parent && this.object.parent.parent ? this.object.getWorldPosition(_v) : this.object.position;
     const s = this.size;
@@ -70,7 +60,6 @@ export class Entity3D extends Entity {
     return a.distanceTo(b);
   }
 
-  /** Turn around Y to face a point (keeps the entity upright). */
   lookAtXZ(x, z, turn = 1) {
     const target = Math.atan2(x - this.object.position.x, z - this.object.position.z);
     let d = target - this.object.rotation.y;
@@ -101,7 +90,6 @@ const GEOMETRIES = {
   octahedron: (s) => new THREE.OctahedronGeometry(s[0] / 2),
 };
 
-/** A single mesh from a primitive shape: box | sphere | cylinder | cone | capsule | plane | octahedron. */
 export class Mesh3D extends Entity3D {
   constructor({ shape = 'box', size = [1, 1, 1], color = '#ffffff', material = null, geometry = null, flat = true, emissive = null, roughness = 0.8, metalness = 0, opacity = 1, ...rest } = {}) {
     const sz = Array.isArray(size) ? size : [size, size, size];
@@ -119,7 +107,6 @@ export class Mesh3D extends Entity3D {
         ...(emissive ? { emissive, emissiveIntensity: 0.6 } : {}),
       });
     const mesh = new THREE.Mesh(geo, mat);
-    // Anchor 0 (feet): lift the mesh so the entity position is the bottom of the shape.
     const anchor = rest.anchor ?? (shape === 'plane' ? 0 : 0);
     if (anchor === 0 && shape !== 'plane') mesh.position.y = sz[1] / 2;
     const g = new THREE.Group();
@@ -137,7 +124,6 @@ export class Mesh3D extends Entity3D {
   }
 }
 
-/** Wrap a loaded model (e.g. gltf.scene). `clone: true` makes an independent copy. */
 export class Model3D extends Entity3D {
   constructor({ model, clone = true, ...rest } = {}) {
     super({ object: new THREE.Group(), ...rest });

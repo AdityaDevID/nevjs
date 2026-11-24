@@ -4,16 +4,6 @@ import { Readable } from 'node:stream';
 import { mimeFor } from '../mime.js';
 import { safeDecode } from '../router.js';
 
-/**
- * Serve files from a directory (GET/HEAD, ETag, Last-Modified, Range).
- *
- *   app.use(serveStatic({ root: 'public' }))
- *   app.use(serveStatic({ root: 'dist', prefix: '/assets', maxAge: 86400 }))
- *
- * Options: root, prefix ('/'), index ('index.html'), maxAge (seconds, 0),
- * immutable, dotfiles ('deny' | 'allow'), filter(relativePath) => boolean.
- * Path traversal and symlinks that escape `root` are rejected.
- */
 export function serveStatic(options) {
   const { root, prefix = '/', index = 'index.html', maxAge = 0, immutable = false, dotfiles = 'deny', filter } = options;
   const absRoot = path.resolve(root);
@@ -84,7 +74,7 @@ export function serveStatic(options) {
       const m = /^bytes=(\d*)-(\d*)$/.exec(range.trim());
       if (m && (m[1] || m[2])) {
         if (m[1] === '') {
-          start = Math.max(0, stat.size - Number(m[2])); // suffix range: last N bytes
+          start = Math.max(0, stat.size - Number(m[2]));
         } else {
           start = Number(m[1]);
           if (m[2]) end = Math.min(end, Number(m[2]));

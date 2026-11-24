@@ -21,7 +21,6 @@ test('game3d template: Crystal Run plays a full round headlessly', () => {
   scene.begin();
   assert.equal(hud.state(), 'playing');
 
-  // walk toward the nearest crystal until it is collected (steering is enough: the island is open ground)
   let collected = false;
   for (let i = 0; i < 60 * 25 && !collected; i++) {
     const crystals = scene.withTag('crystal');
@@ -32,7 +31,6 @@ test('game3d template: Crystal Run plays a full round headlessly', () => {
     const l = Math.hypot(dx, dz) || 1;
     scene.body.walk(dx / l, dz / l, 8);
     scene.controls.setStick(0, 0);
-    // drive through the controls so the real update path runs, camera-relative
     const f = scene.rig.forward;
     const my = (dx / l) * f.x + (dz / l) * f.z;
     const mx = (dx / l) * -f.z + (dz / l) * f.x;
@@ -44,7 +42,6 @@ test('game3d template: Crystal Run plays a full round headlessly', () => {
   assert.ok(hud.score() >= 10);
   assert.equal(scene.withTag('crystal').length, 12, 'a new crystal respawns');
 
-  // run out the clock
   for (let i = 0; i < 60 * 70 && hud.state() === 'playing'; i++) game.step();
   assert.equal(hud.state(), 'over');
   assert.ok(save.data.best >= 10, 'best score saved');

@@ -1,9 +1,3 @@
-/**
- * CORS.
- *   cors()                                     any origin
- *   cors({ origin: ['https://a.com'] })        allow-list
- *   cors({ origin: (o) => o.endsWith('.my.id') && o, credentials: true })
- */
 export function cors(options = {}) {
   const {
     origin = '*',

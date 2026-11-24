@@ -1,7 +1,3 @@
-/**
- * Sensible security headers. Opt in to the stricter ones:
- *   secureHeaders({ hsts: true, csp: "default-src 'self'" })
- */
 export function secureHeaders(options = {}) {
   const headers = {
     'x-content-type-options': 'nosniff',

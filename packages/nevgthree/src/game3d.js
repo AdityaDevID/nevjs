@@ -1,15 +1,6 @@
 import * as THREE from 'three';
 import { Game } from '@adityadevid/nevg';
 
-/**
- * 3D game: a NevG Game whose canvas is drawn by a three.js WebGLRenderer.
- *
- *   const game = new Game3D({ canvas: '#game', shadows: true })
- *   game.start(new MyScene3D())
- *
- * The canvas fills its parent; game.width/height follow it, so pointer coordinates stay in
- * canvas pixels. Headless (tests): omit `canvas` — or pass a fake `renderer`.
- */
 export class Game3D extends Game {
   constructor({
     canvas = null,
@@ -18,7 +9,7 @@ export class Game3D extends Game {
     shadows = false,
     toneMapping = true,
     maxDpr = 2,
-    adaptive = true, // lower the resolution automatically when the frame rate drops (phones)
+    adaptive = true,
     rendererOptions = {},
     width = 800,
     height = 600,
@@ -59,7 +50,7 @@ export class Game3D extends Game {
       this._lost = false;
       this.emit('contextrestored');
     });
-    return null; // no 2D context: everything is drawn by three.js
+    return null;
   }
 
   _applyRendererSettings() {
@@ -73,7 +64,6 @@ export class Game3D extends Game {
     }
   }
 
-  /** Canvas = parent size. game.width/height become the CSS size. */
   _applySize() {
     const el = this.canvas;
     if (!el) return;
@@ -96,7 +86,6 @@ export class Game3D extends Game {
     this.emit('resize', w, h);
   }
 
-  /** 'low' | 'medium' | 'high' — resolution cap and shadows in one switch. */
   setQuality(level) {
     const table = { low: [1, false], medium: [1.5, true], high: [this.maxDprLimit, true] };
     const [dpr, shadows] = table[level] ?? table.high;

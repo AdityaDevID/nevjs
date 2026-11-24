@@ -20,14 +20,6 @@ function pickEncoding(header, allowed) {
   return best;
 }
 
-/**
- * gzip / deflate response compression using the web-standard CompressionStream.
- *   app.use(compress())                         // threshold 1 KB
- * Skipped for: HEAD, non-compressible types, already-encoded bodies, event streams,
- * `cache-control: no-transform`, partial (206) responses, and bodies below `threshold`.
- * Responses without a content-length are buffered to decide, so keep streaming endpoints
- * on `text/event-stream` or add `cache-control: no-transform`.
- */
 export function compress(options = {}) {
   const threshold = options.threshold ?? 1024;
   const encodings = options.encodings ?? ['gzip', 'deflate'];
@@ -47,7 +39,6 @@ export function compress(options = {}) {
       try {
         vary(res);
       } catch {
-        /* immutable headers */
       }
       return res;
     }

@@ -3,7 +3,6 @@ import { createRng } from '@adityadevid/nevg';
 
 const mat = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 0.85, ...extra });
 
-/** Vertical gradient sky dome. Assign it to scene.sky (it follows the camera). */
 export function createSky({ top = '#4aa3ff', horizon = '#d6efff', radius = 300 } = {}) {
   const m = new THREE.Mesh(
     new THREE.SphereGeometry(radius, 24, 16),
@@ -21,7 +20,6 @@ export function createSky({ top = '#4aa3ff', horizon = '#d6efff', radius = 300 }
   return m;
 }
 
-/** Low-poly props. Each returns a THREE.Group with feet at y = 0. */
 export const props = {
   tree({ rng = Math.random, height = 3.4 } = {}) {
     const g = new THREE.Group();
@@ -62,7 +60,6 @@ export const props = {
     g.add(m);
     return g;
   },
-  /** Blocky friendly character; call parts.animate(t, speed) while it moves. */
   character({ body = '#6ee7b7', skin = '#ffd9b3', accent = '#2b3a67' } = {}) {
     const g = new THREE.Group();
     const part = (geo, color, x, y, z) => {

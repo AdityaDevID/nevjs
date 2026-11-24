@@ -1,16 +1,5 @@
 import { clamp } from '@adityadevid/nevg';
 
-/**
- * Movement + look controls for 3D games that work on desktop AND phones.
- *
- *   const controls = new Controls3D(game, { touch: 'auto', buttons: [{ code: 'Space', label: '⤒' }] })
- *   // in update(dt):
- *   const m = controls.move                    // { x: right, y: forward } in -1..1 (keys + joystick)
- *   const look = controls.consumeLook()        // { x, y } radians since the last call (mouse drag / touch drag / pointer lock)
- *   if (this.input.pressed('jump')) …          // on-screen buttons press real key codes
- *
- * Phone layout: left thumb = joystick, right-side drag = look, buttons bottom-right.
- */
 export class Controls3D {
   constructor(game, { mount = null, touch = 'auto', joystick = true, buttons = [], sensitivity = 0.005, touchSensitivity = 0.006, pointerLock = false, invertY = false, deadzone = 0.12 } = {}) {
     this.game = game;
@@ -37,7 +26,6 @@ export class Controls3D {
       this._off.push(() => el.removeEventListener(ev, fn, o));
     };
 
-    // Mouse look: drag, or pointer lock (click the canvas).
     on(canvas, 'pointerdown', (e) => {
       if (e.pointerType === 'touch') return this._touchDown(e, canvas);
       if (pointerLock && document.pointerLockElement !== canvas) canvas.requestPointerLock?.();
@@ -64,8 +52,6 @@ export class Controls3D {
     if (this.touchUI) this._buildUI(host, joystick, buttons);
   }
 
-  // ---- public ---------------------------------------------------------------------
-  /** Keyboard + joystick, forward positive. */
   get move() {
     const k = this.input.vector();
     let x = k.x + this.stick.x;
@@ -90,7 +76,6 @@ export class Controls3D {
     this._look.y += dy;
   }
 
-  /** Feed the stick directly (tests, custom UI). */
   setStick(x, y) {
     this.stick.x = x;
     this.stick.y = y;
@@ -103,7 +88,6 @@ export class Controls3D {
     this.root = null;
   }
 
-  // ---- touch internals ---------------------------------------------------------------
   _touchDown(e, canvas) {
     const r = canvas.getBoundingClientRect();
     const leftHalf = e.clientX - r.left < r.width * 0.4;

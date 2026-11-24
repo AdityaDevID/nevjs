@@ -1,12 +1,5 @@
 import * as THREE from 'three';
 
-/**
- * Add 3D asset types to a NevG Assets instance:
- *   assets.texture('grass', 'grass.png')           // THREE.Texture (sRGB, repeat-wrapped)
- *   assets.gltf('tree', 'tree.glb')                // needs GLTFLoader: extendAssets(assets, { GLTFLoader })
- *   await assets.load()
- * GLTFLoader lives in three's addons:  import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
- */
 export function extendAssets(assets, { GLTFLoader = null, textureLoader = null } = {}) {
   if (assets._3d) return assets;
   assets._3d = true;

@@ -1,4 +1,3 @@
-// NevGThree — public API (3D layer for NevG.js, powered by three.js)
 export { Game3D } from './game3d.js';
 export { Scene3D, disposeObject } from './scene3d.js';
 export { Entity3D, Mesh3D, Model3D } from './entity3d.js';

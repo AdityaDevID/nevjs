@@ -5,7 +5,6 @@ const _ray = new THREE.Raycaster();
 const _ndc = new THREE.Vector2();
 const _off = new THREE.Vector3();
 
-/** Free GPU resources of an object tree. */
 export function disposeObject(root) {
   root.traverse((o) => {
     o.geometry?.dispose?.();
@@ -16,27 +15,13 @@ export function disposeObject(root) {
   });
 }
 
-/**
- * A 3D scene. Extends the NevG Scene: lifecycle (init/update/exit), timers (after/every),
- * tweens, input, assets and entities all work the same — but `camera` is a three.js
- * PerspectiveCamera and drawing is done by three.js.
- *
- *   class Play extends Scene3D {
- *     init() {
- *       this.lights()                      // sun + sky light (+ shadows)
- *       this.ground = new Terrain({ seed: 7 }); this.add(this.ground)
- *       this.player = this.add(new Mesh3D({ shape: 'capsule', size: [0.8, 1.8, 0.8], color: '#6ee7b7' }))
- *       this.rig = new OrbitRig(this.camera, { target: this.player })
- *     }
- *   }
- */
 export class Scene3D extends Scene {
   constructor(props = {}) {
     super(props);
     this.three = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(props.fov ?? 60, 1, 0.1, props.far ?? 400);
-    this.rig = null; // camera controller with update(dt) — see OrbitRig / FirstPersonRig
-    this.ground = null; // object with heightAt(x, z) (e.g. Terrain); otherwise a flat plane at groundY
+    this.rig = null;
+    this.ground = null;
     this.groundY = 0;
     this.sky = null;
     this.sun = null;
@@ -56,7 +41,6 @@ export class Scene3D extends Scene {
   get fog() {
     return this.three.fog;
   }
-  /** scene.fog = ['#bde0ff', 40, 150] (linear) or { color, density } (exp2) */
   set fog(v) {
     if (!v) this.three.fog = null;
     else if (v.isFog || v.isFogExp2) this.three.fog = v;
@@ -69,8 +53,6 @@ export class Scene3D extends Scene {
     this.camera.updateProjectionMatrix();
   }
 
-  // ---- adding things ---------------------------------------------------------
-  /** Add Entity3D(s) and/or raw three.js objects (lights, meshes, groups, Terrain…). */
   add(...list) {
     const out = [];
     for (const e of list.flat()) {
@@ -90,7 +72,6 @@ export class Scene3D extends Scene {
     if (e.object && !e.object.parent) (e.parent?.object ?? this.three).add(e.object);
   }
 
-  /** Sun + sky light with soft shadows. Returns { sun, hemi }. */
   lights({ sun = '#fff1d6', sky = '#bfe3ff', ground = '#4a5d3a', intensity = 2.2, ambient = 0.9, direction = [-0.5, 1, 0.35], shadows = true, shadowSize = 30, shadowMap = 1024 } = {}) {
     const hemi = new THREE.HemisphereLight(sky, ground, ambient);
     const dl = new THREE.DirectionalLight(sun, intensity);
@@ -112,20 +93,17 @@ export class Scene3D extends Scene {
     return { sun: dl, hemi };
   }
 
-  /** Keep the shadow box centered on something (call from update). */
   shadowFollow(target) {
     if (!this.sun || !this._sunDir) return;
     const p = target.object?.position ?? target.position ?? target;
-    this.sun.target.position.set(Math.round(p.x), 0, Math.round(p.z)); // snapped: no shimmering
+    this.sun.target.position.set(Math.round(p.x), 0, Math.round(p.z));
     this.sun.position.copy(this.sun.target.position).addScaledVector(this._sunDir, 60);
   }
 
-  // ---- world queries ------------------------------------------------------------
   groundHeight(x, z) {
     return this.ground ? this.ground.heightAt(x, z) : this.groundY;
   }
 
-  /** Cast a ray; returns [{ entity, object, point, distance }] nearest first. */
   raycast(origin, direction, { far = 200, filter = null } = {}) {
     _ray.set(origin, direction.clone().normalize());
     _ray.far = far;
@@ -144,7 +122,6 @@ export class Scene3D extends Scene {
     return out;
   }
 
-  /** Pick what is under a screen point (game pixels; default = the pointer). */
   pick(x = this.input?.pointer.x, y = this.input?.pointer.y, opts = {}) {
     _ndc.set((x / this.width) * 2 - 1, -(y / this.height) * 2 + 1);
     this.camera.updateMatrixWorld();
@@ -154,18 +131,12 @@ export class Scene3D extends Scene {
     return this.raycast(o, d, opts)[0] ?? null;
   }
 
-  /** Entities (with a size) whose box overlaps `box`, optionally by tag. */
   queryBox(box, tag) {
     const out = [];
     for (const e of this.entities) if (!e.dead && e.size && (!tag || e.tags.has(tag)) && e.box.intersectsBox(box)) out.push(e);
     return out;
   }
 
-  /**
-   * Move `e` by (dx, dy, dz), blocked by solid entities and the ground. Axes are resolved
-   * separately so you slide along walls. Walks up steps/slopes of height <= stepHeight.
-   * Returns { x, y, z, bottom, top, ground, entity }.
-   */
   moveAndCollide3(e, dx, dy, dz, { stepHeight = 0.4, snapDown = 0 } = {}) {
     const hit = { x: false, y: false, z: false, bottom: false, top: false, ground: false, entity: null };
     const p = e.object.position;
@@ -173,7 +144,7 @@ export class Scene3D extends Scene {
     const probe = new THREE.Box3();
     const s = e.size;
     const boxAt = (x, y, z) => probe.set(new THREE.Vector3(x - s.x / 2, y - s.y * e.anchor, z - s.z / 2), new THREE.Vector3(x + s.x / 2, y + s.y * (1 - e.anchor), z + s.z / 2));
-    const base = e.anchor * s.y; // feet = position.y - base
+    const base = e.anchor * s.y;
     const blockerTop = (x, y, z) => {
       const b = boxAt(x, y, z);
       let top = -Infinity;
@@ -196,7 +167,7 @@ export class Scene3D extends Scene {
         let ny = p.y;
         const feet = p.y - base;
         const gh = this.groundHeight(nx, nz);
-        if (gh - feet > stepHeight) return void (hit[axis] = true); // too steep
+        if (gh - feet > stepHeight) return void (hit[axis] = true);
         if (gh > feet) ny = gh + base;
         const top = blockerTop(nx, ny, nz);
         if (top > -Infinity) {
@@ -212,7 +183,6 @@ export class Scene3D extends Scene {
     horizontal('x', dx);
     horizontal('z', dz);
 
-    // vertical
     if (dy !== 0) {
       const n = Math.max(1, Math.ceil(Math.abs(dy) / 0.25));
       const stepLen = dy / n;
@@ -241,12 +211,10 @@ export class Scene3D extends Scene {
     return hit;
   }
 
-  /** Camera shake in world units. */
   shake(power = 0.25, duration = 0.3) {
     this._shake = { time: duration, duration, power };
   }
 
-  // ---- engine internals --------------------------------------------------------------
   _enter(game) {
     super._enter(game);
     this.onResize(game.width, game.height);
@@ -266,7 +234,6 @@ export class Scene3D extends Scene {
     this.camera.position.add(this._shakeOff);
   }
 
-  /** Overlap events between entities that have a size and `collides`. */
   _collide() {
     const list = this.entities.filter((e) => !e.dead && e.collides && e.size && e.object);
     if (list.length < 2) return;
@@ -306,7 +273,7 @@ export class Scene3D extends Scene {
     renderer.render(this.three, this.camera);
   }
 
-  _draw() {} // the 2D draw pass is not used
+  _draw() {}
 
   _exit() {
     super._exit();

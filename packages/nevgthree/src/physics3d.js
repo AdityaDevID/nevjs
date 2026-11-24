@@ -1,25 +1,14 @@
 import * as THREE from 'three';
 
-/**
- * Arcade 3D physics for an Entity3D: gravity, acceleration-based walking, jumping with
- * coyote time + jump buffering, stepping up slopes/ledges, slope snapping.
- * Y is up. The Body owns the velocity; it moves the entity through scene.moveAndCollide3.
- *
- *   init() { this.body = new Body3D(this, { gravity: 30 }) }   // Entity3D steps its body itself
- *   update(dt) {
- *     this.body.walk(dirX, dirZ, 7)       // world-space direction (length <= 1) and speed
- *     if (jumpPressed) this.body.jump(11)
- *   }
- */
 export class Body3D {
   constructor(entity, o = {}) {
     this.entity = entity;
     this.vel = new THREE.Vector3();
     this.gravity = o.gravity ?? 30;
     this.maxFall = o.maxFall ?? 55;
-    this.accel = o.accel ?? 45; // walking acceleration (units/s²)
-    this.friction = o.friction ?? 35; // slow-down on the ground without input
-    this.airControl = o.airControl ?? 0.5; // fraction of accel while airborne
+    this.accel = o.accel ?? 45;
+    this.friction = o.friction ?? 35;
+    this.airControl = o.airControl ?? 0.5;
     this.stepHeight = o.stepHeight ?? 0.45;
     this.coyote = o.coyote ?? 0.1;
     this.jumpBuffer = o.jumpBuffer ?? 0.12;
@@ -32,7 +21,6 @@ export class Body3D {
     entity.body = this;
   }
 
-  /** Set the desired horizontal velocity (world space): walk(dx, dz, speed). */
   walk(dx, dz, speed) {
     this._want.set(dx * speed, 0, dz * speed);
   }
@@ -59,7 +47,6 @@ export class Body3D {
     if (this.vel.y > 0) this.vel.y *= factor;
   }
 
-  /** Add an instant push (dash, knockback). */
   impulse(x, y, z) {
     this.vel.x += x;
     this.vel.y += y;

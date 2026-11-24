@@ -8,13 +8,6 @@ const targetPos = (t, out) => {
   return out.copy(o.position);
 };
 
-/**
- * Third-person camera: follows a target and orbits it by yaw/pitch.
- *
- *   scene.rig = new OrbitRig(scene.camera, { target: player, distance: 7, height: 1.4 })
- *   rig.rotate(dx, dy)          // radians, e.g. from Controls3D.consumeLook()
- *   rig.yaw                     // use it to make movement camera-relative
- */
 export class OrbitRig {
   constructor(camera, { target = null, distance = 7, height = 1.4, yaw = 0, pitch = 0.35, minPitch = -0.1, maxPitch = 1.25, minDistance = 2, maxDistance = 20, smoothing = 10, scene = null } = {}) {
     Object.assign(this, { camera, target, distance, height, yaw, pitch, minPitch, maxPitch, minDistance, maxDistance, smoothing, scene });
@@ -31,12 +24,10 @@ export class OrbitRig {
     this.distance = clamp(this.distance + delta, this.minDistance, this.maxDistance);
   }
 
-  /** Horizontal direction the camera looks toward (for camera-relative movement). */
   get forward() {
     return { x: -Math.sin(this.yaw), z: -Math.cos(this.yaw) };
   }
 
-  /** Turn stick/keys (x = right, y = forward, both -1..1) into a world-space direction. */
   relative(mx, my) {
     const f = this.forward;
     return { x: f.x * my + -f.z * mx, z: f.z * my + f.x * mx };
@@ -59,13 +50,12 @@ export class OrbitRig {
     const z = this.focus.z + Math.cos(this.yaw) * cp * this.distance;
     let y = this.focus.y + Math.sin(this.pitch) * this.distance;
     const gh = this.scene?.groundHeight?.(x, z);
-    if (gh != null) y = Math.max(y, gh + 0.6); // never dive under the terrain
+    if (gh != null) y = Math.max(y, gh + 0.6);
     this.camera.position.set(x, y, z);
     this.camera.lookAt(this.focus);
   }
 }
 
-/** First-person camera at the target's eye height. */
 export class FirstPersonRig {
   constructor(camera, { target = null, eye = 1.6, yaw = 0, pitch = 0, limit = 1.5 } = {}) {
     Object.assign(this, { camera, target, eye, yaw, pitch, limit });
@@ -91,12 +81,11 @@ export class FirstPersonRig {
   }
 }
 
-/** Fixed-angle camera that follows a target (isometric / top-down). */
 export class TopDownRig extends OrbitRig {
   constructor(camera, opts = {}) {
     super(camera, { pitch: 0.95, yaw: Math.PI / 4, distance: 16, smoothing: 6, ...opts });
   }
-  rotate() {} // fixed
+  rotate() {}
 }
 
 export { damp };

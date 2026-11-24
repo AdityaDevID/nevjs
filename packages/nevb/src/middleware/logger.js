@@ -1,4 +1,3 @@
-/** Logs "METHOD /path status 12ms" for every request. */
 export function logger(options = {}) {
   const log = options.log ?? ((line) => console.log(line));
   return async (c, next) => {
