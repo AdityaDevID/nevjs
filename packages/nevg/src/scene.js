@@ -3,10 +3,6 @@ import { Camera } from './camera.js';
 import { Tweens } from './tween.js';
 import { rectsOverlap } from './math.js';
 
-/**
- * A Scene owns entities, a camera and tweens. Subclass it (or pass hooks) and
- * switch with game.setScene(). Lifecycle: init() → update(dt)/draw(ctx) → exit().
- */
 export class Scene extends Emitter {
   constructor(props = {}) {
     super();
@@ -14,7 +10,7 @@ export class Scene extends Emitter {
     this.entities = [];
     this.camera = new Camera();
     this.tweens = new Tweens();
-    this.background = null; // CSS color or null (transparent)
+    this.background = null;
     this.tilemap = null;
     this.time = 0;
     this.paused = false;
@@ -31,12 +27,9 @@ export class Scene extends Emitter {
     if (exit) this.exit = exit;
   }
 
-  // ---- hooks to override -------------------------------------------------
   init() {}
   update(dt) {}
-  /** Extra drawing in WORLD space, after entities. */
   draw(ctx) {}
-  /** Extra drawing in SCREEN space (HUD), after everything else. */
   drawHud(ctx) {}
   exit() {}
 
@@ -53,8 +46,6 @@ export class Scene extends Emitter {
     return this.game?.height ?? this.camera.height;
   }
 
-  // ---- entities ------------------------------------------------------------
-  /** Add an entity (or several). Takes effect immediately; init() runs now. */
   add(...list) {
     for (const e of list.flat()) {
       this._attach(e);
@@ -76,7 +67,6 @@ export class Scene extends Emitter {
     return e;
   }
 
-  /** All live entities that have `tag` (children included). */
   withTag(tag) {
     const out = [];
     const visit = (list) => {
@@ -93,7 +83,6 @@ export class Scene extends Emitter {
     return this.withTag(tag)[0] ?? null;
   }
 
-  /** Live entities overlapping a world rectangle. */
   query(rect, tag) {
     const out = [];
     for (const e of this.entities) {
@@ -103,7 +92,6 @@ export class Scene extends Emitter {
     return out;
   }
 
-  /** Run fn once after `seconds` of scene time. Returns a cancel function. */
   after(seconds, fn) {
     const t = { left: seconds, fn, every: 0, cancelled: false };
     this._timers.push(t);
@@ -120,12 +108,6 @@ export class Scene extends Emitter {
     return this.tweens.to(target, props, options);
   }
 
-  // ---- physics helpers ------------------------------------------------------
-  /**
-   * Move `e` by (dx, dy), stopping at solid tiles and solid entities.
-   * Axes are resolved separately so you can slide along walls.
-   * Returns { x: hitX, y: hitY, left, right, top, bottom, entity }.
-   */
   moveAndCollide(e, dx, dy) {
     const hit = { x: false, y: false, left: false, right: false, top: false, bottom: false, entity: null };
     const solids = this.entities.filter((o) => o !== e && o.solid && !o.dead && o.collides);
@@ -152,16 +134,13 @@ export class Scene extends Emitter {
         e.y = ny;
         return true;
       };
-      // Sweep in <=4px chunks so fast movers cannot tunnel through thin walls.
       let stopped = false;
       for (let i = 0; i < units && !stopped; i++) stopped = !advance(4 * sign);
       const rest = Math.abs(delta) - units * 4;
       if (!stopped && rest > 0) stopped = !advance(rest * sign);
       if (stopped) {
-        // Close the remaining gap pixel-by-pixel (then sub-pixel) for a flush contact.
         for (const inc of [1, 0.25, 0.0625]) {
           while (advance(inc * sign)) {
-            /* creep forward until blocked */
           }
         }
         hit[axis] = true;
@@ -174,7 +153,6 @@ export class Scene extends Emitter {
     return hit;
   }
 
-  // ---- engine internals -----------------------------------------------------
   _enter(game) {
     this.game = game;
     this.camera.resize?.(game.width, game.height);
@@ -223,7 +201,6 @@ export class Scene extends Emitter {
   _collide() {
     const list = this.entities.filter((e) => !e.dead && e.collides && e.w > 0 && e.h > 0);
     if (list.length < 2) return;
-    // Sweep-and-prune on the X axis: far cheaper than all-pairs for typical scenes.
     const items = list.map((e) => ({ e, r: e.rect })).sort((a, b) => a.r.x - b.r.x);
     for (let i = 0; i < items.length; i++) {
       const a = items[i];
@@ -269,7 +246,7 @@ export class Scene extends Emitter {
       ctx.fillRect(0, 0, w, h);
     }
     if (!this._sorted) {
-      this.entities.sort((a, b) => a.z - b.z); // stable sort keeps insertion order for equal z
+      this.entities.sort((a, b) => a.z - b.z);
       this._sorted = true;
     }
     ctx.save();
@@ -297,7 +274,6 @@ export class Scene extends Emitter {
         hud.push(e);
         continue;
       }
-      // Cull top-level entities that are fully off-screen (rotation-safe margin).
       if (!e.noCull && !e.children.length && e.rotation === 0) {
         if (e.x > view.x + view.w || e.y > view.y + view.h || e.x + e.w < view.x || e.y + e.h < view.y) continue;
       }

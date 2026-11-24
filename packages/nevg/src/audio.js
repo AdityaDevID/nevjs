@@ -1,8 +1,3 @@
-/**
- * Small WebAudio wrapper. Browsers only allow audio after a user gesture, so
- * the context is created/resumed lazily on the first input (Game wires this up).
- * Everything is a safe no-op when WebAudio is unavailable (SSR, tests).
- */
 export class Sound {
   constructor() {
     this.ctx = null;
@@ -16,7 +11,6 @@ export class Sound {
     return typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined';
   }
 
-  /** Call from a user gesture (click/keydown). Safe to call repeatedly. */
   unlock() {
     if (!this.supported) return;
     if (!this.ctx) {
@@ -39,7 +33,6 @@ export class Sound {
     if (this.master) this.master.gain.value = on ? 0 : this.volume;
   }
 
-  /** Decode an ArrayBuffer (from Assets.audio) and store it under `key`. */
   async decode(key, arrayBuffer) {
     this.unlock();
     if (!this.ctx) return null;
@@ -48,7 +41,6 @@ export class Sound {
     return buffer;
   }
 
-  /** Play a decoded sound. Returns a stop() function. */
   play(key, { volume = 1, loop = false, rate = 1 } = {}) {
     const buffer = this.buffers.get(key);
     if (!this.ctx || !buffer) return () => {};
@@ -64,12 +56,10 @@ export class Sound {
       try {
         src.stop();
       } catch {
-        /* already stopped */
       }
     };
   }
 
-  /** Synthesised blip — handy for prototypes, no files needed. */
   beep({ freq = 440, duration = 0.1, type = 'square', volume = 0.2, slide = 0 } = {}) {
     if (!this.ctx) return;
     const t = this.ctx.currentTime;

@@ -1,5 +1,3 @@
-// Small WebCrypto helpers (work in Node >= 20, Deno, Bun, Workers). No dependencies.
-
 const enc = new TextEncoder();
 const dec = new TextDecoder();
 
@@ -20,7 +18,6 @@ export function b64urlToBytes(str) {
 export const utf8ToB64url = (s) => bytesToB64url(enc.encode(s));
 export const b64urlToUtf8 = (s) => dec.decode(b64urlToBytes(s));
 
-/** Constant-time comparison of two strings / byte arrays. */
 export function safeEqual(a, b) {
   const x = typeof a === 'string' ? enc.encode(a) : a;
   const y = typeof b === 'string' ? enc.encode(b) : b;
@@ -42,18 +39,15 @@ async function hmacKey(secret) {
   return key;
 }
 
-/** HMAC-SHA256 → base64url */
 export async function hmac(secret, data) {
   const sig = await crypto.subtle.sign('HMAC', await hmacKey(secret), enc.encode(data));
   return bytesToB64url(new Uint8Array(sig));
 }
 
-/** "value.signature" */
 export async function sign(value, secret) {
   return `${value}.${await hmac(secret, value)}`;
 }
 
-/** Returns the original value, or null when the signature does not match. `secret` may be an array (rotation). */
 export async function unsign(signed, secret) {
   if (typeof signed !== 'string') return null;
   const i = signed.lastIndexOf('.');
@@ -66,12 +60,10 @@ export async function unsign(signed, secret) {
   return null;
 }
 
-/** Random URL-safe id (default 16 bytes → 22 chars). */
 export function randomId(bytes = 16) {
   return bytesToB64url(crypto.getRandomValues(new Uint8Array(bytes)));
 }
 
-// ---------------------------------------------------------------- JWT (HS256)
 
 const parseDuration = (d) => {
   if (typeof d === 'number') return d;
@@ -80,10 +72,6 @@ const parseDuration = (d) => {
   return Number(m[1]) * { s: 1, m: 60, h: 3600, d: 86400, w: 604800 }[m[2] ?? 's'];
 };
 
-/**
- * Create a signed JWT (HS256).
- *   await signJWT({ sub: 'u1' }, secret, { expiresIn: '1h' })
- */
 export async function signJWT(payload, secret, options = {}) {
   const now = Math.floor(Date.now() / 1000);
   const body = { iat: now, ...payload };
@@ -97,10 +85,6 @@ export async function signJWT(payload, secret, options = {}) {
   return `${data}.${await hmac(secret, data)}`;
 }
 
-/**
- * Verify a JWT. Returns the payload, or null when invalid / expired.
- * Only HS256 is accepted (the `alg` header is never trusted).
- */
 export async function verifyJWT(token, secret, options = {}) {
   if (typeof token !== 'string') return null;
   const parts = token.split('.');
@@ -126,9 +110,7 @@ export async function verifyJWT(token, secret, options = {}) {
   }
 }
 
-// ---------------------------------------------------------------- passwords (PBKDF2)
 
-/** Hash a password → "pbkdf2$sha256$iterations$salt$hash". Use for storing user passwords. */
 export async function hashPassword(password, { iterations = 210_000 } = {}) {
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const key = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);

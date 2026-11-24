@@ -1,11 +1,9 @@
-// Tiny schema validation:  v.object({ name: v.string({ min: 1 }), age: v.number({ int: true }).optional() })
-
 import { HttpError } from './http-error.js';
 
 class Schema {
   constructor(kind, check) {
     this.kind = kind;
-    this._check = check; // (value, path, ctx) => coerced value; pushes into ctx.errors
+    this._check = check;
     this._optional = false;
     this._default = undefined;
     this._hasDefault = false;
@@ -23,14 +21,12 @@ class Schema {
     return s;
   }
 
-  /** Accept `null` as a valid value (kept as null). */
   nullable() {
     const s = this._clone();
     s._nullable = true;
     return s;
   }
 
-  /** Extra check: fn(value) returns true / false / an error message string. */
   refine(fn, message = 'is invalid') {
     const s = this._clone();
     s._after.push((val, path, ctx) => {
@@ -42,7 +38,6 @@ class Schema {
     return s;
   }
 
-  /** Convert the validated value: v.string().transform((s) => s.toLowerCase()). */
   transform(fn) {
     const s = this._clone();
     s._after.push((val) => fn(val));
@@ -82,14 +77,12 @@ class Schema {
     return out;
   }
 
-  /** @returns {{ ok: boolean, value: any, errors: {path: string, message: string}[] }} */
   safeParse(value, options = {}) {
     const ctx = { coerce: !!options.coerce, errors: [] };
     const out = this._run(value, '', ctx);
     return { ok: ctx.errors.length === 0, value: out, errors: ctx.errors };
   }
 
-  /** Throws HttpError(422) on failure. */
   parse(value, options) {
     const r = this.safeParse(value, options);
     if (!r.ok) throw new HttpError(422, 'Validation failed', r.errors);
@@ -147,7 +140,7 @@ export const v = {
   array(item, { min, max } = {}) {
     return new Schema('array', (val, path, ctx) => {
       if (!Array.isArray(val)) {
-        if (ctx.coerce) val = [val]; // ?tag=a  →  ['a']
+        if (ctx.coerce) val = [val];
         else return fail(ctx, path, 'must be an array');
       }
       if (min != null && val.length < min) return fail(ctx, path, `must have at least ${min} item${min === 1 ? '' : 's'}`);
@@ -169,7 +162,7 @@ export const v = {
           if (!(key in shape)) ctx.errors.push({ path: path ? `${path}.${key}` : key, message: 'is not allowed' });
         }
       }
-      return out; // unknown keys are dropped
+      return out;
     });
   },
 
@@ -183,7 +176,6 @@ export const v = {
     );
   },
 
-  /** First schema that accepts the value wins: v.union([v.string(), v.number()]) */
   union(options) {
     return new Schema('union', (val, path, ctx) => {
       for (const opt of options) {
@@ -195,7 +187,6 @@ export const v = {
     });
   },
 
-  /** Object with arbitrary keys: v.record(v.number()) */
   record(item) {
     return new Schema('record', (val, path, ctx) => {
       if (typeof val !== 'object' || val === null || Array.isArray(val)) return fail(ctx, path, 'must be an object');
@@ -209,7 +200,6 @@ export const v = {
     });
   },
 
-  /** Fixed-length list with a schema per position: v.tuple([v.number(), v.string()]) */
   tuple(items) {
     return new Schema('tuple', (val, path, ctx) => {
       if (!Array.isArray(val)) return fail(ctx, path, 'must be an array');
@@ -218,7 +208,6 @@ export const v = {
     });
   },
 
-  /** ISO date string / timestamp / Date → Date. */
   date({ min, max } = {}) {
     return new Schema('date', (val, path, ctx) => {
       const d = val instanceof Date ? val : typeof val === 'string' || typeof val === 'number' ? new Date(val) : null;
@@ -229,7 +218,6 @@ export const v = {
     });
   },
 
-  /** http(s) URL (override with { protocols: ['https:'] }). */
   url({ protocols = ['http:', 'https:'] } = {}) {
     return new Schema('url', (val, path, ctx) => {
       if (typeof val !== 'string') return fail(ctx, path, 'must be a string');
@@ -252,11 +240,6 @@ export const v = {
   },
 };
 
-/**
- * Validation middleware. Failures → 422 { error, details: [{ path, message }] }.
- *   app.post('/users', validate({ body: v.object({ name: v.string() }) }), (c) => c.valid.body)
- * query/params values are coerced from strings (?page=2 → 2).
- */
 export function validate(schemas) {
   return async (c, next) => {
     const errors = [];

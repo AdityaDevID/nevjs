@@ -103,7 +103,7 @@ describe('middleware chain', () => {
       return res;
     });
     app.use((c) => {
-      order.push('b'); // returns nothing → continues
+      order.push('b');
     });
     app.get('/', () => {
       order.push('handler');
@@ -149,7 +149,7 @@ describe('middleware chain', () => {
     const app = new App();
     app.get('/', (c) => {
       c.header('x-test', 'yes').setCookie('sid', 'a b', { maxAge: 60 }).setCookie('t', '1');
-      return new Response('hi'); // raw Response still gets the headers
+      return new Response('hi');
     });
     const res = await app.request('/');
     assert.equal(res.headers.get('x-test'), 'yes');

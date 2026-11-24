@@ -1,4 +1,3 @@
-// NevB.js — public API
 export { App, createApp } from './app.js';
 export { Context } from './context.js';
 export { HttpError, abort } from './http-error.js';

@@ -1,19 +1,15 @@
 import { clamp, damp } from './math.js';
 
-/**
- * 2D camera. (x, y) is the world point at the CENTER of the screen.
- * The scene applies camera.apply(ctx) before drawing world entities.
- */
 export class Camera {
   constructor(width = 800, height = 600) {
     this.x = width / 2;
     this.y = height / 2;
     this.zoom = 1;
-    this.width = width; // viewport size in game pixels
+    this.width = width;
     this.height = height;
-    this.bounds = null; // { x, y, w, h } world rectangle the view must stay inside
-    this.target = null; // any object with x,y (entity.center is used when present)
-    this.smoothing = 0; // 0 = snap, otherwise follow speed per second (e.g. 8)
+    this.bounds = null;
+    this.target = null;
+    this.smoothing = 0;
     this.offsetX = 0;
     this.offsetY = 0;
     this._shake = { time: 0, duration: 0, power: 0, x: 0, y: 0 };
@@ -33,12 +29,10 @@ export class Camera {
     return this;
   }
 
-  /** Screen shake: power in pixels, duration in seconds. */
   shake(power = 8, duration = 0.3) {
     this._shake = { time: duration, duration, power, x: 0, y: 0 };
   }
 
-  /** Change the viewport size, keeping the top-left corner of the view where it was. */
   resize(width, height) {
     const left = this.x - this.width / this.zoom / 2;
     const top = this.y - this.height / this.zoom / 2;
@@ -84,12 +78,10 @@ export class Camera {
     if (!b) return;
     const halfW = this.width / this.zoom / 2;
     const halfH = this.height / this.zoom / 2;
-    // If the world is smaller than the view, center it.
     this.x = b.w <= halfW * 2 ? b.x + b.w / 2 : clamp(this.x, b.x + halfW, b.x + b.w - halfW);
     this.y = b.h <= halfH * 2 ? b.y + b.h / 2 : clamp(this.y, b.y + halfH, b.y + b.h - halfH);
   }
 
-  /** Top-left of the visible world rectangle (includes shake). */
   get left() {
     return this.x + this._shake.x - this.width / this.zoom / 2;
   }
@@ -97,7 +89,6 @@ export class Camera {
     return this.y + this._shake.y - this.height / this.zoom / 2;
   }
 
-  /** The world rectangle currently visible. */
   get view() {
     return { x: this.left, y: this.top, w: this.width / this.zoom, h: this.height / this.zoom };
   }

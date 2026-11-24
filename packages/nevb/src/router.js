@@ -1,6 +1,3 @@
-// Path patterns:  /users/:id   /posts/:slug?   /files/*path   /static/*
-// Static segments match exactly, :param captures one segment, *name captures the rest.
-
 export function safeDecode(s) {
   try {
     return decodeURIComponent(s);
@@ -27,11 +24,6 @@ export function compile(pattern) {
     });
 }
 
-/**
- * Match compiled segments against decoded path parts.
- * With `prefix`, extra trailing parts are allowed (used by middleware).
- * Returns params or null.
- */
 export function matchSegs(segs, parts, prefix = false) {
   const params = {};
   let i = 0;

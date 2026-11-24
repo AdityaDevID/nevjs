@@ -1,18 +1,5 @@
 import { Emitter } from './emitter.js';
 
-/**
- * Finite state machine — enemies, players, game flow.
- *
- *   const ai = new StateMachine({
- *     idle:  { enter() {...}, update(dt) { if (seesPlayer) ai.go('chase') }, exit() {...} },
- *     chase: { update(dt) {...} },
- *   }, 'idle')
- *   ai.update(dt)         // call from your update()
- *   ai.is('chase')  ai.time  ai.previous
- *
- * Optional `can(from, to)` guard on a state: `chase: { can: (from) => from !== 'dead' }`.
- * Emits 'change' (to, from).
- */
 export class StateMachine extends Emitter {
   constructor(states = {}, initial, context = null) {
     super();
@@ -20,7 +7,7 @@ export class StateMachine extends Emitter {
     this.context = context;
     this.current = null;
     this.previous = null;
-    this.time = 0; // seconds in the current state
+    this.time = 0;
     this.history = [];
     if (initial) this.go(initial);
   }
@@ -29,7 +16,6 @@ export class StateMachine extends Emitter {
     return this.current === name;
   }
 
-  /** Switch state. Returns false when the target is unknown or refuses (`can`). */
   go(name, ...args) {
     const next = this.states[name];
     if (!next) throw new Error(`[nevg] Unknown state "${name}"`);
@@ -47,7 +33,6 @@ export class StateMachine extends Emitter {
     return true;
   }
 
-  /** Go back to the previous state (if any). */
   back() {
     return this.previous ? this.go(this.previous) : false;
   }
@@ -59,7 +44,6 @@ export class StateMachine extends Emitter {
   }
 }
 
-/** Countdown helper (cooldowns, reload times):  const fire = new Cooldown(0.25);  fire.update(dt);  if (fire.use()) shoot() */
 export class Cooldown {
   constructor(duration = 1, { ready = true } = {}) {
     this.duration = duration;
@@ -75,7 +59,6 @@ export class Cooldown {
     if (this.left > 0) this.left = Math.max(0, this.left - dt);
     return this;
   }
-  /** If ready: start the cooldown and return true. */
   use() {
     if (!this.ready) return false;
     this.left = this.duration;

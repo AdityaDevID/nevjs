@@ -2,15 +2,6 @@ import { HttpError } from '../http-error.js';
 
 const SAFE = new Set(['GET', 'HEAD', 'OPTIONS']);
 
-/**
- * CSRF protection for cookie-authenticated apps, based on the Origin / Referer / Sec-Fetch-Site
- * headers browsers attach to every unsafe request (no tokens to manage).
- *
- *   app.use(csrf())                                       // same-origin only
- *   app.use(csrf({ origins: ['https://admin.example.com'] }))
- *
- * Requests without any of those headers (curl, server-to-server) pass unless `allowMissing: false`.
- */
 export function csrf(options = {}) {
   const extra = new Set((options.origins ?? []).map((o) => o.replace(/\/$/, '')));
   const allowMissing = options.allowMissing ?? true;

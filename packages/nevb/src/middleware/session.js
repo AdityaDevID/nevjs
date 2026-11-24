@@ -1,6 +1,5 @@
 import { sign, unsign, randomId, utf8ToB64url, b64urlToUtf8 } from '../crypto.js';
 
-/** In-memory session store with TTL (per process — use a shared store for several instances). */
 export class MemoryStore {
   constructor({ ttl = 7 * 86400 } = {}) {
     this.ttl = ttl * 1000;
@@ -31,18 +30,6 @@ export class MemoryStore {
   }
 }
 
-/**
- * Cookie sessions. `c.session` is a plain object you can read and write.
- *
- *   app.use(session({ secret: process.env.SESSION_SECRET }))          // data lives in a signed cookie (≤ ~4 KB)
- *   app.use(session({ secret, store: new MemoryStore() }))            // data lives on the server, cookie holds an id
- *
- *   c.session.userId = 1;     c.session.destroy();     await c.session.regenerate();
- *
- * Options: name, maxAge (seconds), secure (default: only on https), sameSite, path, domain, rolling.
- * `secret` may be an array to rotate secrets (the first one signs, all are accepted).
- * A store is any object with get(id) / set(id, data) / delete(id) (sync or async).
- */
 export function session(options = {}) {
   const secrets = [].concat(options.secret ?? []);
   if (!secrets.length || secrets.some((s) => typeof s !== 'string' || s.length < 16)) {
@@ -73,7 +60,6 @@ export function session(options = {}) {
               data = parsed;
             }
           } catch {
-            /* tampered or corrupt → empty session */
           }
         }
       }
@@ -116,7 +102,7 @@ export function session(options = {}) {
     const after = JSON.stringify(data);
     const empty = after === '{}';
     if (store) {
-      if (empty && !id) return res; // never create a session just to store nothing
+      if (empty && !id) return res;
       if (after !== before || options.rolling || !id) {
         const first = !id;
         id ??= randomId(24);

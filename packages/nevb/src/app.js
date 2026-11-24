@@ -19,7 +19,6 @@ function defaultError(err, c) {
   return c.json(body, status);
 }
 
-/** Copy headers set via c.header()/c.setCookie() onto the outgoing response. */
 function withContextHeaders(res, extra) {
   if (extra.keys().next().done) return res;
   const apply = (target) => {
@@ -32,25 +31,12 @@ function withContextHeaders(res, extra) {
     apply(res);
     return res;
   } catch {
-    // immutable headers (e.g. a Response from fetch()) → clone
     const copy = new Response(res.body, { status: res.status, statusText: res.statusText, headers: new Headers(res.headers) });
     apply(copy);
     return copy;
   }
 }
 
-/**
- * The application: a list of middleware + routes, executed in registration order.
- *
- *   const app = new App()
- *   app.use(logger())
- *   app.get('/users/:id', (c) => ({ id: c.params.id }))
- *   app.listen(3000)
- *
- * Handlers are `(c, next) => value`. A route handler is final: return a
- * Response, object (→ JSON), string (→ text), or nothing (→ 204). Middleware
- * may `await next()` to run the rest of the chain and get its Response back.
- */
 export class App {
   constructor(options = {}) {
     this.options = { trustProxy: false, maxBodySize: 1024 * 1024, exposeErrors: false, silent: false, ...options };
@@ -59,7 +45,6 @@ export class App {
     this.notFoundHandler = defaultNotFound;
   }
 
-  /** app.use(mw...)  or  app.use('/prefix', mw...) */
   use(...args) {
     let path = '/';
     if (typeof args[0] === 'string') path = args.shift();
@@ -71,7 +56,6 @@ export class App {
     return this;
   }
 
-  /** app.on('GET', '/path', ...handlers). Use 'ALL' for every method. */
   on(method, path, ...handlers) {
     const list = handlers.flat();
     if (!list.length) throw new TypeError(`app.${method.toLowerCase()}('${path}') needs a handler`);
@@ -88,7 +72,6 @@ export class App {
     return this.on('ALL', path, ...handlers);
   }
 
-  /** Mount another App under a prefix (define the sub-app's routes first). */
   route(prefix, sub) {
     const base = compile(prefix);
     for (const e of sub.entries) this.entries.push({ ...e, segs: [...base, ...e.segs] });
@@ -105,7 +88,6 @@ export class App {
     return this;
   }
 
-  /** Web-standard entry point: Request in, Response out. */
   async fetch(request, env) {
     const c = new Context(request, env, this);
     const parts = splitPath(c.path);
@@ -132,7 +114,7 @@ export class App {
       if (out === undefined) {
         if (called) return downstream;
         if (item.isRoute) return new Response(null, { status: 204 });
-        return next(); // middleware that returned nothing: continue automatically
+        return next();
       }
       return toResponse(c, out);
     };
@@ -155,16 +137,11 @@ export class App {
     return res;
   }
 
-  /** Test helper: app.request('/path', { method: 'POST', body: ... }) */
   request(pathOrUrl, init) {
     const url = new URL(pathOrUrl, 'http://localhost');
     return this.fetch(new Request(url, init));
   }
 
-  /**
-   * Start a Node HTTP server. Resolves with the http.Server once listening.
-   *   const server = await app.listen(3000)
-   */
   async listen(port = 3000, hostname, callback) {
     if (typeof hostname === 'function') {
       callback = hostname;

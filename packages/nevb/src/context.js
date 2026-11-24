@@ -9,18 +9,6 @@ function addValue(obj, key, value) {
   else obj[key] = value;
 }
 
-/**
- * Per-request context passed to every handler.
- *
- *   c.req        the web-standard Request
- *   c.url        parsed URL        c.path   pathname      c.method
- *   c.params     route params      c.query  query object  c.cookies
- *   c.state      scratch space for middleware (e.g. c.state.user)
- *   c.valid      validated input   (see validate())
- *   await c.body()                 parsed JSON / form / text body
- *   c.json() c.text() c.html() c.redirect() c.send() c.sse()  → Response
- *   c.header() c.status() c.setCookie() c.deleteCookie()
- */
 export class Context {
   constructor(req, env, app) {
     this.req = req;
@@ -62,7 +50,6 @@ export class Context {
     return this.env.incoming?.socket?.remoteAddress ?? '';
   }
 
-  /** Parse the request body by content-type: JSON → object, forms → object, else text. */
   async body() {
     if (this._body !== undefined) return this._body;
     const type = (this.req.headers.get('content-type') || '').toLowerCase();
@@ -85,16 +72,13 @@ export class Context {
     return this._body;
   }
 
-  // ---- response building ------------------------------------------------
 
-  /** Set a response header (applied to whatever Response is returned). */
   header(name, value, options = {}) {
     if (options.append) this._headers.append(name, value);
     else this._headers.set(name, value);
     return this;
   }
 
-  /** Default status for the next response helper. */
   status(code) {
     this._status = code;
     return this;
@@ -130,17 +114,10 @@ export class Context {
     return this.json({ error: message, status: 404 }, 404);
   }
 
-  /** Turn any supported value into a Response (objects → JSON, strings → text, ...). */
   send(value, status, headers) {
     return toResponse(this, value, status, headers);
   }
 
-  /**
-   * Server-Sent Events.
-   *   return c.sse(async ({ send, onClose }) => { send({ hello: 1 }); ... })
-   * `send(data, event?, id?)`; the stream ends when the handler's promise settles
-   * (return a never-ending promise to keep it open) or the client disconnects.
-   */
   sse(handler, headers) {
     const enc = new TextEncoder();
     const signal = this.req.signal;
@@ -154,7 +131,6 @@ export class Context {
           try {
             controller.close();
           } catch {
-            /* already closed */
           }
         };
         closeFn = close;
@@ -175,7 +151,6 @@ export class Context {
             try {
               fn();
             } catch {
-              /* ignore */
             }
           }
         };
@@ -210,7 +185,6 @@ export class Context {
   }
 }
 
-/** Normalise whatever a handler returned into a Response. */
 export function toResponse(c, out, status, headers) {
   if (out instanceof Response) return out;
   if (out === null || out === undefined) return c._make(null, status ?? 204, {}, headers);
@@ -218,5 +192,5 @@ export function toResponse(c, out, status, headers) {
   if (out instanceof ReadableStream || out instanceof Blob || out instanceof ArrayBuffer || ArrayBuffer.isView(out)) {
     return c._make(out, status, { 'content-type': out.type || 'application/octet-stream' }, headers);
   }
-  return c.json(out, status, headers); // objects, arrays, numbers, booleans
+  return c.json(out, status, headers);
 }

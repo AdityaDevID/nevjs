@@ -1,17 +1,11 @@
 import { HttpError } from '../http-error.js';
 
-/**
- * In-memory fixed-window rate limiter (per process).
- *   app.use('/api', rateLimit({ windowMs: 60_000, max: 100 }))
- * Behind a proxy set `new App({ trustProxy: true })` so c.ip is the real client.
- * For multi-instance deployments use a shared store (Redis) instead.
- */
 export function rateLimit(options = {}) {
   const windowMs = options.windowMs ?? 60_000;
   const max = options.max ?? 60;
   const keyGenerator = options.keyGenerator ?? ((c) => c.ip || 'unknown');
   const message = options.message ?? 'Too Many Requests';
-  const hits = new Map(); // key -> { count, reset }
+  const hits = new Map();
 
   const sweep = setInterval(() => {
     const now = Date.now();

@@ -1,9 +1,3 @@
-/**
- * Object pool — reuse bullets/particles instead of allocating every shot.
- *   const bullets = new Pool(() => new Rect({ w: 4, h: 4 }), (b) => { b.dead = false; b.vx = b.vy = 0 }, { max: 200 })
- *   const b = bullets.get();            // reused or new (null when `max` objects are already out)
- *   bullets.release(b);                 // give it back
- */
 export class Pool {
   constructor(create, reset = () => {}, { max = Infinity, prewarm = 0 } = {}) {
     if (typeof create !== 'function') throw new TypeError('Pool needs a create() function');
@@ -31,7 +25,7 @@ export class Pool {
     return obj;
   }
   release(obj) {
-    if (!this.out.delete(obj)) return false; // not ours / already released
+    if (!this.out.delete(obj)) return false;
     this.free.push(obj);
     return true;
   }

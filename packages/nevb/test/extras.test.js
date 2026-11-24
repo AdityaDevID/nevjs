@@ -40,7 +40,7 @@ describe('crypto helpers', () => {
     assert.equal(await verifyPassword('hunter2', h), true);
     assert.equal(await verifyPassword('hunter3', h), false);
     assert.equal(await verifyPassword('x', 'not-a-hash'), false);
-    assert.notEqual(await hashPassword('hunter2', { iterations: 2000 }), h); // random salt
+    assert.notEqual(await hashPassword('hunter2', { iterations: 2000 }), h);
   });
 
   test('randomId / safeEqual', () => {
@@ -78,12 +78,10 @@ describe('session()', () => {
     const r2 = await app.request('/hit', { headers: { cookie } });
     assert.deepEqual(await json(r2), { count: 2 });
 
-    // untouched request does not rewrite the cookie
     const r3 = await app.request('/peek', { headers: { cookie: cookieOf(r2) } });
     assert.equal(r3.headers.getSetCookie().length, 0);
     assert.deepEqual(await json(r3), { keys: ['count'] });
 
-    // tampered cookie → fresh empty session
     const bad = await app.request('/peek', { headers: { cookie: cookie.slice(0, -2) + 'xx' } });
     assert.deepEqual(await json(bad), { keys: [] });
 

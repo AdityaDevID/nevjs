@@ -6,7 +6,6 @@ export const STATUS_TEXT = {
   503: 'Service Unavailable',
 };
 
-/** Throw this (or call abort()) from any handler to produce an HTTP error response. */
 export class HttpError extends Error {
   constructor(status = 500, message, details) {
     super(message ?? STATUS_TEXT[status] ?? 'Error');

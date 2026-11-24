@@ -1,5 +1,3 @@
-// Node.js adapter: IncomingMessage/ServerResponse <-> web-standard Request/Response.
-
 import http from 'node:http';
 import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -50,11 +48,10 @@ async function writeResponse(res, response, method) {
   try {
     await pipeline(Readable.fromWeb(response.body), res);
   } catch {
-    res.destroy(); // client went away or the stream failed mid-flight
+    res.destroy();
   }
 }
 
-/** (req, res) => void — usable with http.createServer(), or as Express-style middleware. */
 export function createNodeHandler(app) {
   return async (req, res) => {
     const controller = new AbortController();
@@ -88,7 +85,6 @@ export function createNodeHandler(app) {
   };
 }
 
-/** Start listening; resolves with the http.Server. Port 0 picks a free port. */
 export function listen(app, port = 3000, hostname) {
   const server = http.createServer(createNodeHandler(app));
   server.keepAliveTimeout = 65_000;

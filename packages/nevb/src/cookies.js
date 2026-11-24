@@ -26,10 +26,6 @@ export function parseCookies(header) {
 const TOKEN = /^[\w!#$%&'*+.^`|~-]+$/;
 const UNSAFE = /[;\r\n]/;
 
-/**
- * Serialize a Set-Cookie value.
- * Options: maxAge (s), expires (Date), path ('/'), domain, secure, httpOnly, sameSite ('lax'|'strict'|'none')
- */
 export function serializeCookie(name, value, opts = {}) {
   if (!TOKEN.test(name)) throw new TypeError(`Invalid cookie name: ${name}`);
   const path = opts.path ?? '/';
