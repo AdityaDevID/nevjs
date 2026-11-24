@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0 — Nev (`@adityadevid/nevjs`), NevB, NevF
+**Nev**
+- **`.env`**: `.env`, `.env.local`, `.env.<mode>`, `.env.<mode>.local` dimuat ke `process.env` (variabel asli menang; `.env.local` dilewati saat `test`). Hanya `NEV_PUBLIC_*` yang dikirim ke browser, dibaca lewat `publicEnv()`.
+- **Route groups**: folder `(nama)` tidak masuk URL tetapi `_layout.js`-nya tetap berlaku.
+- **Config `redirects`, `headers`, `trailingSlash`** (divalidasi saat start; tujuan redirect tidak bisa jadi `//host`).
+- **SEO `head`**: `description`, `canonical`, `robots`, `openGraph`, `twitter`, `jsonLd`, `alternates`, `themeColor`, dll.; URL relatif jadi absolut lewat `site`; JSON-LD aman dari `</script>`; `head` boleh berupa objek biasa; tag diganti saat navigasi client-side.
+- `notFound()`, `createHandler()` (handler Web-standar untuk serverless/edge — belum diuji di platform nyata), `nev info`, `.env.example` di template, ekspor `loadEnv/parseEnv/expandHead`.
+**NevB** — middleware `trailingSlash('never' | 'always')`.
+**NevF** — `publicEnv`, `setPublicEnv`.
+290 tes lulus (18 baru); fitur sisi-browser diverifikasi manual di Chromium.
+
 ## 0.2.3 — Nev (`@adityadevid/nevjs`)
 CLI: perintah salah ketik sekarang disarankan (`nev strat` → `Did you mean "nev start"?`). Termasuk pembaruan tooling di bawah (jsdom 29) dan rilis NevGThree/NevG 0.2.2 yang belum dirilis.
 

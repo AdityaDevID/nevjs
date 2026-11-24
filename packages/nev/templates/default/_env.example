@@ -1,0 +1,8 @@
+# Copy to .env.local (git-ignored) and fill in. Real environment variables always win over files.
+# Files read: .env, .env.local, .env.<mode>, .env.<mode>.local  (mode = development | production | test)
+
+# Server-only — available as process.env.* in loaders (*.server.js), api/ and nev.config.js. NEVER sent to the browser.
+# DATABASE_URL=postgres://user:pass@host:5432/db
+
+# Only NEV_PUBLIC_* variables reach the browser: publicEnv('NEV_PUBLIC_API_URL') from '@adityadevid/nevf'
+# NEV_PUBLIC_API_URL=https://api.example.com

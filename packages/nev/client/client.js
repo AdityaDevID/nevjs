@@ -1,11 +1,13 @@
 // Nev.js browser runtime: takes over the server-rendered page and handles
 // client-side navigation (no full reloads), loader data and dev live-reload.
 
-import { h, render, signal, batch, effect, untrack, location } from '@adityadevid/nevf';
+import { h, render, signal, batch, effect, untrack, location, setPublicEnv } from '@adityadevid/nevf';
 import { buildTree } from '/__nev/tree.js';
+import { expandHead } from '/__nev/head.js';
 
 const boot = JSON.parse(document.getElementById('__NEV_DATA__').textContent);
 const root = document.getElementById('nev-root');
+setPublicEnv(boot.env ?? {}); // NEV_PUBLIC_* variables → publicEnv('NEV_PUBLIC_X')
 
 const modCache = new Map();
 const load = (url) => {
@@ -68,17 +70,39 @@ const view = signal(null);
 let ticket = 0;
 let currentKey = null;
 
-function applyTitle(mod, props) {
-  let title;
+function applyHead(mod, props) {
+  let head = {};
   try {
-    const head = mod && mod.head ? mod.head(props) : null;
-    title = head && head.title;
+    head = (mod && (typeof mod.head === 'function' ? mod.head(props) : mod.head)) || {};
   } catch {
     /* ignore head errors in the browser */
   }
   const site = boot.site;
-  const t = title ?? site.title;
-  document.title = title && site.titleTemplate.includes('%s') ? site.titleTemplate.replace('%s', () => t) : t;
+  const t = head.title ?? site.title;
+  const title = head.title && site.titleTemplate.includes('%s') ? site.titleTemplate.replace('%s', () => t) : t;
+  document.title = title;
+  if (head.lang) document.documentElement.lang = head.lang;
+
+  // swap the tags the server generated from the previous page's `head`
+  for (const el of document.head.querySelectorAll('[data-nev]')) el.remove();
+  const extra = expandHead(head, { origin: site.origin, url: props.url, title: head.title ?? site.title });
+  const add = (tag, attrs) => {
+    const el = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (v === false || v == null) continue;
+      try {
+        el.setAttribute(k, v === true ? '' : String(v));
+      } catch {
+        /* invalid attribute name — skip it */
+      }
+    }
+    el.setAttribute('data-nev', '');
+    document.head.appendChild(el);
+    return el;
+  };
+  for (const m of extra.meta) add('meta', m);
+  for (const l of extra.links) add('link', l);
+  for (const j of extra.jsonLd) add('script', { type: 'application/ld+json' }).textContent = JSON.stringify(j);
 }
 
 async function resolveView(loc) {
@@ -139,7 +163,7 @@ async function go(loc) {
     }
     currentKey = key;
     batch(() => view.set(next));
-    applyTitle(next.mod, next.props);
+    applyHead(next.mod, next.props);
   } catch (err) {
     console.error('[nev] client navigation failed, falling back to a full page load:', err);
     if (mine === ticket) window.location.assign(key + location.peek().hash);

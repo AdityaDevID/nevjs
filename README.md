@@ -16,7 +16,7 @@ Semuanya ES module murni, nol dependensi (kecuali saling memakai), Node ≥ 20.
 git clone https://github.com/AdityaDevID/nevjs.git
 cd nevjs
 npm install
-npm test                    # 270+ tes untuk kelima paket
+npm test                    # 290 tes untuk kelima paket
 
 # bikin proyek fullstack baru
 node packages/nev/bin/nev.js create ../situs-saya
@@ -120,6 +120,38 @@ nev export [folder] [--out D]  render semua halaman jadi HTML statis (GitHub Pag
 `/sitemap.xml` + `/robots.txt` otomatis bila `site: 'https://situsmu.com'` diisi di `nev.config.js` (`sitemapPaths` untuk halaman dinamis),
 `nev export` (loader dijalankan saat export; halaman ber-loader berpindah dengan page load penuh di situs statis; taruh di root domain),
 template `api` dan `game`, serta Dockerfile di semua template.
+
+**Baru di 0.3**
+
+```js
+// .env / .env.local / .env.production … → process.env (variabel asli selalu menang). Hanya NEV_PUBLIC_* yang sampai ke browser.
+import { publicEnv } from '@adityadevid/nevf';
+publicEnv('NEV_PUBLIC_API_URL', 'http://localhost:3000');   // sama di SSR dan di browser
+
+// pages/(toko)/keranjang.js → /keranjang   — folder "(grup)" tidak masuk URL, tapi _layout.js-nya tetap membungkus
+
+// nev.config.js
+export default defineConfig({
+  site: 'https://situsmu.com',
+  trailingSlash: 'never',                                                   // satu URL kanonik per halaman (308)
+  redirects: [{ source: '/lama/:slug', destination: '/blog/:slug', permanent: true }],
+  headers: [{ source: '/api/*', headers: { 'cache-control': 'no-store' } }],
+});
+
+// SEO: export head dari halaman — meta description, canonical (absolut lewat `site`), robots, Open Graph, Twitter, JSON-LD.
+// Tag-nya ikut berganti saat navigasi client-side.
+export const head = ({ data }) => ({
+  title: data.post.title, description: data.post.summary, canonical: `/blog/${data.post.slug}`,
+  openGraph: { image: '/og.png', type: 'article' }, twitter: {},
+  jsonLd: { '@context': 'https://schema.org', '@type': 'Article', headline: data.post.title },
+});
+
+// loader: notFound() → halaman 404 dengan status 404 asli
+import { notFound } from '@adityadevid/nevjs';
+```
+
+`nev info` mencetak ringkasan proyek (versi, route, file .env, config) untuk laporan bug. `createHandler()` mengembalikan handler Web-standar
+`(request) => Response` untuk runtime serverless/edge (lihat [packages/nev](packages/nev/README.md)). NevB: `trailingSlash('never' | 'always')`. NevF: `publicEnv`.
 
 **Cara kerjanya.** Server me-render halaman ke HTML (SSR), menyisipkan import map + data JSON, lalu `client.js`
 mengambil alih: link `Link` berpindah halaman tanpa reload (mengambil data loader via `/__nev/data`), tombol back/forward
@@ -264,7 +296,7 @@ Coba langsung: `nev create game-saya --template game3d` (Crystal Run 3D: kumpulk
 - Layout dibuat ulang saat berpindah halaman (state di dalam layout tidak dipertahankan).
 - SSR sinkron: ambil data di `load`, bukan di dalam komponen. Belum ada streaming SSR.
 - `nev dev` me-restart seluruh proses saat file berubah (state memori hilang) — penyederhanaan yang disengaja.
-- Nev adalah server Node: jalankan di VPS/Railway/Render/Fly/Docker (ada Dockerfile di template). Untuk hosting statis pakai `nev export`; adapter serverless (Vercel functions) belum ada.
+- Nev adalah server Node: jalankan di VPS/Railway/Render/Fly/Docker (ada Dockerfile di template). Untuk hosting statis pakai `nev export`. Untuk serverless ada `createHandler()` (handler Web-standar), tetapi **belum diuji di platform nyata** dan belum ada adapter otomatis.
 - Contoh template memakai penyimpanan in-memory (guestbook) — ganti dengan database sungguhan (mis. Supabase) di `lib/*.server.js`.
 
 ## Pengujian

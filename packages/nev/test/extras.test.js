@@ -171,7 +171,8 @@ describe('templates', () => {
       assert.ok(fs.existsSync(path.join(dest, 'Dockerfile')));
       const pkg = JSON.parse(fs.readFileSync(path.join(dest, 'package.json'), 'utf8'));
       assert.match(pkg.name, /^tpl-/);
-      assert.equal(pkg.dependencies['@adityadevid/nevjs'], '^0.2.0');
+      assert.equal(pkg.dependencies['@adityadevid/nevjs'], '^0.3.0');
+      if (name === 'default') assert.ok(fs.existsSync(path.join(dest, '.env.example')), '.env.example restored');
       const { app } = await createNev({ root: dest, silent: true });
       assert.equal((await app.request('/')).status, 200);
       if (name === 'api') {

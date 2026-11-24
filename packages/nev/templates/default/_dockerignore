@@ -2,3 +2,5 @@ node_modules
 .git
 .env
 out
+.env.local
+.env.*.local
