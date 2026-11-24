@@ -1,0 +1,1 @@
+import { h } from '@adityadevid/nevf'; export default (p) => h('article', null, p.data.title);
