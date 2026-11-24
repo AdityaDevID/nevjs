@@ -3,11 +3,14 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { App, Context, HttpError, logger, secureHeaders, serveStatic, matchSegs, splitPath, compile } from '@adityadevid/nevb';
-import { renderToString, setLocation, parseQuery } from '@adityadevid/nevf';
+import { renderToString, setLocation, parseQuery, setPublicEnv } from '@adityadevid/nevf';
 import { buildTree } from '../client/tree.js';
 import { loadConfig } from './config.js';
 import { scanPages, scanApi } from './routes.js';
 import { renderDocument, formatTitle } from './html.js';
+import { expandHead } from '../client/head.js';
+import { loadEnv, publicEnvOf } from './env.js';
+import { ruleMiddlewares } from './rules.js';
 import { siteOrigin, collectSitemapEntries, buildSitemap, buildRobots } from './seo.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -36,6 +39,11 @@ export function redirect(location, status = 302) {
   return new Response(null, { status, headers: { location: String(location) } });
 }
 
+/** Throw from a loader/page to render the 404 page with a real 404 status. */
+export function notFound(message = 'Not Found') {
+  throw new HttpError(404, message);
+}
+
 /**
  * Build a Nev application (a NevB App you can still extend).
  *
@@ -45,6 +53,9 @@ export function redirect(location, status = 302) {
 export async function createNev(options = {}) {
   const root = path.resolve(options.root ?? process.cwd());
   const dev = !!options.dev;
+  // .env files first, so nev.config.js, loaders and API routes can already read process.env.*
+  const envInfo = options.env === false ? { loaded: {}, public: publicEnvOf(process.env) } : loadEnv(root, { dev });
+  setPublicEnv(envInfo.public);
   const config = await loadConfig(root, options.config ?? {});
   const pages = scanPages(root);
   const apiRoutes = scanApi(root);
@@ -61,6 +72,7 @@ export async function createNev(options = {}) {
 
   if (dev && !options.silent) app.use(logger());
   app.use(secureHeaders());
+  for (const mw of ruleMiddlewares(config)) app.use(mw); // trailingSlash, redirects, headers from nev.config.js
 
   // 2. static files and framework assets ------------------------------------------------
   app.use(serveStatic({ root: path.join(root, 'public'), index: false, maxAge: dev ? 0 : 3600 }));
@@ -146,7 +158,7 @@ export async function createNev(options = {}) {
     })),
     notFound: { page: notFoundSpec.url, layouts: notFoundSpec.layouts.map((l) => l.url) },
     error: { page: errorSpec.url, layouts: errorSpec.layouts.map((l) => l.url) },
-    site: { title: config.title, titleTemplate: config.titleTemplate || '%s' },
+    site: { title: config.title, titleTemplate: config.titleTemplate || '%s', origin: siteOrigin(config) },
   };
 
   // 5. rendering ---------------------------------------------------------------------------
@@ -166,25 +178,30 @@ export async function createNev(options = {}) {
 
     let head = {};
     try {
-      head = (typeof mods[0].head === 'function' ? mods[0].head(props) : null) ?? {};
+      head = (typeof mods[0].head === 'function' ? mods[0].head(props) : mods[0].head) ?? {};
     } catch (err) {
       if (dev) throw err;
     }
+    const title = formatTitle(head.title, config);
+    const extra = expandHead(head, { origin: siteOrigin(config), url: c.path, title: head.title ?? config.title });
+    const tag = (list) => list.map((x) => ({ ...x, 'data-nev': true })); // the browser swaps these on navigation
 
     setLocation(c.path + c.url.search);
     const bodyHtml = renderToString(buildTree(layouts, Page, props));
 
     const doc = renderDocument({
       bodyHtml,
-      title: formatTitle(head.title, config),
+      title,
       lang: head.lang ?? config.lang,
-      meta: [...config.head.meta, ...(head.meta ?? [])],
-      links: [...config.head.links, ...(head.links ?? [])],
+      meta: [...config.head.meta, ...tag(extra.meta)],
+      links: [...config.head.links, ...tag(extra.links)],
+      jsonLd: extra.jsonLd,
       scripts: config.head.scripts,
       importMap,
       boot: {
         ...manifest,
         dev,
+        env: envInfo.public,
         static: !!options.static,
         page: { page: spec.url, layouts: spec.layouts.map((l) => l.url), params, data, error },
       },
@@ -364,4 +381,22 @@ export async function startServer(options = {}) {
   const requested = options.port ?? nev.config.port;
   const server = await nev.app.listen(requested, options.host);
   return { ...nev, server, port: server.address().port };
+}
+
+/**
+ * A Web-standard handler `(request, env?) => Promise<Response>` for serverless / edge runtimes.
+ *
+ *   // api/index.js (Vercel) · netlify/functions/app.js · worker.js — same idea everywhere
+ *   import { createHandler } from '@adityadevid/nevjs';
+ *   const handler = await createHandler({ root: process.cwd() });
+ *   export default { fetch: handler };          // Cloudflare/Vercel style
+ *   // export default (request) => handler(request);   // Netlify Functions v2 style
+ *
+ * The project files (pages/, api/, public/ …) must be deployed next to the function.
+ */
+export async function createHandler(options = {}) {
+  const nev = await createNev({ silent: true, ...options });
+  const handler = (request, env) => nev.app.fetch(request, env);
+  handler.nev = nev;
+  return handler;
 }

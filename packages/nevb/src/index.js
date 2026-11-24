@@ -16,7 +16,7 @@ export { session, MemoryStore } from './middleware/session.js';
 export { jwtAuth } from './middleware/jwt.js';
 export { compress } from './middleware/compress.js';
 export { csrf } from './middleware/csrf.js';
-export { requestId, basicAuth, bearerAuth, timeout, cacheControl, etag, health } from './middleware/misc.js';
+export { requestId, basicAuth, bearerAuth, timeout, cacheControl, etag, health, trailingSlash } from './middleware/misc.js';
 export {
   sign, unsign, hmac, signJWT, verifyJWT, hashPassword, verifyPassword, randomId, safeEqual,
 } from './crypto.js';

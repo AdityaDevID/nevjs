@@ -14,6 +14,10 @@ export function createRoot<T>(fn: (dispose: () => void) => T): T;
 export function getOwner(): unknown;
 export function isSignal(v: unknown): v is Signal<unknown>;
 export function isServer(): boolean;
+/** Read a NEV_PUBLIC_* variable (same call in SSR and in the browser). */
+export function publicEnv(key: string): string | undefined;
+export function publicEnv<T>(key: string, fallback: T): string | T;
+export function setPublicEnv(values: Record<string, string>): void;
 export function resource<T, A extends any[] = []>(fetcher: (...a: A) => Promise<T>, o?: { initial?: T }): { data: Signal<T | undefined>; loading: Signal<boolean>; error: Signal<unknown>; refetch: (...a: A) => Promise<T> };
 
 export interface VNode { type: any; props: Record<string, any> }

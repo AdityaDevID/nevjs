@@ -17,11 +17,12 @@ Usage:
   nev start [folder] [--port 3000] [--host H]  Start in production mode
   nev routes [folder]                        Print the page and API routes
   nev export [folder] [--out out]            Render every page to static HTML (GitHub Pages, Netlify, S3, …)
+  nev info [folder]                          Show versions, routes, .env files and config summary (paste it in bug reports)
 
 Environment: PORT overrides the configured port.
 `;
 
-const COMMANDS = ['create', 'dev', 'start', 'routes', 'export', 'help'];
+const COMMANDS = ['create', 'dev', 'start', 'routes', 'export', 'info', 'help'];
 
 /** Closest known command to a typo (edit distance <= 2), or null. */
 export function suggest(input, names = COMMANDS) {
@@ -205,6 +206,24 @@ export async function main(argv) {
     case 'routes': {
       const { createNev } = await import('./server.js');
       printRoutes(await createNev({ root, silent: true }));
+      return;
+    }
+    case 'info': {
+      const { createNev } = await import('./server.js');
+      const { envFiles, PUBLIC_PREFIX } = await import('./env.js');
+      const nev = await createNev({ root, silent: true, env: false });
+      const found = envFiles(process.env.NODE_ENV ?? 'production').filter((f) => fs.existsSync(path.join(root, f)));
+      console.log(`
+  Nev.js        ${pkg.version}
+  Node          ${process.version}  (${process.platform}/${process.arch})
+  Project       ${root}
+  Pages         ${nev.pages.routes.length}   API routes ${nev.api.length}
+  Layouts       ${new Set(nev.pages.routes.flatMap((r) => r.layouts.map((l) => l.file))).size}
+  .env files    ${found.length ? found.join(', ') : '(none)'}   (browser sees only ${PUBLIC_PREFIX}*)
+  Site          ${nev.config.site ?? '(not set — no sitemap.xml/robots.txt)'}
+  Redirects     ${nev.config.redirects.length}   Headers rules ${nev.config.headers.length}   trailingSlash ${nev.config.trailingSlash}
+  Middleware    ${['middleware.js', 'middleware.mjs'].some((f) => fs.existsSync(path.join(root, f))) ? 'yes' : 'no'}
+`);
       return;
     }
     case 'export': {

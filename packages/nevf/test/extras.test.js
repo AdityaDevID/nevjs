@@ -412,3 +412,13 @@ describe('createForm', () => {
     dispose();
   });
 });
+
+import { publicEnv as _publicEnv, setPublicEnv as _setPublicEnv } from '../src/index.js';
+test('publicEnv: reads NEV_PUBLIC_* values, falls back, is frozen', () => {
+  _setPublicEnv({ NEV_PUBLIC_A: '1' });
+  assert.equal(_publicEnv('NEV_PUBLIC_A'), '1');
+  assert.equal(_publicEnv('NEV_PUBLIC_B', 'fb'), 'fb');
+  assert.equal(_publicEnv('toString', 'safe'), 'safe');
+  assert.throws(() => { 'use strict'; globalThis.__NEV_ENV__.X = 1; });
+  _setPublicEnv({});
+});

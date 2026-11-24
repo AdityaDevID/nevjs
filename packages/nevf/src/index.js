@@ -36,3 +36,4 @@ export {
   persisted, debounced, throttled, interval, timeout, listen, mediaQuery, toggle, previous, lazy, Portal, Dynamic,
 } from './hooks.js';
 export { createForm } from './form.js';
+export { publicEnv, setPublicEnv } from './env.js';

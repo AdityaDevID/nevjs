@@ -388,3 +388,27 @@ describe('validation extras', () => {
     assert.deepEqual(await json(ok), { email: 'a@b.co' });
   });
 });
+
+import { trailingSlash as _trailingSlash } from '../src/index.js';
+test('trailingSlash: never / always, query kept, GET only, root and files untouched, no open redirect', async () => {
+  const { App } = await import('../src/index.js');
+  const mk = (mode) => {
+    const app = new App({ silent: true });
+    app.use(_trailingSlash(mode));
+    app.all('*', (c) => c.text('ok'));
+    return app;
+  };
+  const never = mk('never');
+  let r = await never.request('/a/b/?x=1');
+  assert.equal(r.status, 308);
+  assert.equal(r.headers.get('location'), '/a/b?x=1');
+  assert.equal((await never.request('/a/b')).status, 200);
+  assert.equal((await never.request('/')).status, 200);
+  assert.equal((await never.request('//evil.com/')).status, 200, 'protocol-relative target is refused, not redirected');
+  assert.equal((await never.request('/a/', { method: 'POST' })).status, 200);
+  const always = mk('always');
+  assert.equal((await always.request('/a')).headers.get('location'), '/a/');
+  assert.equal((await always.request('/logo.png')).status, 200);
+  assert.equal((await always.request('/a/')).status, 200);
+  assert.throws(() => _trailingSlash('sometimes'), /mode must be/);
+});

@@ -16,6 +16,9 @@ const DEFAULTS = {
   setup: null, // (app) => void — add your own middleware/routes before Nev's
   site: null, // 'https://example.com' → enables /sitemap.xml + /robots.txt (and absolute URLs in the sitemap)
   sitemapPaths: null, // extra sitemap URLs (array or async fn) — dynamic pages like /blog/:slug
+  redirects: [], // [{ source: '/old/:id', destination: '/new/:id', permanent: true }]
+  headers: [], // [{ source: '/api/*', headers: { 'cache-control': 'no-store' } }]
+  trailingSlash: 'ignore', // 'never' | 'always' | 'ignore' — canonical URLs (308 redirect)
   export: {}, // nev export: { out: 'out', paths: [...] | async fn, crawl: true }
 };
 

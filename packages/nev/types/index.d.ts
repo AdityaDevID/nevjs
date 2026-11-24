@@ -9,11 +9,34 @@ export interface NevConfig {
   site?: string; sitemap?: boolean; robots?: false | string | { disallow?: string[] };
   sitemapPaths?: (string | { path: string; lastmod?: string | Date; changefreq?: string; priority?: number })[] | (() => Promise<any[]> | any[]);
   sitemapExclude?: string[];
+  redirects?: { source: string; destination: string; permanent?: boolean; statusCode?: number }[];
+  headers?: { source: string; headers: Record<string, string> | { key: string; value: string }[] }[];
+  trailingSlash?: 'never' | 'always' | 'ignore';
   export?: { out?: string; paths?: string[] | (() => Promise<string[]> | string[]); crawl?: boolean };
 }
 export function defineConfig(config: NevConfig): NevConfig;
 export function loadConfig(root: string, overrides?: Partial<NevConfig>): Promise<Required<NevConfig>>;
 export function redirect(location: string, status?: number): Response;
+/** Throw from a loader/page → 404 page with a real 404 status. */
+export function notFound(message?: string): never;
+/** Web-standard handler for serverless/edge runtimes. */
+export function createHandler(o?: { root?: string; dev?: boolean; config?: Partial<NevConfig> }): Promise<((request: Request, env?: any) => Promise<Response>) & { nev: NevInstance }>;
+export function parseEnv(text: string, base?: Record<string, string | undefined>): Record<string, string>;
+export function readEnvFiles(root: string, mode?: string): Record<string, string>;
+export function loadEnv(root: string, o?: { dev?: boolean; mode?: string }): { mode: string; loaded: Record<string, string>; public: Record<string, string> };
+export function publicEnvOf(source: Record<string, string | undefined>): Record<string, string>;
+
+export interface PageHead {
+  title?: string; lang?: string; description?: string; canonical?: string; icon?: string; author?: string; themeColor?: string;
+  keywords?: string | string[];
+  robots?: string | { index?: boolean; follow?: boolean; noarchive?: boolean; nosnippet?: boolean; noimageindex?: boolean };
+  alternates?: Record<string, string>;
+  openGraph?: { title?: string; description?: string; type?: string; url?: string; siteName?: string; locale?: string; image?: string | { url: string; width?: number; height?: number; alt?: string } };
+  twitter?: { card?: 'summary' | 'summary_large_image' | string; title?: string; description?: string; image?: string; site?: string; creator?: string };
+  jsonLd?: Record<string, any> | Record<string, any>[];
+  meta?: Record<string, any>[]; links?: Record<string, any>[];
+}
+export function expandHead(head?: PageHead, ctx?: { origin?: string | null; url?: string; title?: string }): { meta: Record<string, any>[]; links: Record<string, any>[]; jsonLd: Record<string, any>[] };
 export interface NevInstance { app: App; config: NevConfig; pages: any; api: any[]; importMap: Record<string, string>; root: string; dev: boolean }
 export function createNev(o?: { root?: string; dev?: boolean; silent?: boolean; static?: boolean; config?: Partial<NevConfig> }): Promise<NevInstance>;
 export function startServer(o?: { root?: string; dev?: boolean; port?: number; host?: string; silent?: boolean }): Promise<NevInstance & { server: import('node:http').Server; port: number }>;

@@ -19,6 +19,7 @@ import { sortRoutes } from '@adityadevid/nevf';
 
 const EXT = /\.(?:m?js)$/;
 const SERVER = /\.server\.m?js$/;
+const GROUP = /^\([^()/]+\)$/;
 
 export const posix = (p) => p.split(path.sep).join('/');
 export const appUrl = (rel) => '/__nev/app/' + encodeURI(posix(rel));
@@ -37,7 +38,8 @@ function walk(dir, base = dir) {
 
 /** 'blog/[slug].js' → '/blog/:slug' */
 export function fileToPattern(rel) {
-  const parts = posix(rel).replace(EXT, '').split('/');
+  // route groups: "(marketing)" folders organise files and layouts without changing the URL
+  const parts = posix(rel).replace(EXT, '').split('/').filter((p, i, all) => i === all.length - 1 || !GROUP.test(p));
   if (parts[parts.length - 1] === 'index') parts.pop();
   const segs = parts.map((p) => {
     let m = /^\[\.\.\.(\w+)\]$/.exec(p);

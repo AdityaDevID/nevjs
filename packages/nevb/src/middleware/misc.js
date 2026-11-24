@@ -139,3 +139,24 @@ export function health({ path = '/health', check } = {}) {
     return c.json({ status: 'ok', uptime: Math.round(process.uptime?.() ?? 0) }, 200, { 'cache-control': 'no-store' });
   };
 }
+
+/**
+ * Canonical trailing slashes (good for SEO: one URL per page).
+ *   trailingSlash('never')   /about/ → 308 → /about      (default)
+ *   trailingSlash('always')  /about  → 308 → /about/     (paths with a file extension are left alone)
+ * The root "/" is never touched and the query string is kept. Only GET/HEAD are redirected.
+ */
+export function trailingSlash(mode = 'never') {
+  if (mode !== 'never' && mode !== 'always') throw new TypeError(`trailingSlash: mode must be "never" or "always", got "${mode}"`);
+  return (c, next) => {
+    if (c.method !== 'GET' && c.method !== 'HEAD') return next();
+    const p = c.path;
+    if (p === '/') return next();
+    let target = null;
+    if (mode === 'never' && p.endsWith('/')) target = p.replace(/\/+$/, '') || '/';
+    else if (mode === 'always' && !p.endsWith('/') && !/\.[A-Za-z0-9]{1,8}$/.test(p)) target = p + '/';
+    // never redirect to "//host" (open redirect)
+    if (!target || target.startsWith('//')) return next();
+    return c.redirect(target + c.url.search, 308);
+  };
+}

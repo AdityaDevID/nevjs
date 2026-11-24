@@ -40,6 +40,7 @@ export function formatTitle(title, config) {
 export function renderDocument(o) {
   const meta = (o.meta ?? []).map((m) => `<meta${attrs(m)}>`).join('\n    ');
   const links = (o.links ?? []).map((l) => `<link${attrs(l)}>`).join('\n    ');
+  const jsonLd = (o.jsonLd ?? []).map((j) => `<script type="application/ld+json" data-nev>${safeJSON(j)}</script>`).join('\n    ');
   const scripts = (o.scripts ?? [])
     .map((s) => (typeof s === 'string' ? `<script src="${esc(s)}"></script>` : `<script${attrs(s)}></script>`))
     .join('\n    ');
@@ -51,6 +52,7 @@ export function renderDocument(o) {
     <title>${esc(o.title)}</title>
     ${meta}
     ${links}
+    ${jsonLd}
     <script type="importmap">${safeJSON({ imports: o.importMap })}</script>
     ${scripts}
   </head>

@@ -106,6 +106,7 @@ export function bearerAuth(options: { token?: string; tokens?: string[]; verify?
 export function timeout(ms: number, message?: string): Handler;
 export function cacheControl(o: { maxAge?: number; sMaxAge?: number; public?: boolean; private?: boolean; noStore?: boolean; noCache?: boolean; immutable?: boolean; staleWhileRevalidate?: number }): Handler;
 export function etag(): Handler;
+export function trailingSlash(mode?: 'never' | 'always'): Handler;
 export function health(o?: { path?: string; check?: () => boolean | Promise<boolean> }): Handler;
 export interface SessionStore { get(id: string): any; set(id: string, data: any): any; delete(id: string): any }
 export class MemoryStore implements SessionStore { constructor(o?: { ttl?: number }); get(id: string): any; set(id: string, data: any): void; delete(id: string): void; readonly size: number }
