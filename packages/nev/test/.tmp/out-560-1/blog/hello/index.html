@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nev App</title>
+    
+    
+    <script type="importmap">{"imports":{"@adityadevid/nevf":"/__nev/pkg/@adityadevid/nevf/index.js","@adityadevid/nevf/jsx-runtime":"/__nev/pkg/@adityadevid/nevf/jsx-runtime.js","@adityadevid/nevf/jsx-dev-runtime":"/__nev/pkg/@adityadevid/nevf/jsx-dev-runtime.js","@adityadevid/nevg":"/__nev/pkg/@adityadevid/nevg/index.js"}}</script>
+    
+  </head>
+  <body>
+    <div id="nev-root"><div><a href="/about">about</a><a href="/blog/hello">post</a><article>Post hello</article></div></div>
+    <script type="application/json" id="__NEV_DATA__">{"routes":[{"pattern":"/blog/:slug","page":"/__nev/app/pages/blog/%5Bslug%5D.js","layouts":["/__nev/app/pages/_layout.js"],"load":true},{"pattern":"/about","page":"/__nev/app/pages/about.js","layouts":["/__nev/app/pages/_layout.js"],"load":false},{"pattern":"/old","page":"/__nev/app/pages/old.js","layouts":["/__nev/app/pages/_layout.js"],"load":true},{"pattern":"/","page":"/__nev/app/pages/index.js","layouts":["/__nev/app/pages/_layout.js"],"load":false}],"notFound":{"page":"/__nev/not-found.js","layouts":["/__nev/app/pages/_layout.js"]},"error":{"page":"/__nev/error.js","layouts":["/__nev/app/pages/_layout.js"]},"site":{"title":"Nev App","titleTemplate":"%s"},"dev":false,"static":true,"page":{"page":"/__nev/app/pages/blog/%5Bslug%5D.js","layouts":["/__nev/app/pages/_layout.js"],"params":{"slug":"hello"},"data":{"title":"Post hello"},"error":null}}</script>
+    <script type="module" src="/__nev/client.js"></script>
+  </body>
+</html>
