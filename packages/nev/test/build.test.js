@@ -32,7 +32,6 @@ test('nev build --target vercel: output is self-contained and serves pages + API
   assert.ok(!fs.existsSync(path.join(out, 'functions', 'index.func', 'app', '.env')), '.env must not be copied');
   assert.ok(!fs.existsSync(path.join(out, 'functions', 'index.func', 'app', '.vercel')), 'no recursive copy of the output');
 
-  // run the function from a folder OUTSIDE the repo (no access to the repo's node_modules)
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'nev-vercel-'));
   try {
     fs.cpSync(path.join(out, 'functions', 'index.func'), path.join(tmp, 'fn'), { recursive: true });

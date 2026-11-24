@@ -8,7 +8,6 @@ export default function Home() {
 
   onMount(() => {
     let dead = false;
-    // Loaded in the browser only (three.js needs WebGL).
     import('../components/crystal-run.js').then((m) => {
       if (dead) return;
       api = m.createCrystalRun(document.getElementById('game'), hud);

@@ -1,8 +1,7 @@
-// Crystal Run 3D — a small 3D game built with NevGThree (three.js). Everything is procedural: no assets needed.
 import { Game3D, Scene3D, Entity3D, Mesh3D, Body3D, OrbitRig, Controls3D, Terrain, Particles3D, props, createSky, createWater, THREE } from '@adityadevid/nevgthree';
 import { createRng, SaveData, damp, clamp } from '@adityadevid/nevg';
 
-const ROUND = 45; // seconds
+const ROUND = 45;
 const SPEED = 8;
 
 export class Island extends Scene3D {
@@ -21,13 +20,12 @@ export class Island extends Scene3D {
     this.rng = rng;
     this.fog = ['#cfeaff', 45, 150];
     this.sky = this.add(createSky({ top: '#3f8cff', horizon: '#d8f0ff' }));
-    this.game.input.bind('jump', ['Space']); // the default also maps W/ArrowUp, which we use for walking
+    this.game.input.bind('jump', ['Space']);
     this.lights({ shadowSize: 28 });
 
     this.terrain = this.add(new Terrain({ size: 120, segments: 64, height: 7, seed: 7, island: true }));
     this.add(createWater({ level: this.terrain.waterLevel }));
 
-    // Trees: 4 draw calls for all of them (InstancedMesh) + invisible solid trunks for collision.
     const spots = this.terrain.scatter(55, { rng, minHeight: 1.2, avoid: [{ x: 0, z: 0, r: 7 }] });
     const trunk = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.18, 0.24, 1.3, 6).translate(0, 0.65, 0), new THREE.MeshStandardMaterial({ color: '#7a5230', flatShading: true }), spots.length);
     const cone = new THREE.InstancedMesh(new THREE.ConeGeometry(1, 1.6, 7).translate(0, 0.8, 0), new THREE.MeshStandardMaterial({ color: '#ffffff', flatShading: true }), spots.length * 3);
@@ -62,7 +60,6 @@ export class Island extends Scene3D {
       this.add(c);
     }
 
-    // Player
     const model = props.character();
     this.parts = model.userData.parts;
     this.player = this.add(new Entity3D({ object: model, position: [0, this.terrain.heightAt(0, 0) + 0.2, 0], size: [0.7, 1.9, 0.7] }));
@@ -132,7 +129,7 @@ export class Island extends Scene3D {
     this.shadowFollow(player);
 
     if (this.state === 'ready') {
-      rig.yaw += dt * 0.25; // slow fly-around behind the start panel
+      rig.yaw += dt * 0.25;
       this.parts.animate(this.time, 0);
       return;
     }
@@ -142,7 +139,6 @@ export class Island extends Scene3D {
       return;
     }
 
-    // timer
     this.left -= dt;
     if (this.time - this.lastPick > 3) this.combo = 1;
     if (this.left <= 0) {
@@ -153,7 +149,6 @@ export class Island extends Scene3D {
     this.hud.time.set(this.left);
     this.hud.combo.set(this.combo);
 
-    // movement relative to the camera
     const m = controls.move;
     const d = rig.relative(m.x, m.y);
     const inWater = this.terrain.heightAt(player.position.x, player.position.z) < this.terrain.waterLevel;
@@ -172,14 +167,12 @@ export class Island extends Scene3D {
     }
     this.hud.dash.set(1 - this.dashLeft / 1.5);
 
-    // keep the player on the island
     const r = Math.hypot(player.position.x, player.position.z);
     if (r > 54) {
       player.position.x *= 54 / r;
       player.position.z *= 54 / r;
     }
 
-    // juice: squash & stretch, walking animation
     const horiz = Math.hypot(body.vel.x, body.vel.z);
     this.parts.animate(this.time, body.onGround ? horiz : 0);
     this.squash = damp(this.squash, clamp(-body.vel.y * 0.012, -0.25, 0.25), 14, dt);

@@ -2,8 +2,6 @@ import { h, signal, resource, For, Show, batch } from '@adityadevid/nevf';
 
 export const head = () => ({ title: 'Guestbook' });
 
-// This page talks to api/guestbook.js with plain fetch(). resource() does not
-// fetch on the server, so the HTML says "Loading…" and the browser fills it in.
 export default function Guestbook() {
   const list = resource(() => fetch('/api/guestbook').then((r) => r.json()));
   const name = signal('');

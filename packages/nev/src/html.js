@@ -1,11 +1,8 @@
-// HTML document assembly helpers.
-
 export function esc(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-/** JSON that is safe to embed inside a <script> element. */
-const LS = new RegExp(String.fromCharCode(0x2028), 'g'); // U+2028 / U+2029 are line terminators in JS source
+const LS = new RegExp(String.fromCharCode(0x2028), 'g');
 const PS = new RegExp(String.fromCharCode(0x2029), 'g');
 
 export function safeJSON(value) {
@@ -21,7 +18,7 @@ function attrs(obj) {
   let out = '';
   for (const [k, v] of Object.entries(obj)) {
     if (v === false || v == null) continue;
-    if (!/^[a-zA-Z_:][-a-zA-Z0-9_:.]*$/.test(k)) continue; // never emit odd attribute names
+    if (!/^[a-zA-Z_:][-a-zA-Z0-9_:.]*$/.test(k)) continue;
     out += v === true ? ` ${k}` : ` ${k}="${esc(v)}"`;
   }
   return out;
@@ -33,10 +30,6 @@ export function formatTitle(title, config) {
   return title && tpl.includes('%s') ? tpl.replace('%s', () => t) : t;
 }
 
-/**
- * @param {object} o
- *   bodyHtml, title, lang, meta[], links[], scripts[], importMap, boot (object), dev
- */
 export function renderDocument(o) {
   const meta = (o.meta ?? []).map((m) => `<meta${attrs(m)}>`).join('\n    ');
   const links = (o.links ?? []).map((l) => `<link${attrs(l)}>`).join('\n    ');

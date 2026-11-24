@@ -1,5 +1,3 @@
-// End-to-end tests: a real server, a real Chromium (Playwright) and the real `nev dev` CLI.
-// The browser tests are skipped automatically when Playwright is not installed.
 import { test, describe, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -20,7 +18,6 @@ let playwright = null;
 try {
   playwright = createRequire(import.meta.url)('playwright');
 } catch {
-  /* not installed */
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -60,12 +57,10 @@ describe('browser (Chromium)', { skip: playwright ? false : 'playwright is not i
       const problems = [];
       page.on('pageerror', (e) => problems.push('pageerror: ' + e.message));
       page.on('console', (m) => {
-        // 404/422 responses are provoked on purpose below; Chromium logs every failed request.
         if (m.type() === 'error' && !/status of (404|422)/.test(m.text())) problems.push('console: ' + m.text());
       });
       const ready = () => page.waitForFunction(() => window.__NEV_READY__ === true, null, { timeout: 10_000 });
 
-      // SSR content exists before any script runs
       const raw = await (await fetch(base + '/')).text();
       assert.match(raw, /<h1>Welcome to Nev\.js<\/h1>/);
 
@@ -73,12 +68,10 @@ describe('browser (Chromium)', { skip: playwright ? false : 'playwright is not i
       await ready();
       await page.evaluate(() => (window.__marker = 'same-document'));
 
-      // reactive counter
       await page.click('#inc');
       await page.click('#inc');
       assert.equal(await page.textContent('#count'), '2');
 
-      // client-side navigation + loader
       await page.click('a.nav[href="/blog"]');
       await page.waitForSelector('article.card');
       assert.ok(page.url().endsWith('/blog'));
@@ -97,14 +90,12 @@ describe('browser (Chromium)', { skip: playwright ? false : 'playwright is not i
       await page.goForward();
       await page.waitForSelector('h1:has-text("File-based routing")');
 
-      // 404 handled in the client
       await page.evaluate(async () => (await import('@adityadevid/nevf')).navigate('/blog/nope'));
       await page.waitForSelector('h1:has-text("404")');
       await page.evaluate(async () => (await import('@adityadevid/nevf')).navigate('/no/such/page'));
       await page.waitForSelector('h1:has-text("404")');
       assert.equal(await page.evaluate(() => window.__marker), 'same-document');
 
-      // API form: validation errors, then a real post that appears in the list
       await page.click('a.nav[href="/guestbook"]');
       await page.waitForSelector('.entry');
       await page.click('#send');
@@ -116,7 +107,6 @@ describe('browser (Chromium)', { skip: playwright ? false : 'playwright is not i
       assert.equal(await page.inputValue('#message'), '');
       assert.equal(await page.locator('.error').count(), 0);
 
-      // NevG running inside a Nev page
       await page.click('a.nav[href="/game"]');
       await page.waitForFunction(() => window.__game && window.__game.frame > 5, null, { timeout: 10_000 });
       const painted = await page.evaluate(() => {
@@ -136,7 +126,6 @@ describe('browser (Chromium)', { skip: playwright ? false : 'playwright is not i
       await page.waitForSelector('h1:has-text("About")');
       assert.equal(await page.evaluate(() => window.__game), undefined, 'game is destroyed when leaving the page');
 
-      // a hard load of a dynamic URL
       await page.goto(base + '/blog/signals');
       await ready();
       assert.equal(await page.textContent('h1'), 'Signals in 5 minutes');
@@ -190,7 +179,6 @@ describe('nev dev (auto-restart + live reload)', () => {
       const text = () => fetch(base + '/').then((r) => r.text());
       await waitFor(async () => /version one/.test(await text()), { timeout: 15_000 });
 
-      // open the live-reload stream; it must end when the server restarts
       const ac = new AbortController();
       const stream = await fetch(base + '/__nev/reload', { signal: ac.signal });
       const reader = stream.body.getReader();
@@ -225,7 +213,6 @@ describe('nev dev (auto-restart + live reload)', () => {
     try {
       await waitFor(async () => /ok one/.test(await text()), { timeout: 15_000 });
       fs.writeFileSync(path.join(root, 'pages', 'index.js'), 'export default () => {{{ broken');
-      // The page module is only imported on request, so the server keeps running and reports the error.
       await sleep(1500);
       const broken = await fetch(base + '/');
       assert.equal(broken.status, 500);

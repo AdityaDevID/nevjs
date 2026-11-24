@@ -1,4 +1,3 @@
-// A tiny platformer built with NevG: tilemap, Body physics, particles, save data, buttons, transitions.
 import { Game, Scene, Rect, Label, Tilemap, Body, ParticleEmitter, SaveData, Button, transition, createRng } from '@adityadevid/nevg';
 
 const LEVEL = `

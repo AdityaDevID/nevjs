@@ -25,7 +25,6 @@ Environment: PORT overrides the configured port.
 
 const COMMANDS = ['create', 'dev', 'start', 'routes', 'export', 'build', 'info', 'help'];
 
-/** Closest known command to a typo (edit distance <= 2), or null. */
 export function suggest(input, names = COMMANDS) {
   const dist = (a, b) => {
     const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
@@ -76,7 +75,6 @@ function copyDir(src, dest, vars) {
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
     if (entry.name === 'node_modules') continue;
     const from = path.join(src, entry.name);
-    // npm never publishes dotfiles like ".gitignore", so templates ship them as "_gitignore" / "_dockerignore"
     const to = path.join(dest, entry.name.startsWith('_') && /^_(gitignore|dockerignore|npmrc|env\.example)$/.test(entry.name) ? '.' + entry.name.slice(1) : entry.name);
     if (entry.isDirectory()) copyDir(from, to, vars);
     else if (/\.(json|md)$/.test(entry.name)) {
@@ -128,7 +126,6 @@ async function start(root, flags, { dev }) {
   process.on('SIGINT', shutdown);
 }
 
-/** `nev dev`: run the server in a child process and restart it whenever a file changes. */
 function supervise(root, argv) {
   let child = null;
   let timer = null;

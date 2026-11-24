@@ -1,4 +1,3 @@
-// Runs before every page and API route. Remove or edit freely.
 import { rateLimit } from '@adityadevid/nevjs';
 
 export const matcher = ['/api/*'];

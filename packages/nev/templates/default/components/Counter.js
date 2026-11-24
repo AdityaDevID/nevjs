@@ -1,6 +1,5 @@
 import { h, signal } from '@adityadevid/nevf';
 
-// A component body runs once; only the parts that read a signal update.
 export default function Counter(props) {
   const count = signal(props.start ?? 0);
   return h(

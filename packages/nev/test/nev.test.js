@@ -359,7 +359,7 @@ describe('server: what the browser may download', async () => {
       '/__nev/app/%2e%2e/package.json',
       '/__nev/pkg/@adityadevid/nevf/../../package.json',
       '/__nev/pkg/@adityadevid/nevf/package.json',
-      '/__nev/pkg/@adityadevid/nevb/index.js', // not a browser package
+      '/__nev/pkg/@adityadevid/nevb/index.js',
       '/__nev/nev.js',
       '/__nev/package.json',
     ]) {
