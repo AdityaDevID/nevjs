@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0 — Nev (`@adityadevid/nevjs`)
+- **Page `action`**: `export async function action(c)` di `*.server.js` menangani POST/PUT/PATCH/DELETE ke URL halaman; hasilnya masuk ke `props.actionData` (juga ikut hydration). `fail(status, data)` untuk error validasi, `Response` untuk redirect. Tanpa `action`, perilaku lama (404) tidak berubah.
+- **`revalidate`**: `export const revalidate = <detik>` meng-cache hasil `load` per URL (produksi saja, dilewati bila ada cookie/Authorization, dikosongkan setelah `action`).
+- **`staticPaths`**: halaman dinamis bisa mendaftarkan URL-nya untuk `nev export` dan `sitemap.xml`.
+- Tipe TypeScript: `fail`, `PageAction`, `StaticPaths`.
+304 tes lulus (14 baru). NevB/NevF/NevG/NevGThree tidak berubah.
+
 ## 0.3.0 — Nev (`@adityadevid/nevjs`), NevB, NevF
 **Nev**
 - **`.env`**: `.env`, `.env.local`, `.env.<mode>`, `.env.<mode>.local` dimuat ke `process.env` (variabel asli menang; `.env.local` dilewati saat `test`). Hanya `NEV_PUBLIC_*` yang dikirim ke browser, dibaca lewat `publicEnv()`.

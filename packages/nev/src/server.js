@@ -42,6 +42,22 @@ export function notFound(message = 'Not Found') {
   throw new HttpError(404, message);
 }
 
+export class ActionFailure {
+  constructor(status, data) {
+    this.status = status;
+    this.data = data;
+  }
+}
+
+/** Return from a page `action` to re-render the page with `actionData` and a 4xx status (e.g. validation errors). */
+export function fail(status = 400, data = null) {
+  if (!Number.isInteger(status) || status < 400 || status > 599) throw new RangeError('[nev] fail() needs a 4xx/5xx status code');
+  return new ActionFailure(status, data);
+}
+
+const ACTION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const MAX_CACHE_ENTRIES = 500;
+
 export async function createNev(options = {}) {
   const root = path.resolve(options.root ?? process.cwd());
   const dev = !!options.dev;
@@ -146,7 +162,7 @@ export async function createNev(options = {}) {
     site: { title: config.title, titleTemplate: config.titleTemplate || '%s', origin: siteOrigin(config) },
   };
 
-  async function renderSpec(c, spec, { status = 200, params = {}, data = null, error = null }) {
+  async function renderSpec(c, spec, { status = 200, params = {}, data = null, error = null, actionData = null }) {
     const mods = await Promise.all([spec.file, ...spec.layouts.map((l) => l.file)].map(importModule));
     const Page = mods[0].default;
     if (typeof Page !== 'function') {
@@ -158,7 +174,7 @@ export async function createNev(options = {}) {
       }
       return m.default;
     });
-    const props = { url: c.path, query: parseQuery(c.url.search), params, data, error };
+    const props = { url: c.path, query: parseQuery(c.url.search), params, data, error, actionData };
 
     let head = {};
     try {
@@ -187,7 +203,7 @@ export async function createNev(options = {}) {
         dev,
         env: envInfo.public,
         static: !!options.static,
-        page: { page: spec.url, layouts: spec.layouts.map((l) => l.url), params, data, error },
+        page: { page: spec.url, layouts: spec.layouts.map((l) => l.url), params, data, error, actionData },
       },
     });
     return c.html(doc, status, { 'cache-control': 'no-cache' });
@@ -213,12 +229,32 @@ export async function createNev(options = {}) {
     }
   }
 
+  const loaderCache = new Map();
+
   async function runLoader(c, route, params) {
     const mod = await importModule(route.serverFile);
     if (typeof mod.load !== 'function') return null;
     c.params = params;
+    const ttl = Number(mod.revalidate);
+    const cacheable =
+      !dev &&
+      ttl > 0 &&
+      c.method === 'GET' &&
+      !c.req.headers.get('cookie') &&
+      !c.req.headers.get('authorization');
+    const key = cacheable ? c.path + c.url.search : null;
+    if (key) {
+      const hit = loaderCache.get(key);
+      if (hit && hit.expires > Date.now()) return hit.data;
+      if (hit) loaderCache.delete(key);
+    }
     const out = await mod.load(c);
-    return out === undefined ? null : out;
+    const data = out === undefined ? null : out;
+    if (key && !(data instanceof Response)) {
+      if (loaderCache.size >= MAX_CACHE_ENTRIES) loaderCache.delete(loaderCache.keys().next().value);
+      loaderCache.set(key, { data, expires: Date.now() + ttl * 1000 });
+    }
+    return data;
   }
 
   function matchPage(pathname) {
@@ -325,6 +361,32 @@ export async function createNev(options = {}) {
       return run(0);
     }
     return c.json({ error: 'Not Found', status: 404 }, 404);
+  });
+
+  app.use(async (c, next) => {
+    if (!ACTION_METHODS.has(c.method)) return next();
+    if (c.path.startsWith('/__nev/') || c.path === '/api' || c.path.startsWith('/api/')) return next();
+    const found = matchPage(c.path);
+    if (!found) return next();
+    try {
+      const mod = found.route.serverFile ? await importModule(found.route.serverFile) : null;
+      if (!mod || typeof mod.action !== 'function') return next();
+      c.params = found.params;
+      const out = await mod.action(c);
+      loaderCache.clear();
+      if (out instanceof Response) return out;
+      let status = 200;
+      let actionData = out === undefined ? null : out;
+      if (out instanceof ActionFailure) {
+        status = out.status;
+        actionData = out.data ?? null;
+      }
+      const data = await runLoader(new Context(new Request(c.url, { headers: c.req.headers }), c.env, app), found.route, found.params);
+      if (data instanceof Response) return data;
+      return await renderSpec(c, found.route, { status, params: found.params, data, actionData });
+    } catch (err) {
+      return renderFailure(c, err);
+    }
   });
 
   app.get('*', async (c) => {

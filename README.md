@@ -289,6 +289,23 @@ Coba langsung: `nev create game-saya --template game3d` (Crystal Run 3D: kumpulk
 - **NevG**: `ParticleEmitter`, `findPath` (A*), `Body` (fisika arcade), `StateMachine`, `Cooldown`, `Pool`, `SaveData`, `Button`, `ProgressBar`, `transition`, `Gamepads`, helper vektor.
 - Semua paket menyertakan deklarasi TypeScript (`types/index.d.ts`).
 
+**Baru di 0.4** — tiga fitur untuk halaman dinamis:
+
+- **`action` (form tanpa API route)** — di `pages/x.server.js` tulis `export async function action(c) { ... }`. `POST/PUT/PATCH/DELETE` ke URL halaman itu menjalankan `action`; loader dijalankan ulang lalu halaman dirender dengan `props.actionData` (form HTML biasa jalan tanpa JS). Return `Response` (mis. `redirect('/terima-kasih', 303)`) untuk redirect, atau `fail(400, { error: '…' })` untuk menampilkan ulang halaman dengan status 4xx. Halaman tanpa `action` tetap menjawab 404 untuk POST seperti sebelumnya.
+- **`export const revalidate = 60`** di `*.server.js` — hasil `load` di-cache 60 detik per URL (hanya mode produksi, hanya permintaan **tanpa** cookie/Authorization, maks. 500 entri, dikosongkan setelah `action` berhasil). Cache ada di memori satu proses.
+- **`export const staticPaths = () => [{ slug: 'a' }, { slug: 'b' }]`** di `*.server.js` halaman dinamis — daftar URL untuk `nev export` dan `sitemap.xml` (boleh juga mengembalikan string path jadi). Entri yang parameternya kurang dilewati dengan peringatan.
+
+```js
+// pages/kontak.server.js
+import { redirect, fail } from '@adityadevid/nevjs';
+export async function action(c) {
+  const { email } = await c.body();
+  if (!email?.includes('@')) return fail(400, { error: 'Email tidak valid' });
+  await simpan(email);
+  return redirect('/terima-kasih', 303);
+}
+```
+
 ## Batasan yang perlu kamu tahu
 
 - **Tanpa bundler/minifier**: tiap modul diminta terpisah (HTTP/2 membantu). Cocok untuk app kecil–menengah; belum ada code-splitting otomatis atau TypeScript/JSX bawaan.

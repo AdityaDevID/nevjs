@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { compile } from '@adityadevid/nevb';
 import { sortRoutes } from '@adityadevid/nevf';
 
@@ -120,3 +121,50 @@ export function scanApi(root) {
 }
 
 export { METHODS };
+
+export function fillPattern(pattern, params) {
+  const segs = pattern.split('/').filter(Boolean).map((seg) => {
+    const name = seg.slice(1);
+    if (seg[0] !== ':' && seg[0] !== '*') return seg;
+    const value = params?.[name];
+    if (value == null || value === '') throw new Error(`missing param "${name}" for ${pattern}`);
+    const text = String(value);
+    return seg[0] === '*' ? text.split('/').map(encodeURIComponent).join('/') : encodeURIComponent(text);
+  });
+  return '/' + segs.join('/');
+}
+
+/**
+ * Dynamic pages can list their URLs in `pages/.../x.server.js` with
+ * `export async function staticPaths() { return [{ slug: 'a' }, { slug: 'b' }]; }`
+ * (or return ready-made path strings). Used by `nev export` and sitemap.xml.
+ */
+export async function collectStaticPaths(pages, warn = () => {}) {
+  const out = [];
+  for (const route of pages.routes) {
+    if (!/[:*]/.test(route.pattern) || !route.serverFile) continue;
+    let mod;
+    try {
+      mod = await import(pathToFileURL(route.serverFile).href);
+    } catch (err) {
+      warn(`${route.pattern}: could not load ${path.basename(route.serverFile)} (${err.message})`);
+      continue;
+    }
+    if (typeof mod.staticPaths !== 'function') continue;
+    let list;
+    try {
+      list = await mod.staticPaths();
+    } catch (err) {
+      warn(`${route.pattern}: staticPaths() threw (${err.message})`);
+      continue;
+    }
+    for (const item of Array.isArray(list) ? list : []) {
+      try {
+        out.push(typeof item === 'string' ? item : fillPattern(route.pattern, item));
+      } catch (err) {
+        warn(`${route.pattern}: skipped an entry from staticPaths() (${err.message})`);
+      }
+    }
+  }
+  return out.filter((x) => typeof x === 'string' && x.startsWith('/') && !x.startsWith('//'));
+}

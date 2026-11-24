@@ -173,6 +173,7 @@ async function start() {
       params: initial.params,
       data: initial.data,
       error: initial.error,
+      actionData: initial.actionData ?? null,
     },
     mod: mods[0],
   });

@@ -1,4 +1,4 @@
-export { createNev, startServer, redirect, notFound, createHandler } from './server.js';
+export { createNev, startServer, redirect, notFound, fail, createHandler } from './server.js';
 export { defineConfig, loadConfig } from './config.js';
 export { exportSite } from './export.js';
 export { buildVercel } from './build.js';

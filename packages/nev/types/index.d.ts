@@ -19,6 +19,8 @@ export function loadConfig(root: string, overrides?: Partial<NevConfig>): Promis
 export function redirect(location: string, status?: number): Response;
 /** Throw from a loader/page → 404 page with a real 404 status. */
 export function notFound(message?: string): never;
+/** Return from a page `action` to re-render the page with a 4xx/5xx status; `data` becomes `props.actionData`. */
+export function fail<T = unknown>(status?: number, data?: T): { status: number; data: T | null };
 /** Web-standard handler for serverless/edge runtimes. */
 export function createHandler(o?: { root?: string; dev?: boolean; config?: Partial<NevConfig> }): Promise<((request: Request, env?: any) => Promise<Response>) & { nev: NevInstance }>;
 export function parseEnv(text: string, base?: Record<string, string | undefined>): Record<string, string>;
@@ -47,5 +49,9 @@ export function fileToPattern(rel: string): string;
 
 /** A loader: in pages/blog/[slug].server.js write  export const load: Loader = (c) => ({ ... }) */
 export type Loader<T = unknown> = (c: Context) => T | Response | Promise<T | Response>;
+/** In pages/x.server.js: export const action: PageAction = async (c) => { ... }  — handles POST/PUT/PATCH/DELETE to the page URL. */
+export type PageAction<T = unknown> = (c: Context) => T | Response | { status: number; data: unknown } | Promise<T | Response | { status: number; data: unknown }>;
+/** In pages/x.server.js: export const staticPaths: StaticPaths = () => [{ slug: 'a' }]  — URLs for `nev export` and sitemap.xml. */
+export type StaticPaths = () => (Record<string, string | number> | string)[] | Promise<(Record<string, string | number> | string)[]>;
 
 export function buildVercel(o?: { root?: string; out?: string; nodeVersion?: string; config?: Partial<NevConfig> }): Promise<{ out: string; static: number; appFiles: number; packages: string[]; warnings: string[] }>;

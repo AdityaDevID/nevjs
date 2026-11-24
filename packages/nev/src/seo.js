@@ -1,3 +1,5 @@
+import { collectStaticPaths } from './routes.js';
+
 const xml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 
 export function siteOrigin(config) {
@@ -20,6 +22,13 @@ export async function collectSitemapEntries(config, pages) {
     entries.set(e.path, { ...entries.get(e.path), ...e });
   };
   for (const r of pages.routes) if (!/[:*]/.test(r.pattern)) add(r.pattern);
+  for (const p of await collectStaticPaths(pages)) {
+    try {
+      add(decodeURI(p));
+    } catch {
+      add(p);
+    }
+  }
   const extra = typeof config.sitemapPaths === 'function' ? await config.sitemapPaths() : config.sitemapPaths;
   for (const item of extra ?? []) add(item);
   const skip = (config.sitemapExclude ?? []).map((p) => (p.endsWith('*') ? (x) => x.startsWith(p.slice(0, -1)) : (x) => x === p));

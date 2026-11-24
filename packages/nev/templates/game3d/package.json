@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": { "dev": "nev dev", "start": "nev start", "export": "nev export" },
   "dependencies": {
-    "@adityadevid/nevjs": "^0.3.0",
+    "@adityadevid/nevjs": "^0.4.0",
     "@adityadevid/nevf": "^0.3.0",
     "@adityadevid/nevg": "^0.2.2",
     "@adityadevid/nevgthree": "^0.1.0",

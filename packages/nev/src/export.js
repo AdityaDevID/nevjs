@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createNev } from './server.js';
 import { siteOrigin } from './seo.js';
+import { collectStaticPaths } from './routes.js';
 
 const ASSET_EXT = /\.(?:m?js|css|json|svg|png|jpe?g|gif|webp|avif|ico|woff2?|txt)$/i;
 const SERVER_FILE = /\.server\.m?js$/;
@@ -64,6 +65,7 @@ export async function exportSite(options = {}) {
   const result = { out, pages: [], files: 0, errors: [], warnings: [] };
   const queue = ['/'];
   for (const r of nev.pages.routes) if (!/[:*]/.test(r.pattern)) queue.push(r.pattern);
+  for (const p of await collectStaticPaths(nev.pages, (m) => result.warnings.push(m))) queue.push(p);
   const extra = typeof cfg.paths === 'function' ? await cfg.paths() : cfg.paths;
   for (const p of [...(extra ?? []), ...(options.paths ?? [])]) if (typeof p === 'string' && p.startsWith('/')) queue.push(p);
 
