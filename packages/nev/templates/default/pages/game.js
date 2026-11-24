@@ -3,7 +3,6 @@ import { Game, Scene, Rect, Label, createRng } from '@adityadevid/nevg';
 
 export const head = () => ({ title: 'Game' });
 
-// A tiny NevG game: move with the arrow keys / WASD and collect the yellow coins.
 class CoinScene extends Scene {
   init() {
     const rng = createRng(7);
@@ -33,11 +32,10 @@ class CoinScene extends Scene {
 
 export default function GamePage() {
   const canvas = createRef();
-  // onMount only runs in the browser, so the server never touches <canvas>.
   onMount(() => {
     const game = new Game({ canvas: canvas.current, width: 320, height: 180, pixelArt: true });
     game.start(new CoinScene());
-    window.__game = game; // handy for debugging in the console
+    window.__game = game;
     return () => {
       game.destroy();
       delete window.__game;

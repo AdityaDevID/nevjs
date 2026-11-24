@@ -1,13 +1,10 @@
-// Nev.js browser runtime: takes over the server-rendered page and handles
-// client-side navigation (no full reloads), loader data and dev live-reload.
-
 import { h, render, signal, batch, effect, untrack, location, setPublicEnv } from '@adityadevid/nevf';
 import { buildTree } from '/__nev/tree.js';
 import { expandHead } from '/__nev/head.js';
 
 const boot = JSON.parse(document.getElementById('__NEV_DATA__').textContent);
 const root = document.getElementById('nev-root');
-setPublicEnv(boot.env ?? {}); // NEV_PUBLIC_* variables → publicEnv('NEV_PUBLIC_X')
+setPublicEnv(boot.env ?? {});
 
 const modCache = new Map();
 const load = (url) => {
@@ -23,7 +20,6 @@ const load = (url) => {
   return modCache.get(url);
 };
 
-// ---- route matching (same rules as the server) --------------------------------
 function decode(s) {
   try {
     return decodeURIComponent(s);
@@ -56,7 +52,6 @@ function parseQuery(search) {
   }
   return out;
 }
-// The manifest is already sorted most-specific-first by the server.
 function findRoute(pathname) {
   for (const r of boot.routes) {
     const params = match(r.pattern, pathname);
@@ -65,7 +60,6 @@ function findRoute(pathname) {
   return null;
 }
 
-// ---- views ------------------------------------------------------------------------
 const view = signal(null);
 let ticket = 0;
 let currentKey = null;
@@ -75,7 +69,6 @@ function applyHead(mod, props) {
   try {
     head = (mod && (typeof mod.head === 'function' ? mod.head(props) : mod.head)) || {};
   } catch {
-    /* ignore head errors in the browser */
   }
   const site = boot.site;
   const t = head.title ?? site.title;
@@ -83,7 +76,6 @@ function applyHead(mod, props) {
   document.title = title;
   if (head.lang) document.documentElement.lang = head.lang;
 
-  // swap the tags the server generated from the previous page's `head`
   for (const el of document.head.querySelectorAll('[data-nev]')) el.remove();
   const extra = expandHead(head, { origin: site.origin, url: props.url, title: head.title ?? site.title });
   const add = (tag, attrs) => {
@@ -93,7 +85,6 @@ function applyHead(mod, props) {
       try {
         el.setAttribute(k, v === true ? '' : String(v));
       } catch {
-        /* invalid attribute name — skip it */
       }
     }
     el.setAttribute('data-nev', '');
@@ -138,9 +129,8 @@ async function resolveView(loc) {
 
 async function go(loc) {
   const key = loc.pathname + loc.search;
-  if (key === currentKey) return; // hash-only change
+  if (key === currentKey) return;
   if (boot.static) {
-    // statically exported site: there is no /__nev/data endpoint, so pages with a loader need a real page load
     const f = findRoute(loc.pathname);
     if (f && f.route.load) {
       window.location.assign(key + loc.hash);
@@ -150,7 +140,7 @@ async function go(loc) {
   const mine = ++ticket;
   try {
     const next = await resolveView(loc);
-    if (mine !== ticket) return; // a newer navigation won
+    if (mine !== ticket) return;
     if (next.redirect) {
       const target = new URL(next.redirect, window.location.href);
       if (target.origin !== window.location.origin) {
@@ -170,7 +160,6 @@ async function go(loc) {
   }
 }
 
-// ---- start ----------------------------------------------------------------------------
 async function start() {
   const initial = boot.page;
   const mods = await Promise.all([initial.page, ...initial.layouts].map(load));
@@ -196,7 +185,6 @@ async function start() {
     root,
   );
 
-  // Navigations (Link clicks, back/forward) all flow through the location signal.
   effect(() => {
     const loc = location();
     untrack(() => go(loc));
@@ -207,7 +195,6 @@ async function start() {
 
 start().catch((err) => console.error('[nev] failed to start the client:', err));
 
-// ---- dev live reload ------------------------------------------------------------------
 if (boot.dev) {
   let opened = false;
   const es = new EventSource('/__nev/reload');
@@ -220,7 +207,6 @@ if (boot.dev) {
         const r = await fetch('/__nev/ping', { cache: 'no-store' });
         if (r.ok) return window.location.reload();
       } catch {
-        /* server is restarting */
       }
       setTimeout(poll, 300);
     };

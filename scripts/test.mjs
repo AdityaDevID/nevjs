@@ -1,5 +1,3 @@
-// Runs the test files of every package (or only the named ones): node scripts/test.mjs [nevg nevb ...]
-// `node --test "glob"` only expands globs on Node >= 21, so we list the files ourselves (works on Node 20+).
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';

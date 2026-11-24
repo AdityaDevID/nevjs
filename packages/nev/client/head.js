@@ -1,17 +1,3 @@
-// Shared by the server (SSR) and the browser: turn a page's `head` export into <meta>/<link>/JSON-LD descriptors.
-//
-//   export const head = ({ data }) => ({
-//     title: data.post.title,                    // → <title> (+ titleTemplate)
-//     description: data.post.summary,            // → <meta name="description">
-//     canonical: '/blog/' + data.post.slug,      // → <link rel="canonical"> (made absolute with config.site)
-//     robots: { index: false },                  // → <meta name="robots" content="noindex">   (or a string)
-//     themeColor: '#0b1020',
-//     openGraph: { title, description, image: '/og.png', type: 'article', siteName: 'My Site' },
-//     twitter: { card: 'summary_large_image' },  // inherits title/description/image from openGraph
-//     jsonLd: { '@context': 'https://schema.org', '@type': 'Article', headline: '…' },
-//     meta: [...], links: [...]                  // anything else, raw
-//   })
-
 const absolute = (value, origin) => {
   if (value == null || value === '') return value;
   const s = String(value);
@@ -27,15 +13,10 @@ function robotsContent(r) {
   if (r.noarchive) parts.push('noarchive');
   if (r.nosnippet) parts.push('nosnippet');
   if (r.noimageindex) parts.push('noimageindex');
-  if (r.index !== false && r.follow !== false && parts.length === 2) return null; // defaults — nothing to say
+  if (r.index !== false && r.follow !== false && parts.length === 2) return null;
   return parts.join(', ');
 }
 
-/**
- * @param {object} head   what the page exported
- * @param {{ origin?: string|null, url?: string, title?: string }} ctx   site origin, current path, final <title> text
- * @returns {{ meta: object[], links: object[], jsonLd: object[] }}
- */
 export function expandHead(head = {}, ctx = {}) {
   const origin = ctx.origin ?? null;
   const meta = [];

@@ -9,7 +9,7 @@ on:
         description: "Tag rilis, format vX.Y.Z (contoh: v0.2.3)"
         required: true
         type: string
-        default: v0.3.0
+        default: v0.2.3
       package:
         description: "Paket yang dirilis (all = semua, urut nevb nevf nevg nevgthree nev)"
         required: true
