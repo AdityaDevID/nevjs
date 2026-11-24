@@ -7,7 +7,7 @@ import { renderToString, setLocation, parseQuery, setPublicEnv } from '@adityade
 import { buildTree } from '../client/tree.js';
 import { loadConfig } from './config.js';
 import { scanPages, scanApi } from './routes.js';
-import { renderDocument, formatTitle } from './html.js';
+import { renderDocument, renderDocumentParts, formatTitle } from './html.js';
 import { expandHead } from '../client/head.js';
 import { loadEnv, publicEnvOf } from './env.js';
 import { ruleMiddlewares } from './rules.js';
@@ -162,7 +162,7 @@ export async function createNev(options = {}) {
     site: { title: config.title, titleTemplate: config.titleTemplate || '%s', origin: siteOrigin(config) },
   };
 
-  async function renderSpec(c, spec, { status = 200, params = {}, data = null, error = null, actionData = null }) {
+  async function loadSpec(spec) {
     const mods = await Promise.all([spec.file, ...spec.layouts.map((l) => l.file)].map(importModule));
     const Page = mods[0].default;
     if (typeof Page !== 'function') {
@@ -174,39 +174,107 @@ export async function createNev(options = {}) {
       }
       return m.default;
     });
-    const props = { url: c.path, query: parseQuery(c.url.search), params, data, error, actionData };
+    return { mod: mods[0], Page, layouts };
+  }
 
+  function headInfo(c, mod, props) {
     let head = {};
     try {
-      head = (typeof mods[0].head === 'function' ? mods[0].head(props) : mods[0].head) ?? {};
+      head = (typeof mod.head === 'function' ? mod.head(props) : mod.head) ?? {};
     } catch (err) {
       if (dev) throw err;
     }
-    const title = formatTitle(head.title, config);
-    const extra = expandHead(head, { origin: siteOrigin(config), url: c.path, title: head.title ?? config.title });
-    const tag = (list) => list.map((x) => ({ ...x, 'data-nev': true }));
+    return {
+      head,
+      title: formatTitle(head.title, config),
+      extra: expandHead(head, { origin: siteOrigin(config), url: c.path, title: head.title ?? config.title }),
+    };
+  }
 
-    setLocation(c.path + c.url.search);
-    const bodyHtml = renderToString(buildTree(layouts, Page, props));
+  const tagList = (list) => list.map((x) => ({ ...x, 'data-nev': true }));
 
-    const doc = renderDocument({
-      bodyHtml,
-      title,
-      lang: head.lang ?? config.lang,
-      meta: [...config.head.meta, ...tag(extra.meta)],
-      links: [...config.head.links, ...tag(extra.links)],
-      jsonLd: extra.jsonLd,
+  function docBase(spec, info) {
+    return {
+      title: info.title,
+      lang: info.head.lang ?? config.lang,
+      meta: [...config.head.meta, ...tagList(info.extra.meta)],
+      links: [...config.head.links, ...tagList(info.extra.links)],
+      jsonLd: info.extra.jsonLd,
       scripts: config.head.scripts,
       importMap,
-      boot: {
-        ...manifest,
-        dev,
-        env: envInfo.public,
-        static: !!options.static,
-        page: { page: spec.url, layouts: spec.layouts.map((l) => l.url), params, data, error, actionData },
-      },
+      preload: ['/__nev/client.js', importMap['@adityadevid/nevf'], spec.url, ...spec.layouts.map((l) => l.url)],
+    };
+  }
+
+  const bootFor = (spec, page) => ({
+    ...manifest,
+    dev,
+    env: envInfo.public,
+    static: !!options.static,
+    page: { page: spec.url, layouts: spec.layouts.map((l) => l.url), ...page },
+  });
+
+  function renderBody(c, loaded, props) {
+    setLocation(c.path + c.url.search);
+    return renderToString(buildTree(loaded.layouts, loaded.Page, props));
+  }
+
+  const propsFor = (c, params, data, error, actionData) => ({ url: c.path, query: parseQuery(c.url.search), params, data, error, actionData });
+
+  async function renderSpec(c, spec, { status = 200, params = {}, data = null, error = null, actionData = null }) {
+    const loaded = await loadSpec(spec);
+    const props = propsFor(c, params, data, error, actionData);
+    const info = headInfo(c, loaded.mod, props);
+    const doc = renderDocument({
+      ...docBase(spec, info),
+      bodyHtml: renderBody(c, loaded, props),
+      boot: bootFor(spec, { params, data, error, actionData }),
     });
     return c.html(doc, status, { 'cache-control': 'no-cache' });
+  }
+
+  const STREAM_HEADERS = { 'cache-control': 'no-cache', 'x-accel-buffering': 'no' };
+
+  async function streamPage(c, route, params) {
+    const loaded = await loadSpec(route);
+    if (typeof loaded.mod.head === 'function') return null;
+    const info = headInfo(c, loaded.mod, propsFor(c, params, null, null, null));
+    const parts = renderDocumentParts(docBase(route, info));
+    const enc = new TextEncoder();
+
+    const body = new ReadableStream({
+      async start(controller) {
+        const send = (text) => controller.enqueue(enc.encode(text));
+        send(parts.head);
+        try {
+          let tail;
+          try {
+            const out = await runLoader(c, route, params);
+            if (out instanceof Response) {
+              const location = out.headers.get('location');
+              if (out.status >= 300 && out.status < 400 && location) tail = parts.redirectTail(location);
+              else throw new HttpError(out.status >= 400 ? out.status : 500, 'Unsupported loader response');
+            } else {
+              tail = parts.tail(renderBody(c, loaded, propsFor(c, params, out, null, null)), bootFor(route, { params, data: out, error: null, actionData: null }));
+            }
+          } catch (err) {
+            const is404 = err instanceof HttpError && err.status === 404;
+            const spec = is404 ? notFoundSpec : errorSpec;
+            const info2 = describeError(err);
+            if (!is404 && info2.status >= 500 && !options.silent) console.error('[nev] error while rendering', c.path, '\n', err);
+            const l2 = await loadSpec(spec);
+            const error = is404 ? null : info2;
+            tail = parts.tail(renderBody(c, l2, propsFor(c, {}, null, error, null)), bootFor(spec, { params: {}, data: null, error, actionData: null }));
+          }
+          send(tail);
+        } catch (err) {
+          console.error('[nev] streaming render failed:', err);
+          send(parts.plainTail('Internal Server Error'));
+        }
+        controller.close();
+      },
+    });
+    return c._make(body, 200, { 'content-type': 'text/html; charset=utf-8', ...STREAM_HEADERS });
   }
 
   function describeError(err) {
@@ -397,6 +465,13 @@ export async function createNev(options = {}) {
       return renderSpec(c, notFoundSpec, { status: 404 });
     }
     try {
+      if (found.route.serverFile && c.method === 'GET' && !options.static) {
+        const mod = await importModule(found.route.serverFile);
+        if (mod.streaming === true || (config.streaming === true && mod.streaming !== false)) {
+          const res = await streamPage(c, found.route, found.params);
+          if (res) return res;
+        }
+      }
       let data = null;
       if (found.route.serverFile) {
         const out = await runLoader(c, found.route, found.params);

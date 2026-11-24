@@ -30,14 +30,15 @@ export function formatTitle(title, config) {
   return title && tpl.includes('%s') ? tpl.replace('%s', () => t) : t;
 }
 
-export function renderDocument(o) {
+export function renderDocumentParts(o) {
   const meta = (o.meta ?? []).map((m) => `<meta${attrs(m)}>`).join('\n    ');
   const links = (o.links ?? []).map((l) => `<link${attrs(l)}>`).join('\n    ');
   const jsonLd = (o.jsonLd ?? []).map((j) => `<script type="application/ld+json" data-nev>${safeJSON(j)}</script>`).join('\n    ');
   const scripts = (o.scripts ?? [])
     .map((s) => (typeof s === 'string' ? `<script src="${esc(s)}"></script>` : `<script${attrs(s)}></script>`))
     .join('\n    ');
-  return `<!doctype html>
+  const preload = [...new Set(o.preload ?? [])].map((href) => `<link rel="modulepreload" href="${esc(href)}">`).join('\n    ');
+  const head = `<!doctype html>
 <html lang="${esc(o.lang ?? 'en')}">
   <head>
     <meta charset="utf-8">
@@ -47,13 +48,21 @@ export function renderDocument(o) {
     ${links}
     ${jsonLd}
     <script type="importmap">${safeJSON({ imports: o.importMap })}</script>
+    ${preload}
     ${scripts}
   </head>
   <body>
-    <div id="nev-root">${o.bodyHtml}</div>
-    <script type="application/json" id="__NEV_DATA__">${safeJSON(o.boot)}</script>
-    <script type="module" src="/__nev/client.js"></script>
-  </body>
-</html>
-`;
+    <div id="nev-root">`;
+  const close = '</div>\n    <script type="module" src="/__nev/client.js"></script>\n  </body>\n</html>\n';
+  return {
+    head,
+    tail: (bodyHtml, boot) => `${bodyHtml}</div>\n    <script type="application/json" id="__NEV_DATA__">${safeJSON(boot)}</script>\n    <script type="module" src="/__nev/client.js"></script>\n  </body>\n</html>\n`,
+    redirectTail: (location) => `<p><a href="${esc(location)}">Redirecting…</a></p><script>location.replace(${safeJSON(String(location))})</script>${close}`,
+    plainTail: (message) => `<p>${esc(message)}</p>${close}`,
+  };
+}
+
+export function renderDocument(o) {
+  const parts = renderDocumentParts(o);
+  return parts.head + parts.tail(o.bodyHtml, o.boot);
 }

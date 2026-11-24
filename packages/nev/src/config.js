@@ -18,6 +18,7 @@ const DEFAULTS = {
   redirects: [],
   headers: [],
   trailingSlash: 'ignore',
+  streaming: false,
   export: {},
 };
 

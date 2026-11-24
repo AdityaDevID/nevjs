@@ -16,8 +16,10 @@ Usage:
   nev dev [folder] [--port 3000] [--host H]  Start with auto-restart + browser live reload
   nev start [folder] [--port 3000] [--host H]  Start in production mode
   nev routes [folder]                        Print the page and API routes
-  nev export [folder] [--out out]            Render every page to static HTML (GitHub Pages, Netlify, S3, …)
-  nev build [folder] --target vercel         Build for Vercel (.vercel/output, then: vercel deploy --prebuilt)
+  nev export [folder] [--out out] [--target netlify|cloudflare]
+                                             Render every page to static HTML (GitHub Pages, Netlify, Cloudflare Pages, S3, …);
+                                             --target also writes _redirects and _headers from your config
+  nev build [folder] --target vercel|netlify Build for Vercel (.vercel/output) or Netlify (.nev/netlify)
   nev info [folder]                          Show versions, routes, .env files and config summary (paste it in bug reports)
 
 Environment: PORT overrides the configured port.
@@ -208,11 +210,15 @@ export async function main(argv) {
     }
     case 'build': {
       const target = typeof flags.target === 'string' ? flags.target : 'vercel';
-      if (target !== 'vercel') throw new Error(`Unknown --target "${target}". Available: vercel`);
-      const { buildVercel } = await import('./build.js');
-      const r = await buildVercel({ root, out: typeof flags.out === 'string' ? flags.out : undefined });
+      if (target === 'cloudflare') {
+        throw new Error('Cloudflare Workers has no file system, so Nev cannot run there yet. For Cloudflare Pages (static hosting) use: nev export --target cloudflare');
+      }
+      if (target !== 'vercel' && target !== 'netlify') throw new Error(`Unknown --target "${target}". Available: vercel, netlify`);
+      const mod = await import('./build.js');
+      const r = await (target === 'netlify' ? mod.buildNetlify : mod.buildVercel)({ root, out: typeof flags.out === 'string' ? flags.out : undefined });
       for (const w of r.warnings) console.log(`  ! ${w}`);
-      console.log(`\n  Built for Vercel → ${path.relative(process.cwd(), r.out) || '.'}\n  ${r.static} static files, ${r.appFiles} app files, ${r.packages.length} packages in the function\n  Deploy: npx vercel deploy --prebuilt   (set your env vars in the Vercel dashboard)\n`);
+      const deploy = target === 'netlify' ? `cd ${path.relative(process.cwd(), r.out) || '.'} && npx netlify deploy --prod   (set env vars in the Netlify dashboard)` : 'npx vercel deploy --prebuilt   (set your env vars in the Vercel dashboard)';
+      console.log(`\n  Built for ${target === 'netlify' ? 'Netlify' : 'Vercel'} → ${path.relative(process.cwd(), r.out) || '.'}\n  ${r.static} static files, ${r.appFiles} app files, ${r.packages.length} packages in the function\n  Deploy: ${deploy}\n`);
       if (r.warnings.length) process.exitCode = 1;
       return;
     }
@@ -236,7 +242,7 @@ export async function main(argv) {
     }
     case 'export': {
       const { exportSite } = await import('./export.js');
-      const result = await exportSite({ root, out: typeof flags.out === 'string' ? flags.out : undefined, crawl: flags['no-crawl'] ? false : undefined });
+      const result = await exportSite({ root, out: typeof flags.out === 'string' ? flags.out : undefined, crawl: flags['no-crawl'] ? false : undefined, target: typeof flags.target === 'string' ? flags.target : undefined });
       for (const p of result.pages) console.log(`  ✓ ${p}`);
       for (const w of result.warnings) console.log(`  ! ${w}`);
       for (const e of result.errors) console.error(`  ✗ ${e.path}  ${e.message}`);

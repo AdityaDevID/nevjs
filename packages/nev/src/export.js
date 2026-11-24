@@ -3,6 +3,7 @@ import path from 'node:path';
 import { createNev } from './server.js';
 import { siteOrigin } from './seo.js';
 import { collectStaticPaths } from './routes.js';
+import { redirectsFile, headersFile, STATIC_TARGETS } from './targets.js';
 
 const ASSET_EXT = /\.(?:m?js|css|json|svg|png|jpe?g|gif|webp|avif|ico|woff2?|txt)$/i;
 const SERVER_FILE = /\.server\.m?js$/;
@@ -57,6 +58,8 @@ export async function exportSite(options = {}) {
   const cfg = nev.config.export ?? {};
   const out = path.resolve(options.out ?? cfg.out ?? path.join(root, 'out'));
   const crawl = options.crawl ?? cfg.crawl ?? true;
+  const target = options.target ?? cfg.target ?? null;
+  if (target && !STATIC_TARGETS.includes(target)) throw new Error(`Unknown export target "${target}". Available: ${STATIC_TARGETS.join(', ')}`);
 
   if (out === root || root.startsWith(out + path.sep)) throw new Error('The export folder cannot be the project folder or one of its parents');
   fs.rmSync(out, { recursive: true, force: true });
@@ -130,6 +133,13 @@ export async function exportSite(options = {}) {
     result.files += copyFiltered(pkg.dir, path.join(out, pkg.prefix.replace(/^\//, '')), pkg.filter ?? ((rel) => /\.m?js$/.test(rel)));
   }
   write('.nojekyll', '');
+  if (target) {
+    const redirects = redirectsFile(nev.config);
+    const headers = headersFile(nev.config);
+    if (redirects) write('_redirects', redirects);
+    if (headers) write('_headers', headers);
+    if (nev.config.trailingSlash === 'always') result.warnings.push('trailingSlash "always" is not enforced on static hosting (Netlify/Cloudflare use their own pretty-URL rules)');
+  }
 
   return result;
 }

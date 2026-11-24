@@ -12,7 +12,9 @@ export interface NevConfig {
   redirects?: { source: string; destination: string; permanent?: boolean; statusCode?: number }[];
   headers?: { source: string; headers: Record<string, string> | { key: string; value: string }[] }[];
   trailingSlash?: 'never' | 'always' | 'ignore';
-  export?: { out?: string; paths?: string[] | (() => Promise<string[]> | string[]); crawl?: boolean };
+  /** Stream every page with a loader: send <head> first, body when the loader finishes (a page can opt out with `export const streaming = false`). */
+  streaming?: boolean;
+  export?: { out?: string; paths?: string[] | (() => Promise<string[]> | string[]); crawl?: boolean; target?: 'netlify' | 'cloudflare' };
 }
 export function defineConfig(config: NevConfig): NevConfig;
 export function loadConfig(root: string, overrides?: Partial<NevConfig>): Promise<Required<NevConfig>>;
@@ -42,7 +44,7 @@ export function expandHead(head?: PageHead, ctx?: { origin?: string | null; url?
 export interface NevInstance { app: App; config: NevConfig; pages: any; api: any[]; importMap: Record<string, string>; root: string; dev: boolean }
 export function createNev(o?: { root?: string; dev?: boolean; silent?: boolean; static?: boolean; config?: Partial<NevConfig> }): Promise<NevInstance>;
 export function startServer(o?: { root?: string; dev?: boolean; port?: number; host?: string; silent?: boolean }): Promise<NevInstance & { server: import('node:http').Server; port: number }>;
-export function exportSite(o?: { root?: string; out?: string; crawl?: boolean; paths?: string[]; config?: Partial<NevConfig> }): Promise<{ out: string; pages: string[]; files: number; errors: { path: string; status: number; message: string }[]; warnings: string[] }>;
+export function exportSite(o?: { root?: string; out?: string; crawl?: boolean; paths?: string[]; target?: 'netlify' | 'cloudflare'; config?: Partial<NevConfig> }): Promise<{ out: string; pages: string[]; files: number; errors: { path: string; status: number; message: string }[]; warnings: string[] }>;
 export function scanPages(root: string): any;
 export function scanApi(root: string): any[];
 export function fileToPattern(rel: string): string;
@@ -55,3 +57,9 @@ export type PageAction<T = unknown> = (c: Context) => T | Response | { status: n
 export type StaticPaths = () => (Record<string, string | number> | string)[] | Promise<(Record<string, string | number> | string)[]>;
 
 export function buildVercel(o?: { root?: string; out?: string; nodeVersion?: string; config?: Partial<NevConfig> }): Promise<{ out: string; static: number; appFiles: number; packages: string[]; warnings: string[] }>;
+
+/** Netlify build: publish/ + functions/nev/ + netlify.toml (default out: .nev/netlify). */
+export function buildNetlify(o?: { root?: string; out?: string; config?: Partial<NevConfig> }): Promise<{ out: string; static: number; appFiles: number; packages: string[]; warnings: string[] }>;
+/** Contents of the `_redirects` / `_headers` files (Netlify and Cloudflare Pages) generated from the config. */
+export function redirectsFile(config: Partial<NevConfig>): string;
+export function headersFile(config: Partial<NevConfig>): string;
