@@ -1,10 +1,8 @@
-// NevF.js — deep reactive stores: mutate plain objects/arrays, only the readers of what changed re-run.
-
 import { signal, batch } from './reactive.js';
 
 const RAW = Symbol('nevf.raw');
-const proxies = new WeakMap(); // raw object → proxy
-const nodes = new WeakMap(); // raw object → { keys: Map<key, versionSignal>, shape: versionSignal }
+const proxies = new WeakMap();
+const nodes = new WeakMap();
 
 const isWrappable = (v) => {
   if (v === null || typeof v !== 'object') return false;
@@ -38,12 +36,11 @@ const handler = {
     }
     const own = Object.prototype.hasOwnProperty.call(target, key);
     if (!own) {
-      // methods (push, map, …) and prototype stuff: track shape so iteration helpers stay reactive
       const value = Reflect.get(target, key, receiver);
       if (typeof value !== 'function') keySignal(target, key)();
       return value;
     }
-    keySignal(target, key)(); // subscribe to this key
+    keySignal(target, key)();
     const value = target[key];
     return isWrappable(value) ? wrap(value) : value;
   },
@@ -58,7 +55,7 @@ const handler = {
   },
   set(target, key, value) {
     if (typeof key === 'symbol') return Reflect.set(target, key, value);
-    if (value && typeof value === 'object' && value[RAW]) value = value[RAW]; // never store proxies inside raw data
+    if (value && typeof value === 'object' && value[RAW]) value = value[RAW];
     const had = Object.prototype.hasOwnProperty.call(target, key);
     const old = target[key];
     const isArr = Array.isArray(target);
@@ -72,7 +69,6 @@ const handler = {
       if (!had) bump(n.shape);
       if (isArr) {
         if (key === 'length') {
-          // truncation also invalidates removed indices
           for (let i = value; i < oldLength; i++) {
             const si = n.keys.get(String(i));
             if (si) bump(si);
@@ -102,16 +98,6 @@ function wrap(raw) {
   return p;
 }
 
-/**
- * const [state, setState] = createStore({ user: { name: 'Ada' }, todos: [] })
- *
- * state.user.name = 'Grace'          // direct mutation is reactive (deeply, arrays too)
- * state.todos.push({ title: 'x' })
- * setState({ ready: true })           // shallow merge
- * setState((s) => { s.todos.length = 0 })   // batched mutation
- *
- * Read inside effects / computed / JSX functions and they re-run only when what they read changes.
- */
 export function createStore(initial = {}) {
   if (!isWrappable(initial)) throw new TypeError('createStore() expects a plain object or array');
   const state = wrap(initial[RAW] ?? initial);
@@ -126,10 +112,8 @@ export function createStore(initial = {}) {
   return [state, setState];
 }
 
-/** The plain (non-reactive) object behind a store proxy. Mutating it will NOT notify readers. */
 export const unwrap = (store) => (store && store[RAW]) || store;
 
-/** Deep plain copy of a store's current data (safe to JSON.stringify / send / persist). */
 export function snapshot(store) {
   const seen = new WeakMap();
   const copy = (v) => {

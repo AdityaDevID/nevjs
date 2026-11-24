@@ -1,17 +1,5 @@
 import { clamp } from './math.js';
 
-/**
- * Grid tilemap with solid-tile collision and simple drawing.
- *
- *   const map = new Tilemap({
- *     tileSize: 16,
- *     data: [[0,0,0],[1,1,1]],            // rows of tile ids (0 = empty)
- *     solid: [1],                          // ids that block movement (or a function)
- *     colors: { 1: '#654' },               // draw solid colors, or:
- *     tileset: image, tilesetCols: 8       // draw from a tileset image (id 1 = first tile)
- *   })
- *   scene.tilemap = map
- */
 export class Tilemap {
   constructor({ tileSize = 16, data = [], solid = [], colors = {}, tileset = null, tilesetCols = 0, x = 0, y = 0 } = {}) {
     this.tileSize = tileSize;
@@ -24,11 +12,10 @@ export class Tilemap {
     this.colors = colors;
     this.tileset = tileset;
     this.tilesetCols = tilesetCols || (tileset ? Math.floor(tileset.width / tileSize) : 0);
-    this.x = x; // world offset of the top-left tile
+    this.x = x;
     this.y = y;
   }
 
-  /** Build from a multiline string: each char maps to an id through `legend`. */
   static fromString(text, legend, options = {}) {
     const data = text
       .split('\n')
@@ -65,7 +52,6 @@ export class Tilemap {
     return { x: this.x + col * this.tileSize, y: this.y + row * this.tileSize, w: this.tileSize, h: this.tileSize };
   }
 
-  /** Is the tile at (col,row) solid? Outside the map counts as solid when `edgesSolid`. */
   isSolid(col, row) {
     if (!this.inBounds(col, row)) return !!this.edgesSolid;
     return this.solid(this.data[row][col]);
@@ -76,7 +62,6 @@ export class Tilemap {
     return this.isSolid(col, row);
   }
 
-  /** Does the world rectangle touch any solid tile? */
   rectHitsSolid(r) {
     const eps = 1e-6;
     const c0 = Math.floor((r.x - this.x) / this.tileSize);
@@ -89,7 +74,6 @@ export class Tilemap {
     return false;
   }
 
-  /** Solid tiles touching a rectangle, as [{col,row,id,rect}]. */
   tilesIn(r) {
     const out = [];
     const c0 = Math.floor((r.x - this.x) / this.tileSize);
@@ -104,7 +88,6 @@ export class Tilemap {
     return out;
   }
 
-  /** Draw only the tiles inside `view` (a world rectangle). */
   draw(ctx, view) {
     const ts = this.tileSize;
     const c0 = clamp(Math.floor((view.x - this.x) / ts), 0, this.cols - 1);

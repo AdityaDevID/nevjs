@@ -1,30 +1,19 @@
-// NevF.js — fine-grained reactivity core (signals, computed, effects, owners).
-//
-// Mental model:
-//   * a signal holds a value and remembers which effects read it
-//   * writing a signal re-runs exactly those effects (batched, glitch-free)
-//   * every effect/component runs inside an "owner"; when the owner is
-//     re-run or disposed, everything created inside it is cleaned up
-
 const noop = () => {};
 
-let activeObserver = null; // effect/computed currently collecting dependencies
-let currentOwner = null; //   owner that receives cleanups and child effects
+let activeObserver = null;
+let currentOwner = null;
 let batchDepth = 0;
 let flushing = false;
 let serverMode = false;
 const queue = new Set();
 
-/** Internal: switch SSR mode on/off. Returns the previous value. */
 export function setServerMode(on) {
   const prev = serverMode;
   serverMode = !!on;
   return prev;
 }
-/** True while renderToString() is running. */
 export const isServer = () => serverMode;
 
-// ---------------------------------------------------------------- internals
 
 function track(subs) {
   if (activeObserver) {
@@ -113,7 +102,6 @@ function runEffect(o) {
   }
 }
 
-/** Walk up the owner chain looking for an ErrorBoundary handler. */
 export function handleError(err, owner) {
   for (let o = owner; o; o = o.parent) {
     if (o.errorHandler) {
@@ -124,16 +112,7 @@ export function handleError(err, owner) {
   throw err;
 }
 
-// ------------------------------------------------------------------ signals
 
-/**
- * Create a reactive value.
- *   const count = signal(0)
- *   count()            // read (tracked)
- *   count.peek()       // read (untracked)
- *   count.set(5)       // write
- *   count.update(n => n + 1)
- */
 export function signal(initial, options = {}) {
   let value = initial;
   const subs = new Set();
@@ -158,7 +137,6 @@ export function signal(initial, options = {}) {
 
 export const isSignal = (v) => typeof v === 'function' && v.$$signal === true;
 
-/** Lazily-evaluated derived value. */
 export function computed(fn) {
   if (serverMode) {
     const read = () => untrack(fn);
@@ -189,10 +167,6 @@ export function computed(fn) {
   return read;
 }
 
-/**
- * Eager derived value with an equality cut-off: dependents only re-run when
- * the result actually changes. Perfect for "which route / which branch?".
- */
 export function memo(fn, equals = Object.is) {
   const s = signal(undefined, { equals });
   effect(() => {
@@ -203,7 +177,6 @@ export function memo(fn, equals = Object.is) {
   return read;
 }
 
-/** Run `fn` now and again whenever a signal it read changes. Returns dispose(). */
 export function effect(fn) {
   if (serverMode) {
     untrack(fn);
@@ -230,7 +203,6 @@ export function effect(fn) {
   return dispose;
 }
 
-/** Group several writes; effects run once at the end. */
 export function batch(fn) {
   batchDepth++;
   try {
@@ -240,7 +212,6 @@ export function batch(fn) {
   }
 }
 
-/** Read signals inside `fn` without subscribing. */
 export function untrack(fn) {
   const prev = activeObserver;
   activeObserver = null;
@@ -251,7 +222,6 @@ export function untrack(fn) {
   }
 }
 
-// ------------------------------------------------------------------ owners
 
 export const getOwner = () => currentOwner;
 
@@ -259,7 +229,6 @@ export function createOwner(parent = currentOwner) {
   return { parent, cleanups: [], errorHandler: null, disposed: false };
 }
 
-/** Permanently dispose an owner (runs its cleanups, newest first). */
 export function disposeOwner(owner) {
   owner.disposed = true;
   runCleanups(owner);
@@ -275,29 +244,22 @@ export function runWithOwner(owner, fn) {
   }
 }
 
-/** Run `fn` in a child owner that is disposed together with the current owner. */
 export function runInScope(fn) {
   const owner = createOwner(currentOwner);
   if (currentOwner) currentOwner.cleanups.push(() => disposeOwner(owner));
   return runWithOwner(owner, () => fn(owner));
 }
 
-/** Detached root. `fn` receives a dispose() function. */
 export function createRoot(fn) {
   const owner = createOwner(null);
   return runWithOwner(owner, () => fn(() => disposeOwner(owner)));
 }
 
-/** Register a callback to run when the current owner is re-run or disposed. */
 export function onCleanup(fn) {
   if (currentOwner) currentOwner.cleanups.push(fn);
   return fn;
 }
 
-/**
- * Run after the component's DOM is attached (browser only; ignored on the
- * server). If `fn` returns a function it is used as cleanup.
- */
 export function onMount(fn) {
   if (serverMode) return;
   const owner = currentOwner;
@@ -319,14 +281,7 @@ export function onMount(fn) {
   });
 }
 
-// ---------------------------------------------------------------- resources
 
-/**
- * Async data helper.
- *   const user = resource(() => fetch('/api/me').then(r => r.json()))
- *   user.data() / user.loading() / user.error() / user.refetch()
- * On the server it does not auto-fetch (use a loader there).
- */
 export function resource(fetcher, options = {}) {
   const data = signal(options.initial);
   const loading = signal(false);

@@ -1,5 +1,3 @@
-// NevG.js — grid pathfinding (A*), line of sight and reachability.
-
 class MinHeap {
   constructor() {
     this.a = [];
@@ -40,7 +38,6 @@ class MinHeap {
   }
 }
 
-/** Turn a Tilemap (or any { isSolid(col,row), inBounds(col,row) }) into the grid shape the functions below use. */
 export function gridFromTilemap(tilemap, { solidOutside = true } = {}) {
   return {
     cols: tilemap.cols,
@@ -52,16 +49,6 @@ export function gridFromTilemap(tilemap, { solidOutside = true } = {}) {
 const DIRS4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const DIRS8 = [...DIRS4, [1, 1], [1, -1], [-1, 1], [-1, -1]];
 
-/**
- * A* on a grid.
- *   const grid = gridFromTilemap(scene.tilemap)               // or { cols, rows, blocked(col,row) }
- *   findPath(grid, { col: 1, row: 1 }, { col: 8, row: 5 })    // → [{col,row}, …] including start and goal, or null
- *
- * Options: diagonal (false) — 8-way moves; corner cutting is never allowed,
- *          cost(col,row) (1)  — extra weight per tile (mud = 3); Infinity = impassable,
- *          maxNodes (10000)   — give up after expanding this many tiles,
- *          allowGoalBlocked   — path to a blocked goal's neighbour (e.g. walk up to an enemy / door).
- */
 export function findPath(grid, start, goal, options = {}) {
   const { diagonal = false, cost = () => 1, maxNodes = 10_000, allowGoalBlocked = false } = options;
   const { cols, rows } = grid;
@@ -108,11 +95,10 @@ export function findPath(grid, start, goal, options = {}) {
       const isGoal = nc === goal.col && nr === goal.row;
       if (!free(nc, nr)) {
         if (!(isGoal && allowGoalBlocked && goalBlocked)) continue;
-        // arrive next to a blocked goal
         if (diagonal && dx !== 0 && dy !== 0 && (!free(cur.c + dx, cur.r) || !free(cur.c, cur.r + dy))) continue;
         return build(cur.c, cur.r);
       }
-      if (dx !== 0 && dy !== 0 && (!free(cur.c + dx, cur.r) || !free(cur.c, cur.r + dy))) continue; // no corner cutting
+      if (dx !== 0 && dy !== 0 && (!free(cur.c + dx, cur.r) || !free(cur.c, cur.r + dy))) continue;
       const nk = key(nc, nr);
       if (closed.has(nk)) continue;
       const step = (dx !== 0 && dy !== 0 ? Math.SQRT2 : 1) * cost(nc, nr);
@@ -127,7 +113,6 @@ export function findPath(grid, start, goal, options = {}) {
   return null;
 }
 
-/** Tile centres in world coordinates for a path from findPath(): [{ x, y }, …]. */
 export function pathToWorld(tilemap, path) {
   return path.map(({ col, row }) => {
     const r = tilemap.tileRect(col, row);
@@ -135,7 +120,6 @@ export function pathToWorld(tilemap, path) {
   });
 }
 
-/** Remove redundant waypoints: keep only the tiles where the path changes direction. */
 export function simplifyPath(path) {
   if (path.length < 3) return path.slice();
   const out = [path[0]];
@@ -149,7 +133,6 @@ export function simplifyPath(path) {
   return out;
 }
 
-/** Is there an unobstructed straight line between two tiles? (Bresenham) */
 export function lineOfSight(grid, a, b) {
   let { col: x0, row: y0 } = a;
   const { col: x1, row: y1 } = b;
@@ -173,7 +156,6 @@ export function lineOfSight(grid, a, b) {
   }
 }
 
-/** Every tile reachable from `start` within `maxSteps` moves (BFS). Returns [{col,row,steps}]. */
 export function reachable(grid, start, maxSteps = Infinity, { diagonal = false } = {}) {
   const { cols, rows } = grid;
   const seen = new Map([[start.row * cols + start.col, 0]]);

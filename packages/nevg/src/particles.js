@@ -3,30 +3,19 @@ import { createRng } from './math.js';
 
 const pick = (v, rng) => (Array.isArray(v) && v.length === 2 && typeof v[0] === 'number' ? v[0] + rng() * (v[1] - v[0]) : v);
 
-/**
- * Particle emitter entity. Particles live in the emitter's local space (origin = emitter center).
- *
- *   scene.add(new ParticleEmitter({ x: 100, y: 80, rate: 40, life: [0.4, 0.9], speed: [30, 90],
- *     angle: [-Math.PI, 0], gravity: 120, size: [4, 0], colors: ['#fde68a', '#f97316'] }))
- *   emitter.burst(30)                    // one-off explosion
- *   new ParticleEmitter({ rate: 0, once: true }) + burst()   → removes itself when its last particle dies
- *
- * Ranges are [min, max] pairs. `size: [start, end]` shrinks/grows over life, `alpha: [start, end]` fades.
- * Pass `rng: createRng(seed)` for reproducible effects (tests, replays).
- */
 export class ParticleEmitter extends Entity {
   constructor(props = {}) {
     super({
-      rate: 20, // particles per second (0 = only burst())
+      rate: 20,
       life: [0.5, 1],
       speed: [20, 60],
-      angle: [0, Math.PI * 2], // radians
+      angle: [0, Math.PI * 2],
       gravity: 0,
       drag: 0,
       size: [4, 0],
       alpha: [1, 0],
       colors: ['#ffffff'],
-      shape: 'rect', // 'rect' | 'circle'
+      shape: 'rect',
       max: 500,
       once: false,
       emitting: true,
@@ -51,7 +40,6 @@ export class ParticleEmitter extends Entity {
     return this;
   }
 
-  /** Remove all live particles. */
   clearParticles() {
     this.particles.length = 0;
     return this;
@@ -78,7 +66,6 @@ export class ParticleEmitter extends Entity {
   }
 
   update(dt) {
-    // age existing particles first, so ones spawned this step live their full `life`
     const ps = this.particles;
     for (let i = ps.length - 1; i >= 0; i--) {
       const p = ps[i];

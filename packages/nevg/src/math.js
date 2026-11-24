@@ -7,16 +7,13 @@ export const deg2rad = (d) => (d * Math.PI) / 180;
 export const rad2deg = (r) => (r * 180) / Math.PI;
 export const dist = (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1);
 
-/** Move `value` toward `target` by at most `step` (never overshoots). */
 export function approach(value, target, step) {
   if (value < target) return Math.min(value + step, target);
   return Math.max(value - step, target);
 }
 
-/** Frame-rate independent smoothing: lerp toward target with `rate` per second. */
 export const damp = (a, b, rate, dt) => lerp(a, b, 1 - Math.exp(-rate * dt));
 
-/** Do two {x,y,w,h} rectangles overlap? (touching edges do not count) */
 export function rectsOverlap(a, b) {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
@@ -32,7 +29,6 @@ export function circlesOverlap(a, b) {
   return dx * dx + dy * dy < r * r;
 }
 
-/** Deterministic seeded RNG (mulberry32). rng() → [0,1) */
 export function createRng(seed = Date.now()) {
   let a = seed >>> 0;
   const next = () => {
@@ -43,7 +39,7 @@ export function createRng(seed = Date.now()) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
   next.range = (lo, hi) => lo + next() * (hi - lo);
-  next.int = (lo, hi) => Math.floor(lo + next() * (hi - lo + 1)); // inclusive
+  next.int = (lo, hi) => Math.floor(lo + next() * (hi - lo + 1));
   next.pick = (arr) => arr[Math.floor(next() * arr.length)];
   next.chance = (p) => next() < p;
   return next;

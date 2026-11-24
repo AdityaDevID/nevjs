@@ -1,11 +1,3 @@
-/**
- * Asset loader. Loaders are injectable so the same code runs in tests.
- *
- *   const assets = new Assets()
- *   assets.image('hero', 'hero.png').json('level1', 'level1.json').audio('jump', 'jump.ogg')
- *   await assets.load(progress => bar.value = progress)
- *   assets.get('hero')
- */
 export class Assets {
   constructor(loaders = {}) {
     this.items = new Map();
@@ -44,7 +36,6 @@ export class Assets {
     return this.items.has(key);
   }
 
-  /** Load everything queued. Rejects (naming the asset) if any file fails. */
   async load(onProgress) {
     const jobs = this.queue.splice(0);
     let done = 0;
@@ -83,4 +74,4 @@ async function fetchOk(url) {
 }
 const defaultJsonLoader = async (url) => (await fetchOk(url)).json();
 const defaultTextLoader = async (url) => (await fetchOk(url)).text();
-const defaultAudioLoader = async (url) => (await fetchOk(url)).arrayBuffer(); // decoded lazily by Sound
+const defaultAudioLoader = async (url) => (await fetchOk(url)).arrayBuffer();

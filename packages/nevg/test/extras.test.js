@@ -61,7 +61,7 @@ describe('ParticleEmitter', () => {
     const e = new ParticleEmitter({ rate: 60, life: [0.5, 0.5], speed: [0, 0], rng: createRng(1) });
     e.update(0.5);
     assert.equal(e.count, 30);
-    e.update(0.6); // first batch gone, new ones born
+    e.update(0.6);
     assert.ok(e.count > 0 && e.count <= 36);
     const capped = new ParticleEmitter({ rate: 1000, max: 10, life: [5, 5] });
     capped.update(1);
@@ -135,7 +135,6 @@ describe('ParticleEmitter', () => {
     const ctx = fakeCtx();
     game.step();
     scene._draw(ctx);
-    // a normal 1x1 entity at x=-50 would be culled; the emitter must still be drawn (it called draw → globalAlpha restore)
     assert.ok(ctx.calls.some((c) => c[0] === 'set:globalAlpha'));
   });
 });
@@ -417,11 +416,11 @@ describe('UI', () => {
 
     input.pointerDown(20, 15);
     game.step();
-    input.pointerUp(200, 150); // released elsewhere
+    input.pointerUp(200, 150);
     game.step();
     assert.equal(clicks, 1);
 
-    input.pointerDown(200, 150); // pressed elsewhere, released over the button
+    input.pointerDown(200, 150);
     game.step();
     input.pointerUp(20, 15);
     game.step();
@@ -481,7 +480,7 @@ describe('Body (arcade physics)', () => {
     player.on('land', () => events.push('land'));
     for (let i = 0; i < 90; i++) body.step(1 / 60);
     assert.equal(body.onGround, true);
-    near(player.y + player.h, 64, 0.05); // floor top = row 4 → y 64
+    near(player.y + player.h, 64, 0.05);
     assert.equal(body.vy, 0);
     assert.deepEqual(events, ['land']);
     assert.ok(scene);
@@ -506,13 +505,12 @@ describe('Body (arcade physics)', () => {
     for (let i = 0; i < 200; i++) body.step(1 / 60);
     assert.equal(body.onGround, true);
 
-    // early press right before landing is buffered
     player.y = 30;
     body.vy = 0;
     body.onGround = false;
     body._coyoteLeft = 0;
     for (let i = 0; i < 10; i++) body.step(1 / 60);
-    body.jump(250); // pressed while still falling
+    body.jump(250);
     let jumped = false;
     for (let i = 0; i < 40 && !jumped; i++) {
       body.step(1 / 60);
@@ -527,7 +525,7 @@ describe('Body (arcade physics)', () => {
     body.vy = -200;
     body.cutJump(0.5);
     assert.equal(body.vy, -100);
-    body.vy = 100; // falling → unaffected
+    body.vy = 100;
     body.cutJump(0.5);
     assert.equal(body.vy, 100);
 
@@ -535,7 +533,7 @@ describe('Body (arcade physics)', () => {
     body.vy = 0;
     body.step(0.5);
     assert.equal(body.vx, 0);
-    near(player.x + player.w, 144); // flush against the right wall (col 9 → x 144)
+    near(player.x + player.w, 144);
 
     const bouncy = new Body(player, { gravity: 0, bounce: 0.5 });
     bouncy.vx = -1000;
@@ -621,11 +619,11 @@ describe('Gamepads', () => {
     pads.poll();
     assert.equal(input.down('left'), true);
     assert.equal(input.released('jump'), true);
-    current = [pad([], [-0.1, 0, 0, 0])]; // inside the deadzone
+    current = [pad([], [-0.1, 0, 0, 0])];
     input.endFrame();
     pads.poll();
     assert.equal(input.down('left'), false);
-    current = [pad([14])]; // d-pad left
+    current = [pad([14])];
     pads.poll();
     assert.equal(input.down('left'), true);
     pads.release();
@@ -641,6 +639,6 @@ describe('Gamepads', () => {
     assert.equal(live.axis(0), 0.8);
     assert.equal(live.axis(1), 0, 'deadzone');
     assert.equal(new Gamepads(input, { getGamepads: () => [] }).axis(0), 0);
-    live.rumble(); // must not throw without vibrationActuator
+    live.rumble();
   });
 });

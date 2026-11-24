@@ -1,4 +1,3 @@
-/** Minimal event emitter. on() returns an unsubscribe function. */
 export class Emitter {
   constructor() {
     this._handlers = new Map();

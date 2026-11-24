@@ -5,7 +5,6 @@ import {
   clamp, lerp, approach, rectsOverlap, createRng, damp, remap,
 } from '../src/index.js';
 
-// Tests drive the loop manually: a no-op raf keeps Node from staying alive on timers.
 const mkGame = (opts = {}) => new Game({ raf: () => 0, caf: () => {}, ...opts });
 const near = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} !≈ ${b}`);
 const run = (game, seconds) => {
@@ -13,7 +12,6 @@ const run = (game, seconds) => {
   for (let i = 0; i < n; i++) game.step();
 };
 
-/** Recording fake 2D context. */
 function fakeCtx() {
   const calls = [];
   const ctx = new Proxy(
@@ -82,14 +80,14 @@ describe('tweens', () => {
     tw.to(o, { v: 10 }, { duration: 1, delay: 0.5, repeat: 1, yoyo: true });
     tw.update(0.4);
     assert.equal(o.v, 0, 'still delayed');
-    tw.update(0.6); // delay ends at 0.5s → 0.5s into the forward leg
+    tw.update(0.6);
     near(o.v, 5);
-    tw.update(0.5); // end of forward leg → start of yoyo
+    tw.update(0.5);
     near(o.v, 10);
     tw.update(0.5);
     near(o.v, 5);
     tw.update(0.5);
-    near(o.v, 0); // yoyo finished back at the start
+    near(o.v, 0);
     assert.equal(tw.list.length, 0);
 
     const p = { a: 0 };
@@ -176,7 +174,7 @@ describe('entities and scenes', () => {
       log.push('scene');
       cancel();
     });
-    run(game, 1.5); // ticks at 0.25, 0.5, 0.75, 1.0 → then cancelled at 1.1
+    run(game, 1.5);
     assert.equal(log.filter((x) => x === 'after').length, 1);
     assert.equal(log.filter((x) => x === 'tick').length, 4);
     assert.equal(log.filter((x) => x === 'scene').length, 1);
@@ -205,7 +203,6 @@ describe('entities and scenes', () => {
     let pairs = 0;
     for (let i = 0; i < 200; i++) scene.add(new Entity({ x: i * 6, y: 0, w: 10, h: 10, onCollide: () => pairs++ }));
     game.step();
-    // each box overlaps its immediate neighbour (gap 6 < width 10), and the next one (12 >= 10 no)
     assert.equal(pairs, 2 * 199);
   });
 
@@ -317,20 +314,20 @@ describe('physics and tilemaps', () => {
     game.start(scene);
     const p = scene.add(new Entity({ x: 20, y: 20, w: 8, h: 8 }));
 
-    let hit = scene.moveAndCollide(p, 500, 0); // run into the right wall
+    let hit = scene.moveAndCollide(p, 500, 0);
     assert.equal(hit.right, true);
-    near(p.x, 90 - 8, 0.07); // wall starts at x = 90
+    near(p.x, 90 - 8, 0.07);
     assert.ok(p.x + p.w <= 90 + 1e-6, 'never inside the wall');
 
     p.x = 20;
     p.y = 12;
-    hit = scene.moveAndCollide(p, 6, 30); // diagonal into floor: x free, y blocked
+    hit = scene.moveAndCollide(p, 6, 30);
     assert.equal(hit.bottom, true);
     assert.equal(hit.x, false);
     near(p.x, 26);
     assert.ok(p.y + p.h <= 40 + 1e-6);
 
-    hit = scene.moveAndCollide(p, 0, -500); // up into the ceiling
+    hit = scene.moveAndCollide(p, 0, -500);
     assert.equal(hit.top, true);
     assert.ok(p.y >= 10 - 1e-6);
   });
@@ -365,8 +362,6 @@ describe('physics and tilemaps', () => {
     game.start(scene);
     const p = scene.add(new Entity({ x: 20, y: 11, w: 8, h: 8 }));
     let grounded = false;
-    // Entities that use moveAndCollide keep their OWN velocity: the built-in vx/vy
-    // integration would move them a second time without collision.
     let vel = 0;
     p.update = function (dt) {
       vel += 900 * dt;
@@ -378,7 +373,7 @@ describe('physics and tilemaps', () => {
     };
     run(game, 1);
     assert.equal(grounded, true);
-    near(p.y + p.h, 40, 0.07); // floor row starts at y = 40
+    near(p.y + p.h, 40, 0.07);
   });
 });
 
@@ -522,11 +517,11 @@ describe('game loop', () => {
       t += ms;
       frames.shift()(t);
     };
-    advance(1000 / 60 / 2); // half a step → no update yet
+    advance(1000 / 60 / 2);
     assert.equal(updates, 0);
-    advance(1000 / 60 / 2 + 1); // crosses the boundary
+    advance(1000 / 60 / 2 + 1);
     assert.equal(updates, 1);
-    advance(1000); // a full second at once, but capped by maxFrameTime (0.25s)
+    advance(1000);
     assert.equal(updates, 1 + 15);
     game.stop();
     assert.equal(game.running, false);
@@ -543,7 +538,7 @@ describe('game loop', () => {
     game.timeScale = 0.5;
     t += 1000;
     frames.shift()(t);
-    assert.equal(updates, 1); // 0.25s cap * 0.5 = 0.125s → exactly one 0.1s step
+    assert.equal(updates, 1);
   });
 
   test('headless game works without a canvas', () => {
@@ -552,7 +547,7 @@ describe('game loop', () => {
     const scene = new Scene();
     game.start(scene);
     game.step();
-    game.render(); // no-op
+    game.render();
     assert.equal(game.frame, 1);
     near(game.time, 1 / 60);
   });

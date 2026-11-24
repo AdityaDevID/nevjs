@@ -2,14 +2,6 @@ import { Emitter } from './emitter.js';
 
 let nextId = 1;
 
-/**
- * Base game object. Subclass it, or pass hooks:
- *   new Entity({ x: 10, y: 20, w: 16, h: 16, tags: ['enemy'], update(dt) {...}, draw(ctx) {...} })
- *
- * Position (x, y) is the TOP-LEFT of the box; w/h is the hitbox. Visual
- * transforms (rotation, scale, alpha) pivot around the box center.
- * Children are positioned relative to their parent.
- */
 export class Entity extends Emitter {
   constructor(props = {}) {
     super();
@@ -25,12 +17,12 @@ export class Entity extends Emitter {
     this.scaleY = 1;
     this.alpha = 1;
     this.visible = true;
-    this.active = true; // inactive entities skip update()
-    this.z = 0; // draw order (higher = on top)
+    this.active = true;
+    this.z = 0;
     this.tags = new Set();
-    this.solid = false; // blocks moveAndCollide() of others
-    this.collides = true; // takes part in overlap events
-    this.screenSpace = false; // true → ignores the camera (HUD)
+    this.solid = false;
+    this.collides = true;
+    this.screenSpace = false;
     this.scene = null;
     this.parent = null;
     this.children = [];
@@ -44,7 +36,6 @@ export class Entity extends Emitter {
     if (draw) this.draw = draw;
   }
 
-  // ---- geometry ---------------------------------------------------------
   get cx() {
     return this.x + this.w / 2;
   }
@@ -63,14 +54,12 @@ export class Entity extends Emitter {
   get bottom() {
     return this.y + this.h;
   }
-  /** World position of this entity (parents' positions added). */
   get worldX() {
     return this.parent ? this.parent.worldX + this.x : this.x;
   }
   get worldY() {
     return this.parent ? this.parent.worldY + this.y : this.y;
   }
-  /** Hitbox in world coordinates. */
   get rect() {
     return { x: this.worldX, y: this.worldY, w: this.w, h: this.h };
   }
@@ -88,7 +77,6 @@ export class Entity extends Emitter {
     return this;
   }
 
-  // ---- hierarchy --------------------------------------------------------
   add(child) {
     if (child.parent) child.parent.remove(child);
     child.parent = this;
@@ -105,22 +93,18 @@ export class Entity extends Emitter {
     return child;
   }
 
-  /** Remove from the scene at the end of the current frame. */
   destroy() {
     if (this.dead) return;
     this.dead = true;
     for (const c of this.children) c.destroy();
   }
 
-  // ---- timers (use game time, pause with the scene) ----------------------
-  /** Run fn once after `seconds`. Returns a cancel function. */
   after(seconds, fn) {
     const t = { left: seconds, fn, every: 0, cancelled: false };
     this._timers.push(t);
     return () => (t.cancelled = true);
   }
 
-  /** Run fn every `seconds`. Returns a cancel function. */
   every(seconds, fn) {
     const t = { left: seconds, fn, every: seconds, cancelled: false };
     this._timers.push(t);
@@ -142,22 +126,14 @@ export class Entity extends Emitter {
     }
   }
 
-  // ---- hooks to override --------------------------------------------------
-  /** Called once when added to a scene. */
   init() {}
-  /** Called every fixed step. */
   update(dt) {}
-  /** Draw in local space: the origin is the entity's top-left. */
   draw(ctx) {}
-  /** Another collidable entity overlaps this one. */
   onCollide(other) {}
-  /** Called when removed. */
   onDestroy() {}
 }
 
-// ---------------------------------------------------------------- built-ins
 
-/** Filled rectangle. */
 export class Rect extends Entity {
   constructor(props = {}) {
     super({ color: '#fff', ...props });
@@ -168,7 +144,6 @@ export class Rect extends Entity {
   }
 }
 
-/** Filled circle (hitbox is still the bounding box). */
 export class Circle extends Entity {
   constructor(props = {}) {
     super({ color: '#fff', ...props });
@@ -184,7 +159,6 @@ export class Circle extends Entity {
   }
 }
 
-/** Text label. Set `screenSpace: true` for HUD text. */
 export class Label extends Entity {
   constructor(props = {}) {
     super({ text: '', color: '#fff', font: '16px sans-serif', align: 'left', baseline: 'top', collides: false, ...props });
@@ -198,11 +172,6 @@ export class Label extends Entity {
   }
 }
 
-/**
- * Image / spritesheet sprite with frame animations.
- *   new Sprite({ image, frameW: 16, frameH: 16, animations: { run: { frames: [0,1,2,3], fps: 10 } } })
- *   sprite.play('run')
- */
 export class Sprite extends Entity {
   constructor(props = {}) {
     super({ image: null, frameW: 0, frameH: 0, frame: 0, animations: {}, flipX: false, anim: null, ...props });

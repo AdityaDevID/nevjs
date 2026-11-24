@@ -11,17 +11,6 @@ const DEFAULT_ACTIONS = {
   pause: ['KeyP', 'Escape'],
 };
 
-/**
- * Keyboard + pointer (mouse/touch/pen) input with named actions.
- *
- *   input.down('left')          held this frame
- *   input.pressed('jump')       went down this frame
- *   input.released('jump')
- *   input.axis('left','right')  -1 | 0 | 1
- *   input.pointer               { x, y, down, pressed, released } in GAME pixels
- *
- * Call input.endFrame() once per update step (Game does this for you).
- */
 export class Input extends Emitter {
   constructor(actions = DEFAULT_ACTIONS) {
     super();
@@ -37,15 +26,13 @@ export class Input extends Emitter {
     this._off = [];
   }
 
-  /** Rebind: input.bind('jump', ['Space', 'KeyZ']) */
   bind(action, codes) {
     this.actions[action] = [].concat(codes);
     return this;
   }
 
-  // ---- queries -------------------------------------------------------------
   _codes(a) {
-    return this.actions[a] ?? [a]; // an unknown action name is treated as a raw key code
+    return this.actions[a] ?? [a];
   }
   down(a) {
     return this._codes(a).some((c) => this.keys.has(c));
@@ -59,7 +46,6 @@ export class Input extends Emitter {
   axis(neg, pos) {
     return (this.down(pos) ? 1 : 0) - (this.down(neg) ? 1 : 0);
   }
-  /** Normalised movement vector from four actions. */
   vector(left = 'left', right = 'right', up = 'up', down = 'down') {
     let x = this.axis(left, right);
     let y = this.axis(up, down);
@@ -70,7 +56,6 @@ export class Input extends Emitter {
     return { x, y };
   }
 
-  // ---- event feed (also usable directly from tests / on-screen buttons) -------
   keyDown(code) {
     if (!this.keys.has(code)) this._pressed.add(code);
     this.keys.add(code);
@@ -98,7 +83,6 @@ export class Input extends Emitter {
     this.emit('pointerup', this.pointer);
   }
 
-  /** Clear the per-frame "pressed/released" flags. */
   endFrame() {
     this._pressed.clear();
     this._released.clear();
@@ -111,11 +95,6 @@ export class Input extends Emitter {
     if (this.pointer.down) this.pointerUp();
   }
 
-  // ---- DOM wiring ------------------------------------------------------------
-  /**
-   * Attach DOM listeners. `toGame(clientX, clientY)` converts to game pixels.
-   * Returns a detach function.
-   */
   attach(canvas, toGame, target = typeof window !== 'undefined' ? window : null) {
     this.detach();
     this._canvas = canvas;
@@ -153,7 +132,6 @@ export class Input extends Emitter {
       try {
         canvas.setPointerCapture?.(e.pointerId);
       } catch {
-        /* ignore */
       }
       this.pointerDown(p.x, p.y, e.pointerId);
     });

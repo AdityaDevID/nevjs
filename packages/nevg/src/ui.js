@@ -11,14 +11,6 @@ function roundRectPath(ctx, w, h, r) {
   }
 }
 
-/**
- * Clickable / tappable button (HUD, ignores the camera). Works with mouse and touch via Input.pointer.
- *
- *   scene.add(new Button({ x: 10, y: 10, w: 80, h: 24, text: 'Start', onClick: () => game.setScene(new Play()) }))
- *
- * Props: text, font, color, hoverColor, pressColor, disabledColor, textColor, radius, disabled.
- * Emits 'click'. The click fires on release while the pointer is still over the button.
- */
 export class Button extends Entity {
   constructor(props = {}) {
     super({
@@ -75,7 +67,6 @@ export class Button extends Entity {
   }
 }
 
-/** Horizontal bar for health / loading / cooldowns. `value` may be a number or a function; fill = value / max. */
 export class ProgressBar extends Entity {
   constructor(props = {}) {
     super({

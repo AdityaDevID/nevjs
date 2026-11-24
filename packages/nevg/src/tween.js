@@ -1,5 +1,3 @@
-// Tweens and easing. A Tweens manager is owned by every Scene and updated with it.
-
 export const ease = {
   linear: (t) => t,
   inQuad: (t) => t * t,
@@ -30,7 +28,6 @@ export const ease = {
   },
 };
 
-/** A single tween. Created through scene.tween() / game.tweens.to(). */
 export class Tween {
   constructor(target, to, { duration = 1, ease: easing = 'linear', delay = 0, repeat = 0, yoyo = false, onUpdate, onComplete } = {}) {
     this.target = target;
@@ -38,7 +35,7 @@ export class Tween {
     this.duration = Math.max(1e-6, duration);
     this.ease = typeof easing === 'function' ? easing : ease[easing] ?? ease.linear;
     this.delay = delay;
-    this.repeat = repeat; // extra loops; Infinity = forever
+    this.repeat = repeat;
     this.yoyo = yoyo;
     this.onUpdate = onUpdate;
     this.onComplete = onComplete;
@@ -74,7 +71,7 @@ export class Tween {
     if (this.delay > 0) {
       this.delay -= dt;
       if (this.delay > 0) return;
-      dt = -this.delay; // leftover time after the delay
+      dt = -this.delay;
       this.delay = 0;
     }
     if (!this.from) {
@@ -101,20 +98,17 @@ export class Tweens {
     this.list = [];
   }
 
-  /** tweens.to(obj, { x: 100, alpha: 0 }, { duration: 0.5, ease: 'outQuad' }) → Tween (await tween.finished) */
   to(target, props, options) {
     const tween = new Tween(target, props, options);
     this.list.push(tween);
     return tween;
   }
 
-  /** Wait `seconds` of game time:  await tweens.wait(1) */
   wait(seconds) {
     return this.to({ t: 0 }, { t: 1 }, { duration: seconds }).finished;
   }
 
   update(dt) {
-    // Tweens may add tweens from callbacks; iterate over a snapshot.
     for (const tw of [...this.list]) tw.update(dt);
     this.list = this.list.filter((tw) => !tw.done);
   }

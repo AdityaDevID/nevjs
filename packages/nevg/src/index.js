@@ -1,4 +1,3 @@
-// NevG.js — public API
 export { Game } from './game.js';
 export { Scene } from './scene.js';
 export { Entity, Rect, Circle, Label, Sprite } from './entity.js';

@@ -1,10 +1,5 @@
 import { Rect } from './entity.js';
 
-/**
- * Fade out → switch scene → fade in.
- *   transition(game, new GameOver(), { duration: 0.6, color: '#000' })
- * Returns a promise that resolves when the new scene is fully visible.
- */
 export function transition(game, next, { duration = 0.4, color = '#000' } = {}) {
   const half = Math.max(duration, 0.0001) / 2;
   const cover = () =>

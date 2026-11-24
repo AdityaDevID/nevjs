@@ -4,14 +4,6 @@ import { Assets } from './assets.js';
 import { Sound } from './audio.js';
 import { Tweens } from './tween.js';
 
-/**
- * The game: canvas, fixed-timestep loop, input, assets, sound and the active scene.
- *
- *   const game = new Game({ canvas: '#game', width: 320, height: 180, pixelArt: true })
- *   game.start(new MyScene())
- *
- * Headless (tests, servers): omit `canvas` and drive it with game.step(dt).
- */
 export class Game extends Emitter {
   constructor({
     canvas = null,
@@ -19,9 +11,9 @@ export class Game extends Emitter {
     height = 600,
     fps = 60,
     pixelArt = false,
-    fit = 'contain', // 'contain' | 'cover' | 'none' — how the canvas scales inside its parent
+    fit = 'contain',
     maxFrameTime = 0.25,
-    maxDpr = 3, // cap on devicePixelRatio (lower it for heavy scenes / phones)
+    maxDpr = 3,
     assets,
     input,
     raf,
@@ -40,7 +32,7 @@ export class Game extends Emitter {
     this.input = input ?? new Input();
     this.assets = assets ?? new Assets();
     this.sound = new Sound();
-    this.tweens = new Tweens(); // global tweens (not tied to a scene)
+    this.tweens = new Tweens();
     this.scene = null;
     this.time = 0;
     this.frame = 0;
@@ -65,7 +57,6 @@ export class Game extends Emitter {
     if (canvas) this._setupCanvas(canvas);
   }
 
-  // ---- canvas -----------------------------------------------------------------
   _setupCanvas(canvas) {
     const el = typeof canvas === 'string' ? document.querySelector(canvas) : canvas;
     if (!el) throw new Error(`[nevg] Canvas not found: ${canvas}`);
@@ -97,7 +88,6 @@ export class Game extends Emitter {
       };
     };
     this._offs.push(this.input.attach(el, toGame));
-    // Audio needs a user gesture.
     const unlock = () => this.sound.unlock();
     el.addEventListener('pointerdown', unlock);
     if (typeof window !== 'undefined') window.addEventListener('keydown', unlock);
@@ -107,7 +97,6 @@ export class Game extends Emitter {
     });
   }
 
-  /** Hook for subclasses that draw with something other than a 2D context (e.g. WebGL). */
   _createContext(el) {
     return el.getContext('2d');
   }
@@ -124,7 +113,6 @@ export class Game extends Emitter {
       const pw = (p && p.clientWidth) || (typeof window !== 'undefined' ? window.innerWidth : this.width);
       const ph = (p && p.clientHeight) || (typeof window !== 'undefined' ? window.innerHeight : this.height);
       const scale = this.fit === 'cover' ? Math.max(pw / this.width, ph / this.height) : Math.min(pw / this.width, ph / this.height);
-      // Pixel art: snap to integer scales (when >= 1) so pixels stay crisp.
       const s = this.pixelArt && scale >= 1 ? Math.floor(scale) : scale;
       cssW = Math.floor(this.width * s);
       cssH = Math.floor(this.height * s);
@@ -138,11 +126,9 @@ export class Game extends Emitter {
     if (this.ctx) this.ctx.imageSmoothingEnabled = !this.pixelArt;
   }
 
-  // ---- scenes -------------------------------------------------------------------
-  /** Switch scene at the end of the current frame (safe to call from update()). */
   setScene(scene) {
     if (!this.scene && !this.running) {
-      this._swap(scene); // nothing to protect: switch right away
+      this._swap(scene);
       return scene;
     }
     this._next = scene;
@@ -158,8 +144,6 @@ export class Game extends Emitter {
     this.emit('scene', scene, old);
   }
 
-  // ---- loop ----------------------------------------------------------------------
-  /** Start the loop with an initial scene. */
   start(scene) {
     if (scene) this.setScene(scene);
     if (this.running) return this;
@@ -177,7 +161,6 @@ export class Game extends Emitter {
     return this;
   }
 
-  /** Remove all DOM listeners and stop. */
   destroy() {
     this.stop();
     if (this.scene) this.scene._exit();
@@ -198,7 +181,7 @@ export class Game extends Emitter {
     if (this._wasRunning && !this.running) {
       this._wasRunning = false;
       this.running = true;
-      this._last = this._now(); // do not "catch up" on the time spent hidden
+      this._last = this._now();
       this._acc = 0;
       this._handle = this._raf((t) => this._tick(t));
       this.emit('focus');
@@ -211,10 +194,9 @@ export class Game extends Emitter {
     let frame = (now - this._last) / 1000;
     this._last = now;
     if (!(frame >= 0)) frame = 0;
-    if (frame > this.maxFrameTime) frame = this.maxFrameTime; // tab was throttled: drop the backlog
+    if (frame > this.maxFrameTime) frame = this.maxFrameTime;
     this._acc += frame * this.timeScale;
 
-    // Spiral-of-death guard: never run more steps in one frame than maxFrameTime allows.
     const maxSteps = Math.ceil((this.maxFrameTime * Math.max(1, this.timeScale)) / this.step_) + 1;
     let steps = 0;
     while (this._acc >= this.step_ && steps < maxSteps) {
@@ -235,7 +217,6 @@ export class Game extends Emitter {
     if (this.running) this._handle = this._raf((t2) => this._tick(t2));
   }
 
-  /** Advance the simulation by `dt` seconds (one fixed step). Public for tests and replays. */
   step(dt = this.step_) {
     this.time += dt;
     this.frame++;
@@ -250,7 +231,6 @@ export class Game extends Emitter {
     }
   }
 
-  /** Draw the current scene. */
   render() {
     const ctx = this.ctx;
     if (!ctx || !this.scene) return;

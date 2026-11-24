@@ -1,10 +1,3 @@
-/**
- * Save data with defaults, versioning and safe fallbacks (localStorage → memory).
- *
- *   const save = new SaveData('my-game', { coins: 0, best: 0, settings: { sound: true } }, { version: 2,
- *     migrate: { 2: (old) => ({ ...old, settings: { sound: true } }) } })     // migrate[v] upgrades data to version v
- *   save.data.coins += 5;  save.save();      save.set('best', 12);     save.reset();
- */
 export class SaveData {
   constructor(key, defaults = {}, { storage, version = 1, migrate = {} } = {}) {
     this.key = key;
@@ -30,7 +23,6 @@ export class SaveData {
     }
   }
 
-  /** Reload from storage. Missing keys come from the defaults; older versions are migrated. */
   load() {
     const saved = this._read();
     if (!saved || typeof saved !== 'object' || typeof saved.data !== 'object' || saved.data === null) {
@@ -52,7 +44,7 @@ export class SaveData {
       else this._mem = raw;
       return true;
     } catch {
-      this._mem = raw; // quota / blocked → keep in memory for this session
+      this._mem = raw;
       return false;
     }
   }
@@ -61,7 +53,6 @@ export class SaveData {
     return key in this.data ? this.data[key] : fallback;
   }
 
-  /** Set a value and save. */
   set(key, value) {
     this.data[key] = value;
     return this.save();
@@ -72,7 +63,6 @@ export class SaveData {
     try {
       this.storage?.removeItem?.(this.key);
     } catch {
-      /* ignore */
     }
     this._mem = null;
   }
