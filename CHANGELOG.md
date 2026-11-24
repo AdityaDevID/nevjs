@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0 — Nev (`@adityadevid/nevjs`)
+- **Streaming SSR (opt-in)**: `export const streaming = true` di `*.server.js` (atau `streaming: true` di config). `<head>` dikirim lebih dulu, body menyusul setelah `load` selesai. `redirect()` setelah head terkirim jadi redirect sisi-browser; `notFound()`/error merender halaman 404/500 dengan status 200. Halaman dengan `head()` berupa fungsi, `nev export`, dan `HEAD` tetap mode biasa.
+- **`modulepreload`** otomatis untuk client, NevF, halaman, dan layout.
+- **`nev build --target netlify`** / `buildNetlify()`: `.nev/netlify` berisi `publish/`, Netlify Function v2, dan `netlify.toml`. Dites dengan menjalankan hasil build dari folder lain; belum dicoba di akun Netlify sungguhan.
+- **`nev export --target netlify|cloudflare`**: menulis `_redirects` dan `_headers` dari config (`redirectsFile()`, `headersFile()`).
+- `nev build --target cloudflare` menolak dengan penjelasan (Workers tanpa file system) dan menunjuk ke `nev export --target cloudflare`.
+- Refactor internal: pembentukan dokumen dipecah (`renderDocumentParts`), build Vercel/Netlify berbagi satu tahap staging.
+- Tipe TypeScript: `streaming`, `export.target`, `buildNetlify`, `redirectsFile`, `headersFile`.
+316 tes lulus (12 baru). NevB/NevF/NevG/NevGThree tidak berubah.
+
 ## 0.4.0 — Nev (`@adityadevid/nevjs`)
 - **Page `action`**: `export async function action(c)` di `*.server.js` menangani POST/PUT/PATCH/DELETE ke URL halaman; hasilnya masuk ke `props.actionData` (juga ikut hydration). `fail(status, data)` untuk error validasi, `Response` untuk redirect. Tanpa `action`, perilaku lama (404) tidak berubah.
 - **`revalidate`**: `export const revalidate = <detik>` meng-cache hasil `load` per URL (produksi saja, dilewati bila ada cookie/Authorization, dikosongkan setelah `action`).
