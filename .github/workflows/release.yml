@@ -1,15 +1,15 @@
 name: Release
 
-# Rilis MANUAL: Actions → Release → Run workflow → isi tag (mis. v0.2.2).
+# Rilis MANUAL: Actions → Release → Run workflow → isi tag (mis. v0.2.3).
 # TIDAK terpicu oleh push tag. Alur: tes → validasi → npm publish → npm pack → GitHub Release.
 on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag rilis, format vX.Y.Z (contoh: v0.2.2)"
+        description: "Tag rilis, format vX.Y.Z (contoh: v0.2.3)"
         required: true
         type: string
-        default: v0.2.2
+        default: v0.2.3
       package:
         description: "Paket yang dirilis (all = semua, urut nevb nevf nevg nevgthree nev)"
         required: true
@@ -93,7 +93,7 @@ jobs:
 
           # 1) Format tag harus vX.Y.Z
           if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            fail "Format tag salah" "Tag '$TAG' tidak valid. Pakai format vX.Y.Z, contoh: v0.2.2"
+            fail "Format tag salah" "Tag '$TAG' tidak valid. Pakai format vX.Y.Z, contoh: v0.2.3"
           fi
 
           if [ "${GITHUB_REF_NAME}" != "main" ]; then
@@ -183,15 +183,6 @@ jobs:
             (cd "packages/$p" && npm pack --pack-destination ../../dist)
           done
           ls -la dist
-
-      # Dry run: simpan .tgz sebagai artifact supaya bisa diperiksa.
-      - name: Simpan hasil pack (dry run)
-        if: ${{ inputs.dry_run }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: nevjs-${{ inputs.tag }}-dryrun
-          path: dist/*.tgz
-          retention-days: 7
 
       # ── GitHub Release ──────────────────────────────────────────────
       - name: GitHub Release
