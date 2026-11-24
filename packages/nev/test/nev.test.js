@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { createNev, fileToPattern, scanPages, scanApi } from '../src/index.js';
-import { create, parseArgs } from '../src/cli.js';
+import { create, parseArgs, suggest } from '../src/cli.js';
 import { safeJSON, formatTitle } from '../src/html.js';
 import { makeApp, cleanup } from './helpers.js';
 
@@ -413,6 +413,13 @@ describe('config', () => {
 });
 
 describe('cli', () => {
+  test('suggest finds the closest command for typos', () => {
+    assert.equal(suggest('strat'), 'start');
+    assert.equal(suggest('rotues'), 'routes');
+    assert.equal(suggest('exprt'), 'export');
+    assert.equal(suggest('zzzzzz'), null);
+  });
+
   test('parseArgs', () => {
     assert.deepEqual(parseArgs(['site', '--port', '4000', '--host=0.0.0.0', '-p', '5']), {
       flags: { port: '5', host: '0.0.0.0' },

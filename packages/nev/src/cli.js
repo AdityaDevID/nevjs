@@ -21,6 +21,27 @@ Usage:
 Environment: PORT overrides the configured port.
 `;
 
+const COMMANDS = ['create', 'dev', 'start', 'routes', 'export', 'help'];
+
+/** Closest known command to a typo (edit distance <= 2), or null. */
+export function suggest(input, names = COMMANDS) {
+  const dist = (a, b) => {
+    const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+    for (let j = 1; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++)
+      for (let j = 1; j <= b.length; j++)
+        d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    return d[a.length][b.length];
+  };
+  let best = null;
+  let bestD = 3;
+  for (const n of names) {
+    const x = dist(String(input).toLowerCase(), n);
+    if (x < bestD) { best = n; bestD = x; }
+  }
+  return best;
+}
+
 export function parseArgs(argv) {
   const flags = {};
   const positional = [];
@@ -198,7 +219,7 @@ export async function main(argv) {
       return;
     }
     default:
-      console.error(`Unknown command "${command}".`);
+      console.error(`Unknown command "${command}".${suggest(command) ? ` Did you mean "nev ${suggest(command)}"?` : ''}`);
       console.log(HELP);
       process.exitCode = 1;
   }
