@@ -17,12 +17,13 @@ Usage:
   nev start [folder] [--port 3000] [--host H]  Start in production mode
   nev routes [folder]                        Print the page and API routes
   nev export [folder] [--out out]            Render every page to static HTML (GitHub Pages, Netlify, S3, …)
+  nev build [folder] --target vercel         Build for Vercel (.vercel/output, then: vercel deploy --prebuilt)
   nev info [folder]                          Show versions, routes, .env files and config summary (paste it in bug reports)
 
 Environment: PORT overrides the configured port.
 `;
 
-const COMMANDS = ['create', 'dev', 'start', 'routes', 'export', 'info', 'help'];
+const COMMANDS = ['create', 'dev', 'start', 'routes', 'export', 'build', 'info', 'help'];
 
 /** Closest known command to a typo (edit distance <= 2), or null. */
 export function suggest(input, names = COMMANDS) {
@@ -46,7 +47,7 @@ export function suggest(input, names = COMMANDS) {
 export function parseArgs(argv) {
   const flags = {};
   const positional = [];
-  const valued = new Set(['port', 'p', 'host', 'template', 'out', 'o']);
+  const valued = new Set(['port', 'p', 'host', 'template', 'out', 'o', 'target']);
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a.startsWith('--') || (a.startsWith('-') && a.length === 2)) {
@@ -206,6 +207,16 @@ export async function main(argv) {
     case 'routes': {
       const { createNev } = await import('./server.js');
       printRoutes(await createNev({ root, silent: true }));
+      return;
+    }
+    case 'build': {
+      const target = typeof flags.target === 'string' ? flags.target : 'vercel';
+      if (target !== 'vercel') throw new Error(`Unknown --target "${target}". Available: vercel`);
+      const { buildVercel } = await import('./build.js');
+      const r = await buildVercel({ root, out: typeof flags.out === 'string' ? flags.out : undefined });
+      for (const w of r.warnings) console.log(`  ! ${w}`);
+      console.log(`\n  Built for Vercel → ${path.relative(process.cwd(), r.out) || '.'}\n  ${r.static} static files, ${r.appFiles} app files, ${r.packages.length} packages in the function\n  Deploy: npx vercel deploy --prebuilt   (set your env vars in the Vercel dashboard)\n`);
+      if (r.warnings.length) process.exitCode = 1;
       return;
     }
     case 'info': {

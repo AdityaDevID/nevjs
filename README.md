@@ -150,7 +150,7 @@ export const head = ({ data }) => ({
 import { notFound } from '@adityadevid/nevjs';
 ```
 
-`nev info` mencetak ringkasan proyek (versi, route, file .env, config) untuk laporan bug. `createHandler()` mengembalikan handler Web-standar
+`nev build --target vercel` membuat `.vercel/output` (deploy: `vercel deploy --prebuilt`; belum dicoba di akun Vercel sungguhan). `nev info` mencetak ringkasan proyek (versi, route, file .env, config) untuk laporan bug. `createHandler()` mengembalikan handler Web-standar
 `(request) => Response` untuk runtime serverless/edge (lihat [packages/nev](packages/nev/README.md)). NevB: `trailingSlash('never' | 'always')`. NevF: `publicEnv`.
 
 **Cara kerjanya.** Server me-render halaman ke HTML (SSR), menyisipkan import map + data JSON, lalu `client.js`

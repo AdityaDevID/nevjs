@@ -16,7 +16,7 @@ public/  components/  lib/  nev.config.js
 ```
 
 ## Commands
-`nev create` · `nev dev` (restart + live reload) · `nev start` · `nev routes` · `nev info` · `nev export` (static HTML for GitHub Pages / Netlify / S3)
+`nev create` · `nev dev` (restart + live reload) · `nev start` · `nev routes` · `nev build --target vercel` · `nev info` · `nev export` (static HTML for GitHub Pages / Netlify / S3)
 
 ## Highlights
 - SSR + client takeover, loader data, redirects, real 404/500 status codes

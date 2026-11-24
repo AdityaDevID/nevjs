@@ -6,6 +6,7 @@
 export { createNev, startServer, redirect, notFound, createHandler } from './server.js';
 export { defineConfig, loadConfig } from './config.js';
 export { exportSite } from './export.js';
+export { buildVercel } from './build.js';
 export { loadEnv, parseEnv, readEnvFiles, publicEnvOf } from './env.js';
 export { expandHead } from '../client/head.js';
 export { scanPages, scanApi, fileToPattern } from './routes.js';

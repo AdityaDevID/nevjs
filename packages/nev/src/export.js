@@ -14,7 +14,7 @@ const SERVER_FILE = /\.server\.m?js$/;
 
 const toPosix = (p) => p.split(path.sep).join('/');
 
-function copyFiltered(srcDir, destDir, keep) {
+export function copyFiltered(srcDir, destDir, keep) {
   if (!fs.existsSync(srcDir)) return 0;
   let count = 0;
   const walk = (dir) => {

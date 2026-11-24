@@ -47,3 +47,5 @@ export function fileToPattern(rel: string): string;
 
 /** A loader: in pages/blog/[slug].server.js write  export const load: Loader = (c) => ({ ... }) */
 export type Loader<T = unknown> = (c: Context) => T | Response | Promise<T | Response>;
+
+export function buildVercel(o?: { root?: string; out?: string; nodeVersion?: string; config?: Partial<NevConfig> }): Promise<{ out: string; static: number; appFiles: number; packages: string[]; warnings: string[] }>;
