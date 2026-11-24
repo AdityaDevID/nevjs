@@ -1,0 +1,1 @@
+import { h, Link } from '@adityadevid/nevf'; export default (p) => h('div', null, h(Link, { href: '/about' }, 'about'), h(Link, { href: '/blog/hello' }, 'post'), p.children);
