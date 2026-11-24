@@ -1,4 +1,3 @@
-// Enables JSX with:  "jsx": "react-jsx", "jsxImportSource": "@adityadevid/nevf"
 import { Fragment } from './dom.js';
 
 export { Fragment };

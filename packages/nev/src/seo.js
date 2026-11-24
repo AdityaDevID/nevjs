@@ -1,8 +1,5 @@
-// sitemap.xml / robots.txt generation.
-
 const xml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 
-/** Normalise `config.site` to an origin without trailing slash, or null. */
 export function siteOrigin(config) {
   const raw = config.site ?? config.siteUrl;
   if (!raw) return null;
@@ -15,11 +12,6 @@ export function siteOrigin(config) {
   }
 }
 
-/**
- * Entries for the sitemap: every page route without parameters, plus `config.sitemapPaths`
- * (array or async function) for dynamic pages, e.g. () => posts.map((p) => '/blog/' + p.slug)
- * Each item is a path string or { path, lastmod, changefreq, priority }.
- */
 export async function collectSitemapEntries(config, pages) {
   const entries = new Map();
   const add = (item) => {
@@ -45,7 +37,6 @@ export function buildSitemap(origin, entries) {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${rows.join('\n')}\n</urlset>\n`;
 }
 
-/** robots.txt: allow everything (minus config.robots.disallow) and point crawlers at the sitemap. */
 export function buildRobots(config, origin) {
   if (typeof config.robots === 'string') return config.robots;
   const disallow = config.robots?.disallow ?? [];

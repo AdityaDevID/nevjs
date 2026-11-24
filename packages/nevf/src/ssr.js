@@ -1,5 +1,3 @@
-// NevF.js — server-side rendering to an HTML string (synchronous).
-
 import { Fragment, isVNode, classNames, UNITLESS } from './dom.js';
 import { setServerMode, createRoot, untrack, runInScope } from './reactive.js';
 
@@ -90,10 +88,6 @@ function renderNode(value) {
   return `${open}>${inner}</${type}>`;
 }
 
-/**
- * Render a tree to an HTML string. Fully synchronous — fetch your data first,
- * then render. Effects run once, onMount is skipped.
- */
 export function renderToString(vnode) {
   const prev = setServerMode(true);
   let out = '';

@@ -1,12 +1,3 @@
-// `nev build --target vercel` — produce a Vercel "Build Output API v3" folder (.vercel/output) from a Nev project.
-//
-//   .vercel/output/config.json                    filesystem first (CDN: public/, /__nev/*), everything else → the function
-//   .vercel/output/static/…                       public/, framework client files, app modules, browser packages
-//   .vercel/output/functions/index.func/          Node function: app/ (your project) + node_modules (production closure) + index.mjs
-//
-// Deploy with `vercel deploy --prebuilt` (or `vercel build` is not needed — this IS the build).
-// Environment variables are read from the platform (process.env); .env files are NOT copied into the function.
-
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -18,7 +9,6 @@ const SERVER_FILE = /\.server\.m?js$/;
 const toPosix = (p) => p.split(path.sep).join('/');
 const SKIP_APP = new Set(['node_modules', '.git', '.vercel', '.netlify', 'out', '.scratch']);
 
-/** Directory of an installed package, found by walking up node_modules from `from` (symlinks resolved). */
 export function findPackageDir(name, from) {
   let dir = path.resolve(from);
   for (;;) {
@@ -30,7 +20,6 @@ export function findPackageDir(name, from) {
   }
 }
 
-/** All production packages needed to run `deps`: [{ name, dir }] (dependencies + optionalDependencies, transitively). */
 export function productionClosure(deps, from) {
   const seen = new Map();
   const queue = deps.map((name) => ({ name, from }));
@@ -91,7 +80,6 @@ export async function buildVercel(options = {}) {
 
   const result = { out, static: 0, appFiles: 0, packages: [], warnings: [] };
 
-  // 1. static assets (served by Vercel's CDN before the function runs)
   result.static += copyFiltered(path.join(root, 'public'), staticDir, () => true);
   for (const dir of nev.config.clientDirs) {
     result.static += copyFiltered(path.join(root, dir), path.join(staticDir, '__nev', 'app', dir), (rel) => ASSET_EXT.test(rel) && !SERVER_FILE.test(rel));
@@ -99,7 +87,6 @@ export async function buildVercel(options = {}) {
   result.static += copyFiltered(nev.clientDir, path.join(staticDir, '__nev'), (rel) => /\.js$/.test(rel));
   for (const p of nev.packages) result.static += copyFiltered(p.dir, path.join(staticDir, p.prefix.replace(/^\//, '')), p.filter ?? ((rel) => /\.m?js$/.test(rel)));
 
-  // 2. the function: project files + production dependencies
   const isEnv = (name) => /^\.env(\.|$)/.test(name);
   result.appFiles = copyTree(root, path.join(fnDir, 'app'), (name, from) => SKIP_APP.has(name) || isEnv(name) || (from === root && name === path.basename(out) && out.startsWith(root + path.sep)));
   const { packages, missing } = productionClosure(deps, root);

@@ -1,19 +1,8 @@
-// .env loading — same precedence idea as Next.js, zero dependencies.
-//
-//   .env                  all modes
-//   .env.local            everything except `test`   (git-ignored, your secrets)
-//   .env.<mode>           mode = development | production | test
-//   .env.<mode>.local     highest priority file
-//   real process.env      always wins over files
-//
-// Only variables starting with `NEV_PUBLIC_` are ever sent to the browser.
-
 import fs from 'node:fs';
 import path from 'node:path';
 
 export const PUBLIC_PREFIX = 'NEV_PUBLIC_';
 
-/** Parse the text of a .env file → { KEY: 'value' }. Supports comments, `export`, quotes, \n in "double quotes", ${VAR} expansion. */
 export function parseEnv(text, base = {}) {
   const out = {};
   const lookup = (k) => (k in out ? out[k] : base[k] ?? '');
@@ -26,7 +15,6 @@ export function parseEnv(text, base = {}) {
     let value;
     const quote = raw[0];
     if (quote === '"' || quote === "'" || quote === '`') {
-      // quoted value, may span several lines
       let rest = raw.slice(1);
       let end = rest.indexOf(quote);
       while (end === -1 && i + 1 < lines.length) {
@@ -46,7 +34,6 @@ export function parseEnv(text, base = {}) {
   return out;
 }
 
-/** Which files are read, lowest priority first. */
 export function envFiles(mode) {
   const files = ['.env'];
   if (mode !== 'test') files.push('.env.local');
@@ -54,9 +41,6 @@ export function envFiles(mode) {
   return files;
 }
 
-/**
- * Read the .env files of `root` and return the merged values (files only — process.env is NOT modified).
- */
 export function readEnvFiles(root, mode = 'production') {
   const merged = {};
   for (const name of envFiles(mode)) {
@@ -72,10 +56,6 @@ export function readEnvFiles(root, mode = 'production') {
   return merged;
 }
 
-/**
- * Load .env files into process.env (existing variables are never overwritten).
- * Returns { loaded: { KEY: value }, public: { NEV_PUBLIC_*: value } }.
- */
 export function loadEnv(root, { dev = false, mode } = {}) {
   const m = mode ?? process.env.NODE_ENV ?? (dev ? 'development' : 'production');
   const values = readEnvFiles(root, m);
@@ -89,7 +69,6 @@ export function loadEnv(root, { dev = false, mode } = {}) {
   return { mode: m, loaded, public: publicEnvOf(process.env) };
 }
 
-/** Only the NEV_PUBLIC_* entries (safe for the browser). */
 export function publicEnvOf(source) {
   const out = {};
   for (const [k, v] of Object.entries(source)) if (k.startsWith(PUBLIC_PREFIX) && v !== undefined) out[k] = String(v);

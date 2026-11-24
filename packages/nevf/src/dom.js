@@ -1,9 +1,3 @@
-// NevF.js — virtual nodes + DOM renderer.
-//
-// h() only creates lightweight descriptions. Components run ONCE when mounted;
-// anything that must update is expressed as a function (e.g. `() => count()`),
-// and only that tiny region of the DOM is re-rendered when its signals change.
-
 import {
   effect,
   untrack,
@@ -25,7 +19,6 @@ export const UNITLESS = new Set([
   'fontWeight', 'zoom', 'scale', 'aspectRatio', 'columns', 'tabSize', 'orphans', 'widows',
 ]);
 
-/** Create a virtual node: h('div', { class: 'x' }, child1, child2) */
 export function h(type, props, ...children) {
   const p = props ? { ...props } : {};
   if (children.length) p.children = children.length === 1 ? children[0] : children;
@@ -51,9 +44,7 @@ export function classNames(v) {
   return String(v);
 }
 
-// ---------------------------------------------------------------- insertion
 
-/** Insert `value` into `parent` before `anchor`. Handles every child type. */
 function insert(parent, value, anchor, ctx) {
   if (value == null || typeof value === 'boolean') return;
   const t = typeof value;
@@ -74,7 +65,7 @@ function insert(parent, value, anchor, ctx) {
     return;
   }
   if (typeof value.nodeType === 'number') {
-    parent.insertBefore(value, anchor); // raw DOM node
+    parent.insertBefore(value, anchor);
     return;
   }
   parent.insertBefore(document.createTextNode(String(value)), anchor);
@@ -103,7 +94,6 @@ function isPrimitive(v) {
   return t === 'string' || t === 'number' || t === 'bigint';
 }
 
-/** A function child: a reactive region delimited by two comment markers. */
 function insertDynamic(parent, fn, anchor, ctx) {
   if (fn.$$for) {
     insertFor(parent, fn.$$for, anchor, ctx);
@@ -116,10 +106,9 @@ function insertDynamic(parent, fn, anchor, ctx) {
   let textNode = null;
 
   effect(() => {
-    const value = fn(); // tracked
+    const value = fn();
     untrack(() => {
       if (isPrimitive(value)) {
-        // fast path: update the existing text node in place
         if (textNode && textNode.parentNode) {
           textNode.nodeValue = String(value);
           return;
@@ -136,7 +125,6 @@ function insertDynamic(parent, fn, anchor, ctx) {
   });
 }
 
-/** Keyed list reconciliation used by <For>. Items are keyed by identity. */
 function insertFor(parent, spec, anchor, ctx) {
   const outer = getOwner();
   const start = document.createComment('for');
@@ -206,7 +194,7 @@ function insertFor(parent, spec, anchor, ctx) {
   if (outer) outer.cleanups.push(() => entries.forEach((en) => disposeOwner(en.owner)));
 
   effect(() => {
-    const items = spec.each(); // tracked
+    const items = spec.each();
     untrack(() => batch(() => reconcile(items)));
   });
 }
@@ -227,7 +215,6 @@ function mountVNode(parent, vnode, anchor, ctx) {
   parent.insertBefore(createHost(type, props, ctx), anchor);
 }
 
-// -------------------------------------------------------------- host nodes
 
 const LATE_PROPS = new Set(['value', 'checked', 'selected']);
 
@@ -323,12 +310,7 @@ function setStyleProp(el, k, v) {
   else el.style[k] = v;
 }
 
-// ------------------------------------------------------------------ roots
 
-/**
- * Render a tree into a container (replacing its content).
- * Returns a dispose() function.
- */
 export function render(vnode, container) {
   let dispose;
   const frag = document.createDocumentFragment();
@@ -343,18 +325,10 @@ export function render(vnode, container) {
   };
 }
 
-/**
- * Mount a tree into `container` as part of the *current* owner: it is disposed together
- * with it and sees its contexts. Used by <Portal>. Returns the host-side dispose().
- */
 export function mountInto(vnode, container) {
   const frag = document.createDocumentFragment();
   runInScope(() => insert(frag, vnode, null, { svg: false }));
   container.appendChild(frag);
 }
 
-/**
- * Take over server-rendered markup. The tree is rebuilt off-screen and swapped
- * in atomically (no flash). DOM nodes are not reused — see README.
- */
 export const hydrate = render;

@@ -1,11 +1,8 @@
-// NevF.js — small reactive utilities. All of them clean up with their owner (component / effect).
-
 import { signal, effect, onCleanup, untrack, isServer, getOwner } from './reactive.js';
 import { h, mountInto } from './dom.js';
 
 const read = (v) => (typeof v === 'function' ? v() : v);
 
-/** A signal mirrored to localStorage (JSON). Falls back to a plain signal where storage is unavailable (SSR). */
 export function persisted(key, initial, options = {}) {
   const storage = options.storage ?? (typeof localStorage !== 'undefined' ? localStorage : null);
   let start = initial;
@@ -14,7 +11,6 @@ export function persisted(key, initial, options = {}) {
       const raw = storage.getItem(key);
       if (raw != null) start = JSON.parse(raw);
     } catch {
-      /* corrupt value or blocked storage → use initial */
     }
   }
   const s = signal(start);
@@ -24,7 +20,6 @@ export function persisted(key, initial, options = {}) {
       try {
         storage.setItem(key, JSON.stringify(v));
       } catch {
-        /* quota / private mode */
       }
     });
     if (options.sync !== false && typeof window !== 'undefined' && window.addEventListener) {
@@ -33,7 +28,6 @@ export function persisted(key, initial, options = {}) {
         try {
           s.set(e.newValue == null ? initial : JSON.parse(e.newValue));
         } catch {
-          /* ignore */
         }
       };
       window.addEventListener('storage', onStorage);
@@ -43,7 +37,6 @@ export function persisted(key, initial, options = {}) {
   return s;
 }
 
-/** Follows `source` after it has been quiet for `ms`. */
 export function debounced(source, ms = 200) {
   const out = signal(untrack(() => read(source)));
   let timer;
@@ -56,7 +49,6 @@ export function debounced(source, ms = 200) {
   return out;
 }
 
-/** Follows `source` at most once every `ms` (leading + trailing). */
 export function throttled(source, ms = 200) {
   const out = signal(untrack(() => read(source)));
   let last = 0;
@@ -65,7 +57,7 @@ export function throttled(source, ms = 200) {
   effect(() => {
     const v = read(source);
     if (first) {
-      first = false; // the initial value is already in `out`
+      first = false;
       return;
     }
     const wait = last + ms - Date.now();
@@ -84,7 +76,6 @@ export function throttled(source, ms = 200) {
   return out;
 }
 
-/** setInterval that stops with its owner. Returns a stop() function. No-op on the server. */
 export function interval(fn, ms) {
   if (isServer()) return () => {};
   const id = setInterval(fn, ms);
@@ -93,7 +84,6 @@ export function interval(fn, ms) {
   return stop;
 }
 
-/** setTimeout that is cancelled with its owner. */
 export function timeout(fn, ms) {
   if (isServer()) return () => {};
   const id = setTimeout(fn, ms);
@@ -102,7 +92,6 @@ export function timeout(fn, ms) {
   return stop;
 }
 
-/** addEventListener that is removed with its owner. `target` may be an element, window, or a function returning one. */
 export function listen(target, type, handler, options) {
   if (isServer() || typeof document === 'undefined') return () => {};
   const el = typeof target === 'function' ? target() : target;
@@ -113,7 +102,6 @@ export function listen(target, type, handler, options) {
   return stop;
 }
 
-/** Reactive boolean for a CSS media query: mediaQuery('(max-width: 600px)'). Always false on the server. */
 export function mediaQuery(query) {
   const s = signal(false);
   if (isServer() || typeof window === 'undefined' || !window.matchMedia) return s;
@@ -125,13 +113,11 @@ export function mediaQuery(query) {
   return s;
 }
 
-/** [value, toggle, set] boolean helper. */
 export function toggle(initial = false) {
   const s = signal(!!initial);
   return [s, () => s.update((v) => !v), (v) => s.set(!!v)];
 }
 
-/** Value of `source` from the previous change. */
 export function previous(source, initial) {
   const out = signal(initial);
   let prev = untrack(() => read(source));
@@ -139,7 +125,7 @@ export function previous(source, initial) {
   effect(() => {
     const now = read(source);
     if (first) {
-      first = false; // nothing has changed yet
+      first = false;
       return;
     }
     untrack(() => out.set(prev));
@@ -148,14 +134,7 @@ export function previous(source, initial) {
   return out;
 }
 
-// ---------------------------------------------------------------- components
 
-/**
- * Load a component on demand:
- *   const Chart = lazy(() => import('./Chart.js'))
- *   h(Chart, { fallback: h('p', null, 'Loading…'), ...props })
- * The loader runs once. On the server the fallback is rendered unless the module was preloaded.
- */
 export function lazy(loader) {
   let loaded = null;
   let promise = null;
@@ -175,7 +154,6 @@ export function lazy(loader) {
   return Lazy;
 }
 
-/** Render `children` into another DOM node (default: document.body) — modals, tooltips, toasts. */
 export function Portal(props) {
   if (isServer() || typeof document === 'undefined') return null;
   const target = (typeof props.mount === 'string' ? document.querySelector(props.mount) : read(props.mount)) ?? document.body;
@@ -187,7 +165,6 @@ export function Portal(props) {
   return null;
 }
 
-/** Choose the component at runtime:  h(Dynamic, { component: () => (admin() ? Admin : User), ...props }) — or a tag name. */
 export function Dynamic(props) {
   const { component, children, ...rest } = props;
   return () => {

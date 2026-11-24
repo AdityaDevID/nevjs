@@ -2,11 +2,10 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 
-// Browser globals must exist before nevf is imported (router reads window.location).
 const dom = new JSDOM('<!doctype html><html><body><div id="app"></div></body></html>', {
   url: 'http://localhost/',
 });
-dom.window.scrollTo = () => {}; // jsdom does not implement it
+dom.window.scrollTo = () => {};
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 
@@ -32,7 +31,7 @@ describe('reactivity', () => {
     const stop = effect(() => seen.push(n()));
     n.set(2);
     n.update((x) => x + 1);
-    n.set(3); // same value → no re-run
+    n.set(3);
     assert.deepEqual(seen, [1, 2, 3]);
     stop();
     n.set(10);
@@ -77,7 +76,7 @@ describe('reactivity', () => {
       isOdd();
       runs++;
     });
-    n.set(3); // still odd
+    n.set(3);
     n.set(5);
     assert.equal(runs, 1);
     n.set(4);
@@ -118,10 +117,10 @@ describe('reactivity', () => {
         innerRuns++;
       });
     });
-    outer.set(1); // creates a new inner effect, disposes the old
+    outer.set(1);
     innerRuns = 0;
     inner.set(1);
-    assert.equal(innerRuns, 1); // not 2 → old inner effect is gone
+    assert.equal(innerRuns, 1);
   });
 
   test('createRoot dispose cleans everything inside', () => {
@@ -144,7 +143,7 @@ describe('reactivity', () => {
     const n = signal(0);
     assert.throws(() => {
       effect(() => {
-        n(); // subscribe first, then write → the effect triggers itself forever
+        n();
         n.set(n.peek() + 1);
       });
     }, /infinite loop/);
@@ -182,7 +181,7 @@ describe('DOM rendering', () => {
     const { root } = mount(h(Counter));
     const btn = root.querySelector('button');
     assert.equal(btn.textContent, 'Count: 0');
-    const textNode = btn.lastChild.previousSibling; // the in-place text node
+    const textNode = btn.lastChild.previousSibling;
     btn.click();
     btn.click();
     assert.equal(btn.textContent, 'Count: 2');
@@ -265,7 +264,7 @@ describe('DOM rendering', () => {
     assert.equal(root.querySelector('b').textContent, 'n=2');
     assert.equal(plainRuns, 1, 'plain children are not rebuilt when only the value changes');
     const same = data.peek();
-    data.set(same); // identical value → nothing happens
+    data.set(same);
     assert.equal(root.querySelector('b').textContent, 'n=2');
   });
 
@@ -296,12 +295,12 @@ describe('DOM rendering', () => {
     assert.equal(text(), '0:a,1:b,2:c');
     const liB = root.querySelectorAll('li')[1];
 
-    list.set([c, b, a]); // reorder
+    list.set([c, b, a]);
     assert.equal(text(), '0:c,1:b,2:a');
     assert.equal(root.querySelectorAll('li')[1], liB, 'DOM node reused, not recreated');
 
     const d = { n: 'd' };
-    list.set([c, d, b]); // remove a, insert d
+    list.set([c, d, b]);
     assert.equal(text(), '0:c,1:d,2:b');
 
     list.set([]);
@@ -466,7 +465,6 @@ describe('router', () => {
   test('sortRoutes: static > param > wildcard', () => {
     const order = sortRoutes(['/*', '/a/:id', '/a/new', '/:x', '/'].map((path) => ({ path }))).map((r) => r.path);
     assert.deepEqual(order, ['/a/new', '/a/:id', '/:x', '/', '/*']);
-    // a wildcard also matches an empty rest, so exact routes must win over it
     const docs = sortRoutes(['/docs/*rest', '/docs'].map((path) => ({ path }))).map((r) => r.path);
     assert.deepEqual(docs, ['/docs', '/docs/*rest']);
   });
@@ -498,7 +496,6 @@ describe('router', () => {
 
   test('Link ignores modified clicks and external URLs', () => {
     const { root } = mount(h('div', null, h(Link, { href: 'https://example.com', id: 'ext' }, 'x'), h(Link, { href: '/z', id: 'int' }, 'y')));
-    // Observe at the root *after* Link's own handler ran; stop jsdom from really navigating.
     const seen = [];
     root.addEventListener('click', (e) => {
       seen.push(e.defaultPrevented);

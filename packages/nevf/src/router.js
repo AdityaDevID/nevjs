@@ -1,5 +1,3 @@
-// NevF.js — client/server router: location signal, navigate(), <Link>, <Router>.
-
 import { signal, memo } from './reactive.js';
 import { h } from './dom.js';
 
@@ -16,7 +14,6 @@ function browserLocation() {
     : { pathname: '/', search: '', hash: '' };
 }
 
-/** Reactive { pathname, search, hash }. */
 export const location = signal(browserLocation());
 export const useLocation = () => location;
 
@@ -28,12 +25,10 @@ function listen() {
 }
 listen();
 
-/** Server-side: set the location before rendering. */
 export function setLocation(url) {
   location.set(parseURL(url));
 }
 
-/** Go to a URL (pushState). On the server this only updates `location`. */
 export function navigate(to, options = {}) {
   const loc = parseURL(to);
   if (!hasWindow()) {
@@ -53,7 +48,6 @@ export function navigate(to, options = {}) {
       try {
         window.scrollTo(0, 0);
       } catch {
-        /* jsdom: not implemented */
       }
     }
   }
@@ -70,7 +64,6 @@ export function parseQuery(search) {
   return out;
 }
 
-/** Reactive query object for the current location. */
 export function useQuery() {
   return memo(() => parseQuery(location().search), shallowEqual);
 }
@@ -83,7 +76,6 @@ function shallowEqual(a, b) {
   return ka.length === kb.length && ka.every((k) => String(a[k]) === String(b[k]));
 }
 
-// ----------------------------------------------------------------- matching
 
 function safeDecode(s) {
   try {
@@ -104,10 +96,6 @@ function segmentsOf(pattern) {
     });
 }
 
-/**
- * Match "/users/:id" or "/files/*path" against a pathname.
- * Returns the params object, or null when it does not match.
- */
 export function matchPath(pattern, pathname) {
   const segs = segmentsOf(pattern);
   const parts = pathname.split('/').filter(Boolean).map(safeDecode);
@@ -129,10 +117,6 @@ export function matchPath(pattern, pathname) {
   return i === parts.length ? params : null;
 }
 
-/**
- * Most specific first: static > :param > "pattern ends here" > *wildcard.
- * (A wildcard also matches an empty rest, so "/" and "/docs" must be tried before "/*" and "/docs/*".)
- */
 export function sortRoutes(routes, getPattern = (r) => r.path ?? r.pattern ?? r) {
   const key = (r) => segmentsOf(getPattern(r));
   return [...routes].sort((a, b) => {
@@ -148,11 +132,9 @@ export function sortRoutes(routes, getPattern = (r) => r.path ?? r.pattern ?? r)
   });
 }
 
-// --------------------------------------------------------------- components
 
 const isExternal = (href) => /^[a-z][a-z0-9+.-]*:|^\/\//i.test(href);
 
-/** <a> that navigates without a page load. */
 export function Link(props) {
   const { href, children, replace, scroll, onClick, ...rest } = props;
   listen();
@@ -177,12 +159,6 @@ export function Link(props) {
   );
 }
 
-/**
- * Minimal SPA router.
- *   h(Router, { routes: [{ path: '/', component: Home }, { path: '/u/:id', component: User }],
- *               notFound: NotFound })
- * Components receive { params, query } props.
- */
 export function Router(props) {
   listen();
   const routes = sortRoutes(props.routes);

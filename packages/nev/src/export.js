@@ -1,9 +1,3 @@
-// `nev export` — render every page to plain HTML files (deploy to GitHub Pages, Netlify, S3, any static host).
-//
-// Pages are rendered in-process through the same code as the server, so loaders run at export time and their data is
-// embedded in the HTML. Pages WITH a loader navigate with a full page load in the exported site (there is no
-// /__nev/data endpoint); pages without one keep client-side navigation. API routes cannot be exported.
-
 import fs from 'node:fs';
 import path from 'node:path';
 import { createNev } from './server.js';
@@ -36,7 +30,6 @@ export function copyFiltered(srcDir, destDir, keep) {
   return count;
 }
 
-/** '/blog/hello' → 'blog/hello/index.html', '/' → 'index.html' */
 export function pathToFile(pathname) {
   const clean = decodeURIComponent(pathname).replace(/^\/+|\/+$/g, '');
   const segs = clean.split('/').filter(Boolean);
@@ -44,7 +37,6 @@ export function pathToFile(pathname) {
   return segs.length ? `${segs.join('/')}/index.html` : 'index.html';
 }
 
-/** Internal page links found in rendered HTML. */
 export function findLinks(html) {
   const out = new Set();
   for (const m of html.matchAll(/<a\s[^>]*?href="([^"]+)"/gi)) {
@@ -52,17 +44,12 @@ export function findLinks(html) {
     if (!href.startsWith('/') || href.startsWith('//')) continue;
     href = href.split('#')[0].split('?')[0];
     if (!href || href.startsWith('/__nev') || href === '/api' || href.startsWith('/api/')) continue;
-    if (/\.[a-z0-9]{1,8}$/i.test(href)) continue; // files (pdf, png, …) are not pages
+    if (/\.[a-z0-9]{1,8}$/i.test(href)) continue;
     out.add(href.length > 1 ? href.replace(/\/+$/, '') : href);
   }
   return [...out];
 }
 
-/**
- * Export a project.
- *   const result = await exportSite({ root: './my-site', out: './out' })
- * → { out, pages: ['/', '/about', …], files: n, errors: [{ path, status, message }], warnings: [] }
- */
 export async function exportSite(options = {}) {
   const root = path.resolve(options.root ?? process.cwd());
   const nev = await createNev({ root, static: true, silent: true, dev: false, config: options.config });
@@ -117,7 +104,6 @@ export async function exportSite(options = {}) {
     if (crawl) for (const link of findLinks(html)) if (!seen.has(link)) queue.push(link);
   }
 
-  // 404.html — what static hosts serve for unknown URLs
   try {
     const nf = await nev.app.request('/__nev-not-found__');
     if (nf.status === 404 && /html/.test(nf.headers.get('content-type') ?? '')) write('404.html', await nf.text());
@@ -125,7 +111,6 @@ export async function exportSite(options = {}) {
     result.warnings.push('could not render 404.html');
   }
 
-  // sitemap / robots (only when `site` is configured)
   if (siteOrigin(nev.config)) {
     for (const file of ['sitemap.xml', 'robots.txt']) {
       const r = await nev.app.request('/' + file);
@@ -133,7 +118,6 @@ export async function exportSite(options = {}) {
     }
   }
 
-  // assets: public/, framework client files, app modules (browser-safe only), browser packages
   result.files += copyFiltered(path.join(root, 'public'), out, () => true);
   const clientDirs = nev.config.clientDirs;
   for (const dir of clientDirs) {
@@ -143,7 +127,7 @@ export async function exportSite(options = {}) {
   for (const pkg of nev.packages) {
     result.files += copyFiltered(pkg.dir, path.join(out, pkg.prefix.replace(/^\//, '')), pkg.filter ?? ((rel) => /\.m?js$/.test(rel)));
   }
-  write('.nojekyll', ''); // GitHub Pages would otherwise ignore the "__nev" folder
+  write('.nojekyll', '');
 
   return result;
 }

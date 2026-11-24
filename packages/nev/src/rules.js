@@ -1,15 +1,3 @@
-// nev.config.js `redirects`, `headers` and `trailingSlash`.
-//
-//   redirects: [
-//     { source: '/old-blog/:slug', destination: '/blog/:slug', permanent: true },   // 308 (false → 307)
-//     { source: '/docs/*path',     destination: 'https://docs.example.com/*path' },
-//   ],
-//   headers: [
-//     { source: '/api/*',  headers: { 'cache-control': 'no-store' } },
-//     { source: '/*',      headers: [{ key: 'x-frame-options', value: 'DENY' }] },
-//   ],
-//   trailingSlash: 'never' | 'always' | 'ignore'    // default 'ignore'
-
 import { compile, matchSegs, splitPath, trailingSlash } from '@adityadevid/nevb';
 
 const toSegs = (source, what) => {
@@ -19,7 +7,6 @@ const toSegs = (source, what) => {
 
 const encodeSplat = (v) => String(v).split('/').map(encodeURIComponent).join('/');
 
-/** '/blog/:slug' + { slug: 'a b' } → '/blog/a%20b' */
 export function fillDestination(destination, params) {
   const out = destination.replace(/([:*])([A-Za-z_]\w*)/g, (m, kind, name) => {
     if (!Object.prototype.hasOwnProperty.call(params, name)) return m;
@@ -34,7 +21,6 @@ function checkDestination(d, i) {
   }
 }
 
-/** Middleware for config.redirects (first match wins; the query string is carried over). */
 export function redirectsMiddleware(list = []) {
   if (!Array.isArray(list)) throw new Error('[nev] config.redirects must be an array');
   const rules = list.map((r, i) => {
@@ -53,7 +39,7 @@ export function redirectsMiddleware(list = []) {
       const params = matchSegs(rule.segs, parts);
       if (!params) continue;
       let target = fillDestination(rule.destination, params);
-      if (target.startsWith('//')) target = '/' + target.replace(/^\/+/, ''); // never turn into a protocol-relative URL
+      if (target.startsWith('//')) target = '/' + target.replace(/^\/+/, '');
       if (c.url.search && !target.includes('?')) target += c.url.search;
       return c.redirect(target, rule.status);
     }
@@ -61,7 +47,6 @@ export function redirectsMiddleware(list = []) {
   };
 }
 
-/** Middleware for config.headers. */
 export function headersMiddleware(list = []) {
   if (!Array.isArray(list)) throw new Error('[nev] config.headers must be an array');
   const rules = list.map((r, i) => {
@@ -79,7 +64,6 @@ export function headersMiddleware(list = []) {
   };
 }
 
-/** All three config rules, in the order they should run. */
 export function ruleMiddlewares(config) {
   const out = [];
   const mode = config.trailingSlash ?? 'ignore';

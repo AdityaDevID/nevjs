@@ -1,4 +1,3 @@
-// NevF.js — public API
 export {
   signal,
   computed,

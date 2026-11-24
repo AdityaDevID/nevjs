@@ -1,23 +1,5 @@
-// NevF.js — form state with validation.
-
 import { signal, batch, untrack } from './reactive.js';
 
-/**
- * const form = createForm({
- *   initial: { email: '', age: '' },
- *   validate: (values) => ({ email: values.email.includes('@') ? '' : 'Invalid email' }),   // function → { field: message }
- *   // …or any schema with safeParse() → { ok, errors: [{ path, message }] }, e.g. NevB's  v.object({...})
- *   onSubmit: async (values) => { await save(values) },
- * })
- *
- * h('form', { onSubmit: form.submit },
- *   h('input', form.field('email')),                // { name, value, onInput, onBlur }
- *   () => form.touched().email && form.errors().email,
- *   h('button', { disabled: form.submitting }, 'Save'))
- *
- * form.values()  form.errors()  form.touched()  form.valid()  form.dirty()  form.submitting()  form.submitError()
- * form.set('email', 'x')  form.reset()  form.validateAll()
- */
 export function createForm(options = {}) {
   const initial = { ...(options.initial ?? {}) };
   const values = signal({ ...initial });
@@ -78,7 +60,6 @@ export function createForm(options = {}) {
         submitCount.set(0);
       });
     },
-    /** Spread onto an <input>/<textarea>/<select>. For checkboxes use { type: 'checkbox' } as the 2nd argument. */
     field(name, { type } = {}) {
       const isCheck = type === 'checkbox';
       const props = {
@@ -92,7 +73,6 @@ export function createForm(options = {}) {
       } else props.value = () => values()[name] ?? '';
       return props;
     },
-    /** Use as <form onSubmit={form.submit}>. Validates, marks every field touched, then calls onSubmit(values). */
     async submit(event) {
       event?.preventDefault?.();
       if (untrack(() => submitting())) return false;

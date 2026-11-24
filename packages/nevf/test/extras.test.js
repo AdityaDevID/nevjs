@@ -78,8 +78,8 @@ describe('createStore', () => {
     assert.deepEqual([nameRuns, ageRuns], [2, 1]);
     s.user.age = 31;
     assert.deepEqual([nameRuns, ageRuns], [2, 2]);
-    s.user.age = 31; // no change
-    s.other = 2; // unrelated
+    s.user.age = 31;
+    s.other = 2;
     assert.deepEqual([nameRuns, ageRuns], [2, 2]);
   });
 
@@ -160,7 +160,7 @@ describe('createStore', () => {
   test('proxies are never written into the raw data; Dates/Maps stay untouched', () => {
     const [s] = createStore({ a: { n: 1 }, when: new Date(0), map: new Map() });
     const other = { n: 2 };
-    s.b = s.a; // assigning a proxy
+    s.b = s.a;
     assert.equal(unwrap(s).b, unwrap(s).a, 'raw object stored, not the proxy');
     assert.ok(s.when instanceof Date);
     assert.equal(s.when.getTime(), 0);
