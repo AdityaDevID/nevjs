@@ -133,7 +133,8 @@ export class Scene3D extends Scene {
 
   queryBox(box, tag) {
     const out = [];
-    for (const e of this.entities) if (!e.dead && e.size && (!tag || e.tags.has(tag)) && e.box.intersectsBox(box)) out.push(e);
+    // Include child entities (world-space boxes), like Scene#query.
+    for (const e of this._allEntities()) if (!e.dead && e.size && (!tag || e.tags.has(tag)) && e.box.intersectsBox(box)) out.push(e);
     return out;
   }
 
@@ -206,7 +207,9 @@ export class Scene3D extends Scene {
       hit.bottom = hit.ground = hit.y = true;
     } else if (snapDown > 0 && dy <= 0 && p.y - base - gh <= snapDown && !hit.bottom) {
       p.y = gh + base;
-      hit.bottom = hit.ground = true;
+      // Match the primary ground branch above: hit.y must be set too,
+      // otherwise Body3D never zeroes vel.y for a snapped landing.
+      hit.bottom = hit.ground = hit.y = true;
     }
     return hit;
   }
@@ -235,7 +238,7 @@ export class Scene3D extends Scene {
   }
 
   _collide() {
-    const list = this.entities.filter((e) => !e.dead && e.collides && e.size && e.object);
+    const list = this._allEntities().filter((e) => !e.dead && e.collides && e.size && e.object);
     if (list.length < 2) return;
     const items = list.map((e) => ({ e, b: e.box.clone() })).sort((a, b) => a.b.min.x - b.b.min.x);
     for (let i = 0; i < items.length; i++) {

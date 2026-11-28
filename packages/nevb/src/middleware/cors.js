@@ -2,14 +2,22 @@ export function cors(options = {}) {
   const {
     origin = '*',
     methods = 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    allowedHeaders,
     exposedHeaders,
     credentials = false,
     maxAge,
   } = options;
+  // `headers` is accepted as an alias for `allowedHeaders`.
+  const allowedHeaders = options.allowedHeaders ?? options.headers;
 
   const resolve = (requestOrigin) => {
-    if (typeof origin === 'function') return origin(requestOrigin);
+    if (typeof origin === 'function') {
+      const r = origin(requestOrigin);
+      // A function returning true means "allow this origin": echo the
+      // request origin back, never the literal string "true".
+      if (r === true) return requestOrigin || false;
+      if (typeof r === 'string') return r;
+      return r ? requestOrigin || false : false;
+    }
     if (origin === '*') return credentials ? requestOrigin || false : '*';
     if (Array.isArray(origin)) return origin.includes(requestOrigin) ? requestOrigin : false;
     return origin;

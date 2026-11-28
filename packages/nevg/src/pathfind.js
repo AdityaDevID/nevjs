@@ -60,10 +60,26 @@ export function findPath(grid, start, goal, options = {}) {
   if (start.col === goal.col && start.row === goal.row) return [{ col: start.col, row: start.row }];
 
   const key = (c, r) => r * cols + c;
+  // The heuristic must never overestimate the true cost: a step can cost
+  // less than 1 when cost() returns values < 1, so scale the (unit-cost)
+  // heuristic by the minimum cost over the whole grid. Scanning once per
+  // call is cheap for the small grids this is meant for and keeps A*
+  // admissible — and therefore optimal — for any cost function.
+  let minCost = Infinity;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (grid.blocked(c, r)) continue;
+      const v = cost(c, r);
+      if (Number.isFinite(v) && v < minCost) minCost = v;
+    }
+  }
+  if (!Number.isFinite(minCost)) minCost = 1;
+  else if (minCost < 0) minCost = 0;
   const h = (c, r) => {
     const dx = Math.abs(c - goal.col);
     const dy = Math.abs(r - goal.row);
-    return diagonal ? dx + dy + (Math.SQRT2 - 2) * Math.min(dx, dy) : dx + dy;
+    const base = diagonal ? dx + dy + (Math.SQRT2 - 2) * Math.min(dx, dy) : dx + dy;
+    return base * minCost;
   };
   const g = new Map([[key(start.col, start.row), 0]]);
   const parent = new Map();

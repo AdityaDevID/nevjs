@@ -50,20 +50,64 @@ export class Context {
     return this.env.incoming?.socket?.remoteAddress ?? '';
   }
 
+  async _readBodyBytes() {
+    const limit = this.app?.options?.maxBodySize;
+    const hasLimit = typeof limit === 'number' && Number.isFinite(limit);
+    if (hasLimit) {
+      const declared = this.req.headers.get('content-length');
+      if (declared != null && declared !== '') {
+        const n = Number(declared);
+        if (Number.isFinite(n) && n > limit) throw new HttpError(413, 'Payload Too Large');
+      }
+    }
+    if (!this.req.body) return new Uint8Array(0);
+    // Stream the body chunk-by-chunk so chunked/streaming bodies without a
+    // content-length are also cut off as soon as they exceed the limit.
+    if (typeof this.req.body.getReader === 'function') {
+      const reader = this.req.body.getReader();
+      const chunks = [];
+      let total = 0;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = value instanceof Uint8Array ? value : new Uint8Array(value);
+        total += chunk.byteLength;
+        if (hasLimit && total > limit) {
+          try { await reader.cancel(); } catch { /* ignore */ }
+          throw new HttpError(413, 'Payload Too Large');
+        }
+        chunks.push(chunk);
+      }
+      const out = new Uint8Array(total);
+      let off = 0;
+      for (const chunk of chunks) { out.set(chunk, off); off += chunk.byteLength; }
+      return out;
+    }
+    const buf = new Uint8Array(await this.req.arrayBuffer());
+    if (hasLimit && buf.byteLength > limit) throw new HttpError(413, 'Payload Too Large');
+    return buf;
+  }
+
   async body() {
     if (this._body !== undefined) return this._body;
     const type = (this.req.headers.get('content-type') || '').toLowerCase();
     try {
+      const bytes = await this._readBodyBytes();
+      const text = new TextDecoder().decode(bytes);
       if (type.includes('json')) {
-        const text = await this.req.text();
         this._body = text ? JSON.parse(text) : {};
       } else if (type.includes('application/x-www-form-urlencoded') || type.includes('multipart/form-data')) {
-        const form = await this.req.formData();
+        const clone = new Request(this.req.url, {
+          method: this.req.method,
+          headers: this.req.headers,
+          body: bytes.byteLength ? bytes : undefined,
+        });
+        const form = await clone.formData();
         const obj = {};
         for (const [k, v] of form) addValue(obj, k, v);
         this._body = obj;
       } else {
-        this._body = await this.req.text();
+        this._body = text;
       }
     } catch (err) {
       if (err instanceof HttpError || (Number.isInteger(err?.status) && err.status >= 400)) throw err;
@@ -134,13 +178,23 @@ export class Context {
           }
         };
         closeFn = close;
-        const send = (data, event, id) => {
+        const send = (data, event, id, retry) => {
           if (closed) return;
           const payload = typeof data === 'string' ? data : JSON.stringify(data);
+          // Sanitize single-line fields: any event/id containing CR/LF is
+          // dropped entirely (rather than emitted with the newlines
+          // stripped and the fragments joined), so a crafted value can
+          // never inject forged SSE events or fields.
+          const clean = (v) => (/[\r\n]/.test(String(v)) ? null : String(v));
           let msg = '';
-          if (event) msg += `event: ${event}\n`;
-          if (id != null) msg += `id: ${id}\n`;
-          for (const line of payload.split('\n')) msg += `data: ${line}\n`;
+          const eventClean = event ? clean(event) : null;
+          if (eventClean) msg += `event: ${eventClean}\n`;
+          const idClean = id != null ? clean(id) : null;
+          if (idClean != null) msg += `id: ${idClean}\n`;
+          if (retry != null && Number.isFinite(Number(retry)) && Number(retry) >= 0) {
+            msg += `retry: ${Math.floor(Number(retry))}\n`;
+          }
+          for (const line of payload.split(/\r\n|\r|\n/)) msg += `data: ${line}\n`;
           controller.enqueue(enc.encode(msg + '\n'));
         };
         const closeHandlers = [];

@@ -43,10 +43,15 @@ export class Entity3D extends Entity {
 
   get box() {
     const p = this.object.parent && this.object.parent.parent ? this.object.getWorldPosition(_v) : this.object.position;
-    const s = this.size;
+    // The collision size is in local units: scale it by the object's own
+    // scale so a scaled-up entity actually occupies more world space.
+    const sc = this.object.scale;
+    const sx = this.size.x * Math.abs(sc.x);
+    const sy = this.size.y * Math.abs(sc.y);
+    const sz = this.size.z * Math.abs(sc.z);
     const b = (this._box ??= new THREE.Box3());
-    b.min.set(p.x - s.x / 2, p.y - s.y * this.anchor, p.z - s.z / 2);
-    b.max.set(p.x + s.x / 2, p.y + s.y * (1 - this.anchor), p.z + s.z / 2);
+    b.min.set(p.x - sx / 2, p.y - sy * this.anchor, p.z - sz / 2);
+    b.max.set(p.x + sx / 2, p.y + sy * (1 - this.anchor), p.z + sz / 2);
     return b;
   }
 

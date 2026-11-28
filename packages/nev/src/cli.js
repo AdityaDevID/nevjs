@@ -21,11 +21,12 @@ Usage:
                                              --target also writes _redirects and _headers from your config
   nev build [folder] --target vercel|netlify Build for Vercel (.vercel/output) or Netlify (.nev/netlify)
   nev info [folder]                          Show versions, routes, .env files and config summary (paste it in bug reports)
+  nev check [folder]                         Validate the project: config, routes, and common security mistakes (exit 1 on errors)
 
 Environment: PORT overrides the configured port.
 `;
 
-const COMMANDS = ['create', 'dev', 'start', 'routes', 'export', 'build', 'info', 'help'];
+const COMMANDS = ['create', 'dev', 'start', 'routes', 'export', 'build', 'info', 'check', 'help'];
 
 export function suggest(input, names = COMMANDS) {
   const dist = (a, b) => {
@@ -89,7 +90,10 @@ function copyDir(src, dest, vars) {
 
 export function create(target, template = 'default') {
   if (!target) throw new Error('Usage: nev create <folder>');
-  const src = path.join(templatesDir, template);
+  const src = path.resolve(templatesDir, template);
+  if (src === templatesDir || (src !== templatesDir && !src.startsWith(templatesDir + path.sep))) {
+    throw new Error(`Invalid template "${template}". Template must be one of: ${fs.existsSync(templatesDir) ? fs.readdirSync(templatesDir).join(', ') : ''}`);
+  }
   if (!fs.existsSync(src)) {
     const names = fs.readdirSync(templatesDir).join(', ');
     throw new Error(`Unknown template "${template}". Available: ${names}`);
@@ -182,6 +186,55 @@ function supervise(root, argv) {
   launch();
 }
 
+const SERVER_ONLY_IN_PUBLIC = [/\.server\.(js|mjs)$/i, /^nev\.config\.(js|mjs)$/i, /^middleware\.(js|mjs)$/i, /^\.env/i];
+
+function walkFiles(dir, base = dir, out = []) {
+  if (!fs.existsSync(dir)) return out;
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) walkFiles(p, base, out);
+    else out.push(path.relative(base, p));
+  }
+  return out;
+}
+
+export async function checkProject(root) {
+  // Static health + security check for a Nev project. Returns
+  // { errors, warnings, pages, api } — errors are things that break or leak,
+  // warnings are things that silently degrade the site.
+  const errors = [];
+  const warnings = [];
+  if (!fs.existsSync(root)) return { errors: [`Project folder does not exist: ${root}`], warnings, pages: 0, api: 0 };
+  if (!fs.existsSync(path.join(root, 'package.json'))) warnings.push('No package.json — `npm install` inside the project will not know its dependencies.');
+  const { createNev } = await import('./server.js');
+  let nev;
+  try {
+    nev = await createNev({ root, silent: true, env: false });
+  } catch (err) {
+    return { errors: [`Project does not load: ${err.message}`], warnings, pages: 0, api: 0 };
+  }
+  const pages = nev.pages.routes.length;
+  const api = nev.api.length;
+  if (!pages && !api) warnings.push('No pages and no API routes — add files under pages/ or api/.');
+  if (pages && !nev.config.site) warnings.push('`site` is not set in nev.config.js — no sitemap.xml/robots.txt, and canonical/OG URLs stay relative.');
+  for (const rel of walkFiles(path.join(root, 'pages'))) {
+    if (/\.server\.(js|mjs)$/.test(rel)) {
+      const pageFile = path.join(root, 'pages', rel.replace(/\.server\.(js|mjs)$/, '.$1'));
+      if (!fs.existsSync(pageFile)) warnings.push(`Loader without a matching page (never runs): pages/${rel}`);
+    }
+  }
+  for (const rel of walkFiles(path.join(root, 'public'))) {
+    const base = path.basename(rel);
+    if (SERVER_ONLY_IN_PUBLIC.some((re) => re.test(base))) errors.push(`Server-only file inside public/ would be downloadable by anyone: public/${rel}`);
+  }
+  const envPresent = ['.env', '.env.local', '.env.production'].some((f) => fs.existsSync(path.join(root, f)));
+  if (envPresent) {
+    const gi = path.join(root, '.gitignore');
+    if (!fs.existsSync(gi) || !/^\.env/m.test(fs.readFileSync(gi, 'utf8'))) warnings.push('.env files exist but .gitignore does not list .env — secrets could be committed.');
+  }
+  return { errors, warnings, pages, api };
+}
+
 export async function main(argv) {
   const [command, ...rest] = argv;
   if (!command || command === 'help' || command === '--help' || command === '-h') {
@@ -220,6 +273,14 @@ export async function main(argv) {
       const deploy = target === 'netlify' ? `cd ${path.relative(process.cwd(), r.out) || '.'} && npx netlify deploy --prod   (set env vars in the Netlify dashboard)` : 'npx vercel deploy --prebuilt   (set your env vars in the Vercel dashboard)';
       console.log(`\n  Built for ${target === 'netlify' ? 'Netlify' : 'Vercel'} → ${path.relative(process.cwd(), r.out) || '.'}\n  ${r.static} static files, ${r.appFiles} app files, ${r.packages.length} packages in the function\n  Deploy: ${deploy}\n`);
       if (r.warnings.length) process.exitCode = 1;
+      return;
+    }
+    case 'check': {
+      const r = await checkProject(root);
+      for (const e of r.errors) console.error(`  ✗ ${e}`);
+      for (const w of r.warnings) console.log(`  ! ${w}`);
+      console.log(`\n  ${r.errors.length ? 'FAILED' : 'OK'} — ${r.pages} page${r.pages === 1 ? '' : 's'}, ${r.api} API route${r.api === 1 ? '' : 's'}, ${r.errors.length} error${r.errors.length === 1 ? '' : 's'}, ${r.warnings.length} warning${r.warnings.length === 1 ? '' : 's'}\n`);
+      if (r.errors.length) process.exitCode = 1;
       return;
     }
     case 'info': {

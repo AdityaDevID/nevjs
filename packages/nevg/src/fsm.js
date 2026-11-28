@@ -44,6 +44,69 @@ export class StateMachine extends Emitter {
   }
 }
 
+export class Timer extends Emitter {
+  // One-shot or looping timer driven by update(dt) — call it from a scene's
+  // update(). Emits 'complete' when the duration elapses (every cycle when
+  // looping) and 'tick' with the remaining seconds on every update.
+  constructor(duration = 1, { loop = false, autostart = true } = {}) {
+    super();
+    this.duration = Math.max(0, duration);
+    this.loop = !!loop;
+    this.elapsed = 0;
+    this.running = !!autostart;
+    this.done = false;
+  }
+
+  get left() {
+    return Math.max(0, this.duration - this.elapsed);
+  }
+
+  get progress() {
+    return this.duration ? Math.min(1, this.elapsed / this.duration) : 1;
+  }
+
+  start() {
+    this.running = true;
+    return this;
+  }
+
+  pause() {
+    this.running = false;
+    return this;
+  }
+
+  reset() {
+    this.elapsed = 0;
+    this.done = false;
+    return this;
+  }
+
+  restart() {
+    return this.reset().start();
+  }
+
+  update(dt) {
+    if (!this.running || this.done || !(dt > 0)) return this;
+    this.elapsed += dt;
+    this.emit('tick', this.left);
+    while (this.elapsed >= this.duration) {
+      if (this.duration <= 0) {
+        this.done = true;
+        this.emit('complete');
+        break;
+      }
+      this.elapsed -= this.duration;
+      this.emit('complete');
+      if (!this.loop) {
+        this.elapsed = this.duration;
+        this.done = true;
+        break;
+      }
+    }
+    return this;
+  }
+}
+
 export class Cooldown {
   constructor(duration = 1, { ready = true } = {}) {
     this.duration = duration;

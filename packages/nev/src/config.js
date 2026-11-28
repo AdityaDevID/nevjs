@@ -19,6 +19,7 @@ const DEFAULTS = {
   headers: [],
   trailingSlash: 'ignore',
   streaming: false,
+  csrf: false,
   export: {},
 };
 

@@ -143,8 +143,15 @@ export function computed(fn) {
     read.peek = read;
     return read;
   }
-  const o = { kind: 'computed', sources: new Set(), subs: new Set(), dirty: true, value: undefined };
+  const o = { kind: 'computed', sources: new Set(), subs: new Set(), dirty: true, value: undefined, disposed: false };
+  const dispose = () => {
+    if (o.disposed) return;
+    o.disposed = true;
+    detach(o);
+  };
+  if (currentOwner) currentOwner.cleanups.push(dispose);
   const refresh = () => {
+    o.disposed = false;
     detach(o);
     const prev = activeObserver;
     activeObserver = o;
@@ -165,6 +172,37 @@ export function computed(fn) {
     return o.value;
   };
   return read;
+}
+
+export function createSelector(source, equals = Object.is) {
+  // Solid-style selector: `const isActive = createSelector(selectedId)` then
+  // `isActive(item.id)` inside an effect/component re-runs that observer ONLY
+  // when that particular key starts or stops matching — not on every change
+  // of the source. One internal effect fans the source out to per-key
+  // subscriber sets, so a list of 1,000 rows costs one comparison per row per
+  // change, but only the two affected rows re-render.
+  if (serverMode) return (key) => !!equals(untrack(source), key);
+  const entries = new Map();
+  effect(() => {
+    const value = source();
+    for (const [key, e] of entries) {
+      const next = !!equals(value, key);
+      if (next !== e.value) {
+        e.value = next;
+        propagate(e.subs);
+      }
+    }
+    if (!flushing && batchDepth === 0) flush();
+  });
+  return (key) => {
+    let e = entries.get(key);
+    if (!e) {
+      e = { subs: new Set(), value: !!equals(untrack(source), key) };
+      entries.set(key, e);
+    }
+    track(e.subs);
+    return e.value;
+  };
 }
 
 export function memo(fn, equals = Object.is) {

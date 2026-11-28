@@ -42,7 +42,7 @@ export function navigate(to, options = {}) {
   location.set(loc);
   if (options.scroll !== false) {
     if (loc.hash) {
-      const el = document.getElementById(decodeURIComponent(loc.hash.slice(1)));
+      const el = document.getElementById(safeDecode(loc.hash.slice(1)));
       if (el && el.scrollIntoView) el.scrollIntoView();
     } else if (window.scrollTo) {
       try {
@@ -68,12 +68,21 @@ export function useQuery() {
   return memo(() => parseQuery(location().search), shallowEqual);
 }
 
+function valueEqual(a, b) {
+  if (Object.is(a, b)) return true;
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b)) return false;
+    return a.length === b.length && a.every((v, i) => Object.is(v, b[i]));
+  }
+  return false;
+}
+
 function shallowEqual(a, b) {
   if (a === b) return true;
   if (!a || !b) return false;
   const ka = Object.keys(a);
   const kb = Object.keys(b);
-  return ka.length === kb.length && ka.every((k) => String(a[k]) === String(b[k]));
+  return ka.length === kb.length && ka.every((k) => valueEqual(a[k], b[k]));
 }
 
 
@@ -161,7 +170,10 @@ export function Link(props) {
 
 export function Router(props) {
   listen();
-  const routes = sortRoutes(props.routes);
+  // `fallback` is the canonical not-found prop (see types); `notFound` is
+  // kept as a legacy alias. When both are given, `fallback` wins.
+  const fallback = props.fallback ?? props.notFound;
+  const routes = sortRoutes(props.routes ?? []);
   const match = memo(
     () => {
       const { pathname } = location();
@@ -176,7 +188,10 @@ export function Router(props) {
   const query = useQuery();
   return () => {
     const m = match();
-    if (!m) return props.notFound ? h(props.notFound, {}) : null;
+    if (!m) {
+      if (fallback == null) return null;
+      return typeof fallback === 'function' ? h(fallback, {}) : fallback;
+    }
     return h(m.route.component, { params: m.params, query: query.peek() });
   };
 }

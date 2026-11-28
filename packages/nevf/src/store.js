@@ -120,6 +120,19 @@ export function snapshot(store) {
     v = unwrap(v);
     if (v === null || typeof v !== 'object') return v;
     if (seen.has(v)) return seen.get(v);
+    if (v instanceof Date) return new Date(v.getTime());
+    if (v instanceof Map) {
+      const outMap = new Map();
+      seen.set(v, outMap);
+      for (const [k, val] of v) outMap.set(copy(k), copy(val));
+      return outMap;
+    }
+    if (v instanceof Set) {
+      const outSet = new Set();
+      seen.set(v, outSet);
+      for (const val of v) outSet.add(copy(val));
+      return outSet;
+    }
     if (!isWrappable(v)) return v;
     const out = Array.isArray(v) ? [] : {};
     seen.set(v, out);

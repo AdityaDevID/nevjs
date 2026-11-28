@@ -59,6 +59,17 @@ class Schema {
   }
 
   _run(value, path, ctx) {
+    try {
+      return this._runInner(value, path, ctx);
+    } catch (err) {
+      // Exceptions from user callbacks (refine/transform) or checks become a
+      // validation error so safeParse() never throws.
+      ctx.errors.push({ path, message: err instanceof Error ? err.message : 'is invalid' });
+      return undefined;
+    }
+  }
+
+  _runInner(value, path, ctx) {
     if (value === null && this._nullable) return null;
     const empty = value === undefined || value === null || (ctx.coerce && value === '');
     if (empty) {
@@ -79,7 +90,12 @@ class Schema {
 
   safeParse(value, options = {}) {
     const ctx = { coerce: !!options.coerce, errors: [] };
-    const out = this._run(value, '', ctx);
+    let out;
+    try {
+      out = this._run(value, '', ctx);
+    } catch (err) {
+      ctx.errors.push({ path: '', message: err instanceof Error ? err.message : 'is invalid' });
+    }
     return { ok: ctx.errors.length === 0, value: out, errors: ctx.errors };
   }
 
@@ -105,7 +121,14 @@ export const v = {
       if (trim) val = val.trim();
       if (min != null && val.length < min) return fail(ctx, path, `must be at least ${min} character${min === 1 ? '' : 's'}`);
       if (max != null && val.length > max) return fail(ctx, path, `must be at most ${max} character${max === 1 ? '' : 's'}`);
-      if (pattern && !pattern.test(val)) return fail(ctx, path, 'has an invalid format');
+      if (pattern) {
+        // Stateful (/g, /y) regexes advance lastIndex on every test(); reset
+        // it so repeated parses of the same value give the same verdict.
+        pattern.lastIndex = 0;
+        const ok = pattern.test(val);
+        pattern.lastIndex = 0;
+        if (!ok) return fail(ctx, path, 'has an invalid format');
+      }
       if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return fail(ctx, path, 'must be a valid email');
       return val;
     });

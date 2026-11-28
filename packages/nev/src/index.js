@@ -25,6 +25,7 @@ export {
   jwtAuth,
   compress,
   csrf,
+  keyAuth,
   requestId,
   basicAuth,
   bearerAuth,

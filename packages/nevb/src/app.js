@@ -110,9 +110,32 @@ export class App {
         downstream = run(i + 1);
         return downstream;
       };
-      const out = await item.fn(c, next);
+      let out;
+      try {
+        out = await item.fn(c, next);
+      } catch (err) {
+        // The middleware threw after starting downstream work: observe the
+        // downstream promise so its rejection is never left floating, but
+        // let the middleware's own error win.
+        if (called) {
+          try { await downstream; } catch { /* already have an error */ }
+        }
+        throw err;
+      }
+      if (called) {
+        // Fire-and-forget next(): even when the middleware returns its own
+        // response without awaiting next(), the downstream promise must be
+        // awaited/observed here — otherwise a downstream failure becomes an
+        // unhandledRejection. Semantics: downstream completion is always
+        // awaited; if the middleware itself succeeded but downstream failed,
+        // the downstream error propagates; if both succeed and the
+        // middleware returned its own value, that value wins (the downstream
+        // response is discarded, but it was still run to completion).
+        const downRes = await downstream;
+        if (out === undefined) return downRes;
+        return toResponse(c, out);
+      }
       if (out === undefined) {
-        if (called) return downstream;
         if (item.isRoute) return new Response(null, { status: 204 });
         return next();
       }

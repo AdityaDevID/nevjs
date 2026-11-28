@@ -242,7 +242,7 @@ describe('server: pages, loaders, SSR', async () => {
 describe('server: data endpoint (client-side navigation)', async () => {
   const root = makeApp(appFiles);
   const { app } = await createNev({ root, silent: true });
-  const data = (p) => app.request('/__nev/data?path=' + encodeURIComponent(p));
+  const data = (p) => app.request('/__nev/data?path=' + encodeURIComponent(p), { headers: { 'x-nev-data': '1' } });
 
   test('returns loader data as JSON, never cached', async () => {
     const res = await data('/users/7?q=x');
@@ -273,7 +273,7 @@ describe('server: data endpoint (client-side navigation)', async () => {
     for (const p of ['//evil.com/x', 'https://evil.com/', 'users/1', '/a\\b']) {
       assert.equal((await data(p)).status, 400, p);
     }
-    assert.equal((await app.request('/__nev/data')).status, 400);
+    assert.equal((await app.request('/__nev/data', { headers: { 'x-nev-data': '1' } })).status, 400);
   });
 
   test('loader cookies are forwarded', async () => {

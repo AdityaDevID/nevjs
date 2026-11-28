@@ -96,9 +96,20 @@ export async function verifyJWT(token, secret, options = {}) {
     for (const s of [].concat(secret)) if (safeEqual(parts[2], await hmac(s, `${parts[0]}.${parts[1]}`))) ok = true;
     if (!ok) return null;
     const payload = JSON.parse(b64urlToUtf8(parts[1]));
-    const now = Math.floor(Date.now() / 1000) + (options.clockTolerance ?? 0);
-    if (payload.exp != null && now >= payload.exp) return null;
-    if (payload.nbf != null && now < payload.nbf) return null;
+    const now = Math.floor(Date.now() / 1000);
+    const tol = typeof options.clockTolerance === 'number' && Number.isFinite(options.clockTolerance) ? options.clockTolerance : 0;
+    // clockTolerance loosens both checks: a token is expired once
+    // now - tolerance reaches exp (RFC 7519: a token must not be accepted
+    // on or after exp), and not-yet-valid only while now + tolerance is
+    // still before nbf. Non-numeric claims are invalid.
+    if (payload.exp != null) {
+      if (typeof payload.exp !== 'number' || !Number.isFinite(payload.exp)) return null;
+      if (now - tol >= payload.exp) return null;
+    }
+    if (payload.nbf != null) {
+      if (typeof payload.nbf !== 'number' || !Number.isFinite(payload.nbf)) return null;
+      if (now + tol < payload.nbf) return null;
+    }
     if (options.issuer && payload.iss !== options.issuer) return null;
     if (options.audience) {
       const aud = [].concat(payload.aud ?? []);
@@ -119,11 +130,17 @@ export async function hashPassword(password, { iterations = 210_000 } = {}) {
 }
 
 export async function verifyPassword(password, stored) {
-  const [scheme, hash, iter, salt, digest] = String(stored).split('$');
-  if (scheme !== 'pbkdf2' || hash !== 'sha256' || !iter || !salt || !digest) return false;
-  const iterations = Number(iter);
-  if (!Number.isInteger(iterations) || iterations < 1000 || iterations > 10_000_000) return false;
-  const key = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
-  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: b64urlToBytes(salt), iterations }, key, 256);
-  return safeEqual(bytesToB64url(new Uint8Array(bits)), digest);
+  try {
+    const [scheme, hash, iter, salt, digest] = String(stored).split('$');
+    if (scheme !== 'pbkdf2' || hash !== 'sha256' || !iter || !salt || !digest) return false;
+    const iterations = Number(iter);
+    if (!Number.isInteger(iterations) || iterations < 1000 || iterations > 10_000_000) return false;
+    const key = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: b64urlToBytes(salt), iterations }, key, 256);
+    return safeEqual(bytesToB64url(new Uint8Array(bits)), digest);
+  } catch {
+    // A malformed stored hash (bad base64url, bad salt, ...) is simply a
+    // failed verification, never an exception.
+    return false;
+  }
 }

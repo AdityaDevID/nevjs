@@ -12,7 +12,7 @@ export * from './math.js';
 export * from './vec.js';
 export { ParticleEmitter } from './particles.js';
 export { findPath, gridFromTilemap, pathToWorld, simplifyPath, lineOfSight, reachable } from './pathfind.js';
-export { StateMachine, Cooldown } from './fsm.js';
+export { StateMachine, Cooldown, Timer } from './fsm.js';
 export { Pool } from './pool.js';
 export { SaveData } from './storage.js';
 export { Button, ProgressBar } from './ui.js';

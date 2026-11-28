@@ -1,5 +1,54 @@
 # Changelog
 
+## 0.6.0 — Semua paket (audit keamanan & kebenaran menyeluruh + fitur baru)
+Rilis hardening: seluruh kode diaudit baris demi baris; **39 temuan** diperbaiki dan dikunci dengan tes regresi. **392 tes lulus (78 baru)** — angka lama di README (290) dan catatan 0.5.0 (316) sudah tidak akurat dan ikut diperbaiki.
+
+**Nev (`@adityadevid/nevjs` 0.6.0)**
+- **Loader sekarang menerima konteks middleware juga saat navigasi client & setelah `action`**: `/__nev/data` dan render-ulang pasca-action memakai Context request yang sama, jadi `c.state`, `c.session`, `c.valid` dari `middleware.js`/`setup()`/session tidak lagi hilang (sebelumnya halaman terautentikasi diam-diam rusak setelah klik link pertama).
+- **Streaming SSR mengembalikan status asli**: loader ditunggu sebelum stream dimulai, jadi `notFound()`/error menghasilkan 404/500 sungguhan, bukan soft-404 berstatus 200. Konsekuensinya TTFB streaming kini menunggu loader selesai (head dan body tetap dikirim sebagai chunk terpisah).
+- **Celah symlink di `/__nev/app` ditutup**: symlink di dalam proyek yang menunjuk ke `*.server.js`, `nev.config.js`, `middleware.js`, atau file `api/` tidak lagi bisa diunduh browser — pemeriksaan file terlarang kini diterapkan pada path hasil realpath.
+- **Guard `--out` diperketat**: `nev export`/`nev build` menolak `--out` yang merupakan root filesystem, root proyek, atau leluhur root proyek (sebelumnya `--out /` lolos dan bisa menghapus dari root).
+- **`/__nev/data` mewajibkan header `x-nev-data: 1`** (client bawaan sudah mengirimnya) — request lintas-situs tanpa header kustom ditolak 403.
+- **Cache `revalidate` tidak lagi berbagi objek**: data di-`structuredClone` saat disimpan dan disajikan, dan `Accept-Language` ikut menjadi kunci cache (sebelumnya satu pengunjung bisa meracuni/mengubah data semua pengunjung lain).
+- **`nev export` tangguh**: satu link/path tidak aman (`/../`, `%2e%2e`) dilewati dengan peringatan, tidak lagi menggagalkan seluruh export. `public/.well-known/*` kini ikut ter-export/ter-build (sebelumnya hilang diam-diam).
+- **Route group di akhir path diperbaiki**: `pages/(marketing).js` → `/`, `pages/blog/(seo).js` → `/blog` (sebelumnya jadi URL literal berkurung).
+- **CSRF opt-in**: `csrf: true` di `nev.config.js` memasang middleware `csrf()` NevB untuk page action dan mutasi API.
+- **CLI `nev create`**: `--template` yang keluar dari folder template ditolak. **`parseEnv`**: nilai dikutip dengan `\"` tidak lagi terpotong.
+- **Baru: `nev check [folder]`** — validasi proyek sekali jalan: proyek bisa dimuat, hitungan route, file server-only di dalam `public/` (error — bisa diunduh siapa pun), loader yatim tanpa halaman, `site` belum diisi, dan `.env` yang belum masuk `.gitignore`. Exit code 1 bila ada error.
+
+**NevB (`@adityadevid/nevb` 0.4.0)**
+- **`maxBodySize` kini ditegakkan di `Context.body()`** untuk semua runtime (header `content-length` + byte aktual saat streaming, 413) — sebelumnya hanya di adapter Node, jadi deployment Workers/Bun menerima body tanpa batas.
+- **Injeksi SSE ditutup**: field `event`/`id` yang mengandung CR/LF dibuang, `retry` hanya diterima sebagai angka valid — `send()` tidak bisa lagi memalsukan event.
+- **Middleware yang lupa `await next()` tidak lagi menjatuhkan proses**: promise downstream selalu ditunggu/diobservasi; error downstream diteruskan, tidak ada lagi `unhandledRejection` yang mengambang.
+- **`verifyPassword` tidak pernah melempar**: hash tersimpan yang rusak mengembalikan `false` (sebelumnya 500 di endpoint login).
+- **`verifyJWT`**: `clockTolerance` kini melonggarkan `exp` DAN `nbf` dengan arah yang benar (mengikuti RFC 7519, termasuk batas tepat di `exp`), dan klaim `exp`/`nbf` non-numerik ditolak.
+- **`safeParse` benar-benar aman**: pengecualian dari `.refine()`/`.transform()` menjadi `{ ok: false, errors }`, bukan throw.
+- **Validasi `v.string({ pattern })`**: regex `/g`/`/y` tidak lagi berganti-ganti hasil antar-request (`lastIndex` direset).
+- **Session**: data yang tidak bisa di-serialisasi (BigInt/sirkular) tidak lagi mengubah respons sukses menjadi 500; `regenerate()` pada session cookie kini mencabut cookie lama (id sesi dirotasi + daftar cabut in-memory — hilang saat proses restart, didokumentasikan di kode).
+- **CORS**: fungsi `origin` yang mengembalikan `true` kini memantulkan origin request (bukan string `"true"` yang invalid), dan opsi `headers` diterima sebagai alias `allowedHeaders`. Tipe TypeScript diselaraskan.
+- **Baru: middleware `keyAuth`** — autentikasi API key statis (header `x-api-key` atau skema `Authorization: ApiKey …`), perbandingan constant-time, dukungan fungsi lookup async yang bisa menamai klien lewat `c.state.apiKeyId`.
+
+**NevF (`@adityadevid/nevf` 0.4.0)**
+- **`persisted()`**: loop tulis tak berujung antar-tab untuk nilai objek dihentikan (penanda suppress + perbandingan serialisasi).
+- **`computed()` kini dimiliki owner**: dispose owner melepaskan computed dari sumbernya — tidak ada lagi kebocoran reaktivitas yang menumpuk.
+- **`Router`**: prop `fallback` (sesuai tipe) kini benar-benar dipakai sebagai halaman not-found (`notFound` tetap jadi alias), dan `routes` yang kosong tidak lagi crash.
+- **`useQuery`**: perbandingan query tidak lagi menabrakkan `'a,b'` dengan `['a','b']` — navigasi antar keduanya tidak lagi menyajikan query basi.
+- **`snapshot()`**: `Date`/`Map`/`Set` kini disalin dalam, bukan berbagi referensi dengan store.
+- **`navigate()`**: hash URL yang rusak tidak lagi melempar `URIError` setelah navigasi terjadi.
+- **`hydrate()`** didokumentasikan apa adanya (client takeover yang membuang DOM SSR) dan memberi peringatan di mode dev.
+- **Baru: `createSelector(source, equals?)`** — primitif reaktif ala Solid: `isActive(id)` di dalam effect hanya menjalankan ulang observer yang status cocoknya berubah.
+
+**NevG (`@adityadevid/nevg` 0.3.0)**
+- **A\* kembali optimal**: heuristik diskalakan dengan biaya tile minimum, jadi tile berbiaya < 1 (jalan, rel) benar-benar dipakai (sebelumnya jalur lurus yang lebih mahal bisa menang).
+- **`Assets.load()`**: aset yang gagal tidak lagi hilang dari antrean — `load()` berikutnya mengulang yang gagal saja.
+- **Kolisi & query kini mencakup entitas anak** (`Scene._collide`/`query`), konsisten dengan `withTag` dan rect dunia.
+- **Tilemap kosong tidak lagi crash** saat render; **`Sprite.play()`** mereset status selesai sehingga `animationend` terbit untuk animasi non-loop berikutnya; **`transition()`** tidak lagi menggantung pada scene yang di-pause; **input**: tombol untuk action yang di-`bind()` setelah `attach()` kini juga di-`preventDefault`.
+- Tipe TypeScript diselaraskan dengan runtime (`Tween.finished`/`paused`, field `Body`, `GameOptions.fit: 'none'`, `Camera.follow` mengembalikan `this`).
+- **Baru: `Timer`** — timer one-shot/looping berbasis `update(dt)` dengan event `complete`/`tick`, `pause`/`resume`/`restart`.
+
+**NevGThree (`@adityadevid/nevgthree` 0.2.0)**
+- Kolisi & `queryBox` kini mencakup entitas anak; cabang `snapDown` mengisi `hit.y` dengan benar (kecepatan jatuh tidak lagi menumpuk diam-diam saat menuruni lereng); kotak kolisi `Entity3D` kini memperhitungkan `object.scale`; `Particles3D({ max: 0 })` dan `Terrain({ segments: 0 })` tidak lagi crash/NaN. Tipe `Entity3DOptions.size` menerima `THREE.Vector3`.
+
 ## 0.5.0 — Nev (`@adityadevid/nevjs`)
 - **Streaming SSR (opt-in)**: `export const streaming = true` di `*.server.js` (atau `streaming: true` di config). `<head>` dikirim lebih dulu, body menyusul setelah `load` selesai. `redirect()` setelah head terkirim jadi redirect sisi-browser; `notFound()`/error merender halaman 404/500 dengan status 200. Halaman dengan `head()` berupa fungsi, `nev export`, dan `HEAD` tetap mode biasa.
 - **`modulepreload`** otomatis untuk client, NevF, halaman, dan layout.

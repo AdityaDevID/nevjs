@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { createNev } from './server.js';
-import { copyFiltered } from './export.js';
+import { copyFiltered, assertSafeOut } from './export.js';
 
 const ASSET_EXT = /\.(?:m?js|css|json|svg|png|jpe?g|gif|webp|avif|ico|woff2?|txt)$/i;
 const SERVER_FILE = /\.server\.m?js$/;
@@ -92,7 +92,7 @@ export async function buildVercel(options = {}) {
   const root = path.resolve(options.root ?? process.cwd());
   const out = path.resolve(options.out ?? path.join(root, '.vercel', 'output'));
   const nodeVersion = options.nodeVersion ?? 'nodejs22.x';
-  if (out === root || root.startsWith(out + path.sep)) throw new Error('The output folder cannot be the project folder or one of its parents');
+  assertSafeOut(out, root, 'output');
 
   const nev = await createNev({ root, silent: true, env: false, config: options.config });
   const staticDir = path.join(out, 'static');
@@ -129,7 +129,7 @@ export default createNodeHandler(nev.app);
 export async function buildNetlify(options = {}) {
   const root = path.resolve(options.root ?? process.cwd());
   const out = path.resolve(options.out ?? path.join(root, '.nev', 'netlify'));
-  if (out === root || root.startsWith(out + path.sep)) throw new Error('The output folder cannot be the project folder or one of its parents');
+  assertSafeOut(out, root, 'output');
 
   const nev = await createNev({ root, silent: true, env: false, config: options.config });
   const staticDir = path.join(out, 'publish');

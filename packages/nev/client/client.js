@@ -112,7 +112,7 @@ async function resolveView(loc) {
   let data = null;
   if (route.load) {
     const res = await fetch('/__nev/data?path=' + encodeURIComponent(loc.pathname + loc.search), {
-      headers: { accept: 'application/json' },
+      headers: { accept: 'application/json', 'x-nev-data': '1' },
       credentials: 'same-origin',
     });
     if (!res.ok && res.status !== 404 && res.status !== 500) throw new Error('data request failed: ' + res.status);

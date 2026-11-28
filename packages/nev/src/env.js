@@ -15,11 +15,20 @@ export function parseEnv(text, base = {}) {
     let value;
     const quote = raw[0];
     if (quote === '"' || quote === "'" || quote === '`') {
+      // For double-quoted values a `\"` is an escaped quote, not the closer.
+      const findClose = (s) => {
+        if (quote !== '"') return s.indexOf(quote);
+        for (let j = 0; j < s.length; j++) {
+          if (s[j] === '\\') { j++; continue; }
+          if (s[j] === quote) return j;
+        }
+        return -1;
+      };
       let rest = raw.slice(1);
-      let end = rest.indexOf(quote);
+      let end = findClose(rest);
       while (end === -1 && i + 1 < lines.length) {
         rest += '\n' + lines[++i];
-        end = rest.indexOf(quote);
+        end = findClose(rest);
       }
       value = end === -1 ? rest : rest.slice(0, end);
       if (quote === '"') value = value.replace(/\\n/g, '\n').replace(/\\r/g, '\r').replace(/\\t/g, '\t').replace(/\\"/g, '"');

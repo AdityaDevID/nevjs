@@ -109,15 +109,19 @@ export class Input extends Emitter {
       const t = e.target;
       return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
     };
-    const gameKeys = new Set();
-    for (const k in this.actions) for (const c of this.actions[k]) gameKeys.add(c);
+    // Membership is computed live from this.actions so actions bound
+    // after attach() (via bind()) still get preventDefault behaviour.
+    const isGameKey = (code) => {
+      for (const k in this.actions) if (this.actions[k].includes(code)) return true;
+      return false;
+    };
 
     add(target, 'keydown', (e) => {
       if (isTyping(e) || e.repeat) {
-        if (!isTyping(e) && gameKeys.has(e.code)) e.preventDefault();
+        if (!isTyping(e) && isGameKey(e.code)) e.preventDefault();
         return;
       }
-      if (gameKeys.has(e.code) && (e.code.startsWith('Arrow') || e.code === 'Space')) e.preventDefault();
+      if (isGameKey(e.code) && (e.code.startsWith('Arrow') || e.code === 'Space')) e.preventDefault();
       this.keyDown(e.code);
     });
     add(target, 'keyup', (e) => {

@@ -1,6 +1,7 @@
 export {
   signal,
   computed,
+  createSelector,
   memo,
   effect,
   batch,

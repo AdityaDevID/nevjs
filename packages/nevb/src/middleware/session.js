@@ -30,6 +30,28 @@ export class MemoryStore {
   }
 }
 
+// Revoked cookie-session ids (see __sid in session() below).
+// Limitation: this set is in-memory and per-process — revocations are lost
+// on restart and are not shared between multiple server instances. Use a
+// store-backed session when cross-instance revocation matters.
+const revokedCookieSessionIds = new Set();
+function revokeCookieSessionId(sid) {
+  if (!sid) return;
+  revokedCookieSessionIds.add(sid);
+  // Keep the set bounded: drop the oldest entries once it grows too large.
+  while (revokedCookieSessionIds.size > 10_000) {
+    revokedCookieSessionIds.delete(revokedCookieSessionIds.values().next().value);
+  }
+}
+
+function tryStringify(value) {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return null;
+  }
+}
+
 export function session(options = {}) {
   const secrets = [].concat(options.secret ?? []);
   if (!secrets.length || secrets.some((s) => typeof s !== 'string' || s.length < 16)) {
@@ -42,6 +64,7 @@ export function session(options = {}) {
   return async (c, next) => {
     let data = {};
     let id = null;
+    let cookieSid = null;
     const raw = c.cookies[name];
     if (raw) {
       const value = await unsign(raw, secrets);
@@ -56,8 +79,13 @@ export function session(options = {}) {
           try {
             const parsed = JSON.parse(b64urlToUtf8(value));
             if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && (!parsed.__exp || parsed.__exp > Date.now())) {
-              delete parsed.__exp;
-              data = parsed;
+              const sid = typeof parsed.__sid === 'string' ? parsed.__sid : null;
+              if (!sid || !revokedCookieSessionIds.has(sid)) {
+                cookieSid = sid;
+                delete parsed.__exp;
+                delete parsed.__sid;
+                data = parsed;
+              }
             }
           } catch {
           }
@@ -66,11 +94,13 @@ export function session(options = {}) {
     }
 
     let destroyed = false;
-    const before = JSON.stringify(data);
+    let forceSave = false;
+    const before = tryStringify(data);
     Object.defineProperties(data, {
       destroy: {
         value() {
           destroyed = true;
+          if (!store) revokeCookieSessionId(cookieSid);
           for (const k of Object.keys(data)) delete data[k];
         },
       },
@@ -78,6 +108,15 @@ export function session(options = {}) {
         async value() {
           if (store && id) await store.delete(id);
           id = null;
+          if (!store) {
+            // Cookie sessions hold their data client-side, so there is no
+            // server record to delete. Instead rotate the internal __sid
+            // embedded in the signed payload and revoke the old one, so a
+            // copy of the pre-regenerate cookie no longer loads.
+            revokeCookieSessionId(cookieSid);
+            cookieSid = randomId(24);
+            forceSave = true;
+          }
           for (const k of Object.keys(data)) delete data[k];
         },
       },
@@ -99,24 +138,38 @@ export function session(options = {}) {
       if (raw) c.deleteCookie(name, { path: cookieOpts.path, domain: cookieOpts.domain });
       return res;
     }
-    const after = JSON.stringify(data);
+    // Unserializable data (BigInt, circular refs, ...) must not turn a
+    // successful response into a 500: when stringify fails we cannot detect
+    // changes, so fall back to always attempting a save below.
+    const after = tryStringify(data);
+    const unserializable = after === null;
+    const changed = unserializable || forceSave || after !== before;
     const empty = after === '{}';
     if (store) {
       if (empty && !id) return res;
-      if (after !== before || options.rolling || !id) {
+      if (changed || options.rolling || !id) {
         const first = !id;
         id ??= randomId(24);
-        await store.set(id, { ...data });
-        if (first || options.rolling) c.setCookie(name, await sign(id, secrets[0]), cookieOpts);
+        try {
+          await store.set(id, { ...data });
+        } catch {
+          // Even the store cannot persist this data; skip saving rather
+          // than failing the (already successful) response.
+          return res;
+        }
+        if (first || options.rolling || forceSave) c.setCookie(name, await sign(id, secrets[0]), cookieOpts);
       }
-    } else if (after !== before || (options.rolling && !empty)) {
-      if (empty) {
+    } else if (changed || (options.rolling && !empty)) {
+      if (empty && !forceSave) {
         if (raw) c.deleteCookie(name, { path: cookieOpts.path, domain: cookieOpts.domain });
-      } else {
-        const value = await sign(utf8ToB64url(JSON.stringify({ ...data, __exp: Date.now() + maxAge * 1000 })), secrets[0]);
+      } else if (!unserializable) {
+        cookieSid ??= randomId(24);
+        const value = await sign(utf8ToB64url(JSON.stringify({ ...data, __sid: cookieSid, __exp: Date.now() + maxAge * 1000 })), secrets[0]);
         if (value.length > 3800) throw new Error('[nevb] session data is too large for a cookie; use session({ store })');
         c.setCookie(name, value, cookieOpts);
       }
+      // If unserializable and cookie-based, the payload cannot be encoded
+      // as JSON at all: skip persisting it instead of throwing.
     }
     return res;
   };

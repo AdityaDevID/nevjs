@@ -89,6 +89,7 @@ export class Tilemap {
   }
 
   draw(ctx, view) {
+    if (!this.cols || !this.rows) return;
     const ts = this.tileSize;
     const c0 = clamp(Math.floor((view.x - this.x) / ts), 0, this.cols - 1);
     const c1 = clamp(Math.floor((view.x + view.w - this.x) / ts), 0, this.cols - 1);

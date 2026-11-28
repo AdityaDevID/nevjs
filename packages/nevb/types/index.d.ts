@@ -30,7 +30,7 @@ export class Context {
   redirect(location: string, status?: number): Response;
   notFound(message?: string): Response;
   send(value: unknown, status?: number, headers?: HeadersInit): Response;
-  sse(handler: (s: { send(data: unknown, event?: string, id?: string | number): void; close(): void; onClose(fn: () => void): void; signal?: AbortSignal }) => unknown, headers?: HeadersInit): Response;
+  sse(handler: (s: { send(data: unknown, event?: string, id?: string | number, retry?: number): void; close(): void; onClose(fn: () => void): void; signal?: AbortSignal }) => unknown, headers?: HeadersInit): Response;
 }
 
 export class App {
@@ -94,12 +94,13 @@ export function validate(schemas: { body?: Schema; query?: Schema; params?: Sche
 
 // middleware
 export function logger(options?: any): Handler;
-export function cors(options?: { origin?: string | string[] | ((o: string) => boolean); methods?: string[]; headers?: string[]; credentials?: boolean; maxAge?: number }): Handler;
+export function cors(options?: { origin?: string | string[] | ((o: string) => boolean | string); methods?: string | string[]; allowedHeaders?: string | string[]; headers?: string | string[]; exposedHeaders?: string | string[]; credentials?: boolean; maxAge?: number }): Handler;
 export function rateLimit(options?: { windowMs?: number; max?: number; keyGenerator?: (c: Context) => string; message?: string }): Handler;
 export function secureHeaders(options?: Record<string, any>): Handler;
 export function serveStatic(options: { root: string; prefix?: string; index?: string | false; maxAge?: number; filter?: (rel: string) => boolean }): Handler;
 export function compress(options?: { threshold?: number; encodings?: ('gzip' | 'deflate')[] }): Handler;
 export function csrf(options?: { origins?: string[]; allowMissing?: boolean; allowSameSite?: boolean }): Handler;
+export function keyAuth(options: { keys: string[] | Set<string> | ((key: string) => boolean | unknown | Promise<boolean | unknown>); header?: string; bearer?: boolean }): Handler;
 export function requestId(options?: { header?: string }): Handler;
 export function basicAuth(options: { users?: Record<string, string>; verify?: (user: string, pass: string, c: Context) => boolean | Promise<boolean>; realm?: string }): Handler;
 export function bearerAuth(options: { token?: string; tokens?: string[]; verify?: (token: string, c: Context) => boolean | Promise<boolean> }): Handler;

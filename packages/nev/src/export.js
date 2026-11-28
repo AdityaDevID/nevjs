@@ -10,6 +10,19 @@ const SERVER_FILE = /\.server\.m?js$/;
 
 const toPosix = (p) => p.split(path.sep).join('/');
 
+/**
+ * Refuse an output folder that would make `rm -rf <out>` wipe the project
+ * or the filesystem. `out` must already be `path.resolve()`d. The naive
+ * `root.startsWith(out + path.sep)` check misses `out === '/'` (where
+ * `out + sep` is `'//'`), so the filesystem root is refused explicitly.
+ */
+export function assertSafeOut(out, root, label = 'export') {
+  const fsRoot = path.parse(out).root;
+  if (out === fsRoot || out === root || root.startsWith(out + path.sep)) {
+    throw new Error(`The ${label} folder cannot be the project folder or one of its parents`);
+  }
+}
+
 export function copyFiltered(srcDir, destDir, keep) {
   if (!fs.existsSync(srcDir)) return 0;
   let count = 0;
@@ -18,7 +31,9 @@ export function copyFiltered(srcDir, destDir, keep) {
       const full = path.join(dir, entry.name);
       const rel = toPosix(path.relative(srcDir, full));
       if (entry.isDirectory()) {
-        if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
+        // `.well-known` is the one dot-directory served live, so it is
+        // exported/built too; every other dot-directory stays private.
+        if (entry.name === 'node_modules' || (entry.name.startsWith('.') && entry.name !== '.well-known')) continue;
         walk(full);
       } else if (entry.isFile() && !entry.name.startsWith('.') && keep(rel)) {
         const to = path.join(destDir, rel);
@@ -61,7 +76,7 @@ export async function exportSite(options = {}) {
   const target = options.target ?? cfg.target ?? null;
   if (target && !STATIC_TARGETS.includes(target)) throw new Error(`Unknown export target "${target}". Available: ${STATIC_TARGETS.join(', ')}`);
 
-  if (out === root || root.startsWith(out + path.sep)) throw new Error('The export folder cannot be the project folder or one of its parents');
+  assertSafeOut(out, root, 'export');
   fs.rmSync(out, { recursive: true, force: true });
   fs.mkdirSync(out, { recursive: true });
 
@@ -84,29 +99,35 @@ export async function exportSite(options = {}) {
     const pathname = queue.shift();
     if (seen.has(pathname)) continue;
     seen.add(pathname);
-    let res;
+    // One bad link/path must not abort the whole export: skip it, warn, continue.
     try {
-      res = await nev.app.request(pathname);
-    } catch (err) {
-      result.errors.push({ path: pathname, status: 500, message: err.message });
-      continue;
-    }
-    if (res.status >= 300 && res.status < 400) {
-      const target = res.headers.get('location') ?? '/';
-      const html = `<!doctype html><meta charset="utf-8"><title>Redirecting…</title><meta http-equiv="refresh" content="0; url=${target.replace(/"/g, '&quot;')}"><link rel="canonical" href="${target.replace(/"/g, '&quot;')}"><p>Redirecting to <a href="${target.replace(/"/g, '&quot;')}">${target.replace(/</g, '&lt;')}</a></p>`;
+      let res;
+      try {
+        res = await nev.app.request(pathname);
+      } catch (err) {
+        result.errors.push({ path: pathname, status: 500, message: err.message });
+        continue;
+      }
+      if (res.status >= 300 && res.status < 400) {
+        const target = res.headers.get('location') ?? '/';
+        const html = `<!doctype html><meta charset="utf-8"><title>Redirecting…</title><meta http-equiv="refresh" content="0; url=${target.replace(/"/g, '&quot;')}"><link rel="canonical" href="${target.replace(/"/g, '&quot;')}"><p>Redirecting to <a href="${target.replace(/"/g, '&quot;')}">${target.replace(/</g, '&lt;')}</a></p>`;
+        write(pathToFile(pathname), html);
+        result.pages.push(pathname);
+        result.warnings.push(`${pathname} redirects to ${target} (exported as a meta-refresh page)`);
+        continue;
+      }
+      if (res.status !== 200) {
+        result.errors.push({ path: pathname, status: res.status, message: `responded ${res.status}` });
+        continue;
+      }
+      const html = await res.text();
       write(pathToFile(pathname), html);
       result.pages.push(pathname);
-      result.warnings.push(`${pathname} redirects to ${target} (exported as a meta-refresh page)`);
+      if (crawl) for (const link of findLinks(html)) if (!seen.has(link)) queue.push(link);
+    } catch (err) {
+      result.warnings.push(`${pathname}: skipped (${err.message})`);
       continue;
     }
-    if (res.status !== 200) {
-      result.errors.push({ path: pathname, status: res.status, message: `responded ${res.status}` });
-      continue;
-    }
-    const html = await res.text();
-    write(pathToFile(pathname), html);
-    result.pages.push(pathname);
-    if (crawl) for (const link of findLinks(html)) if (!seen.has(link)) queue.push(link);
   }
 
   try {

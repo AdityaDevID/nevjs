@@ -37,6 +37,8 @@ function makeNoise(seed) {
 export class Terrain extends THREE.Mesh {
   constructor({ size = 120, segments = 60, height = 7, seed = 1, scale = 0.045, flatRadius = 9, island = true, waterLevel = 0.6, colors = {} } = {}) {
     super();
+    // segments < 1 would divide by zero when building the grid.
+    segments = Math.max(1, Math.floor(segments) || 1);
     this.size = size;
     this.segments = segments;
     this.height = height;

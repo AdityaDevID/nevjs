@@ -24,7 +24,9 @@ function walk(dir, base = dir) {
 }
 
 export function fileToPattern(rel) {
-  const parts = posix(rel).replace(EXT, '').split('/').filter((p, i, all) => i === all.length - 1 || !GROUP.test(p));
+  // Route groups never contribute a URL segment — including when the group
+  // is the file itself (`pages/(marketing).js` → `/`, `pages/blog/(seo).js` → `/blog`).
+  const parts = posix(rel).replace(EXT, '').split('/').filter((p) => !GROUP.test(p));
   if (parts[parts.length - 1] === 'index') parts.pop();
   const segs = parts.map((p) => {
     let m = /^\[\.\.\.(\w+)\]$/.exec(p);

@@ -40,7 +40,7 @@ export function disposeObject(root: THREE.Object3D): void;
 
 export interface Entity3DOptions {
   object?: THREE.Object3D; position?: [number, number, number] | THREE.Vector3; rotation?: [number, number, number]; scale?: number | [number, number, number];
-  size?: [number, number, number]; anchor?: number; castShadow?: boolean; receiveShadow?: boolean;
+  size?: [number, number, number] | THREE.Vector3; anchor?: number; castShadow?: boolean; receiveShadow?: boolean;
   spin?: [number, number, number]; bob?: { amp: number; speed: number };
   tags?: string | string[]; solid?: boolean; collides?: boolean; update?(dt: number): void; [k: string]: any;
 }

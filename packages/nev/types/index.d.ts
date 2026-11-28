@@ -14,6 +14,8 @@ export interface NevConfig {
   trailingSlash?: 'never' | 'always' | 'ignore';
   /** Stream every page with a loader: send <head> first, body when the loader finishes (a page can opt out with `export const streaming = false`). */
   streaming?: boolean;
+  /** Opt-in CSRF protection (NevB `csrf()`): when `true` (or an options object), cross-site unsafe requests to page actions and API mutations are blocked with 403. Default `false`. */
+  csrf?: boolean | { origins?: string[]; allowMissing?: boolean; allowSameSite?: boolean };
   export?: { out?: string; paths?: string[] | (() => Promise<string[]> | string[]); crawl?: boolean; target?: 'netlify' | 'cloudflare' };
 }
 export function defineConfig(config: NevConfig): NevConfig;

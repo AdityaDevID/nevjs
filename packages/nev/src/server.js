@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { App, Context, HttpError, logger, secureHeaders, serveStatic, matchSegs, splitPath, compile } from '@adityadevid/nevb';
+import { App, HttpError, logger, secureHeaders, serveStatic, matchSegs, splitPath, compile, csrf } from '@adityadevid/nevb';
 import { renderToString, setLocation, parseQuery, setPublicEnv } from '@adityadevid/nevf';
 import { buildTree } from '../client/tree.js';
 import { loadConfig } from './config.js';
@@ -78,6 +78,9 @@ export async function createNev(options = {}) {
 
   if (dev && !options.silent) app.use(logger());
   app.use(secureHeaders());
+  // Opt-in CSRF (config `csrf: true` or an options object): blocks cross-site
+  // unsafe requests to page actions and API mutations. Off by default.
+  if (config.csrf) app.use(csrf(typeof config.csrf === 'object' ? config.csrf : {}));
   for (const mw of ruleMiddlewares(config)) app.use(mw);
 
   app.use(serveStatic({ root: path.join(root, 'public'), index: false, maxAge: dev ? 0 : 3600 }));
@@ -113,6 +116,41 @@ export async function createNev(options = {}) {
   }
 
   const clientDirs = config.clientDirs;
+  // Symlink guard for /__nev/app: serveStatic's filter only sees the logical
+  // path and its realpath check only proves root containment, so a symlink
+  // inside pages/ could point at a banned file (e.g. a *.server.js) inside
+  // the root and be served. Re-apply every banned-file check to the
+  // RESOLVED path and deny when the target itself is banned.
+  const rootReal = (() => { try { return fs.realpathSync(root); } catch { return root; } })();
+  const isBannedResolved = (rel) => {
+    const segs = rel.split('/');
+    const base = segs[segs.length - 1] ?? '';
+    return (
+      !clientDirs.some((d) => rel.startsWith(d + '/')) ||
+      !ASSET_EXT.test(rel) ||
+      SERVER_FILE.test(rel) ||
+      base.startsWith('nev.config.') ||
+      base === 'middleware.js' ||
+      base === 'middleware.mjs' ||
+      base === 'package.json' ||
+      segs[0] === 'api' ||
+      segs.includes('node_modules') ||
+      segs.some((s) => s.startsWith('.'))
+    );
+  };
+  app.use(async (c, next) => {
+    if (c.method !== 'GET' && c.method !== 'HEAD') return next();
+    if (!c.path.startsWith('/__nev/app/')) return next();
+    let decoded;
+    try { decoded = decodeURIComponent(c.path.slice('/__nev/app/'.length)); } catch { return c.text('Not Found', 404); }
+    const logical = path.join(root, decoded);
+    let real;
+    try { real = await fs.promises.realpath(logical); } catch { return next(); }
+    const relReal = path.relative(rootReal, real).split(path.sep).join('/');
+    if (relReal === '..' || relReal.startsWith('../') || path.isAbsolute(relReal)) return c.text('Not Found', 404);
+    if (isBannedResolved(relReal)) return c.text('Not Found', 404);
+    return next();
+  });
   app.use(
     serveStatic({
       root,
@@ -238,6 +276,24 @@ export async function createNev(options = {}) {
   async function streamPage(c, route, params) {
     const loaded = await loadSpec(route);
     if (typeof loaded.mod.head === 'function') return null;
+    // TTFB tradeoff (deliberate): the loader is awaited BEFORE any byte is
+    // streamed, so a loader HttpError/notFound/redirect gets its real HTTP
+    // status instead of an always-200 stream whose head was already sent.
+    // Streaming still splits the document: head is enqueued as the first
+    // chunk and the rendered body as a later chunk once the loader settles.
+    let out;
+    try {
+      out = route.serverFile ? await runLoader(c, route, params) : null;
+    } catch (err) {
+      return renderFailure(c, err);
+    }
+    if (out instanceof Response) {
+      const location = out.headers.get('location');
+      if (out.status >= 300 && out.status < 400 && location) return out;
+      if (out.status >= 400) return renderFailure(c, new HttpError(out.status, 'Unsupported loader response'));
+      return out;
+    }
+    const data = out;
     const info = headInfo(c, loaded.mod, propsFor(c, params, null, null, null));
     const parts = renderDocumentParts(docBase(route, info));
     const enc = new TextEncoder();
@@ -247,26 +303,7 @@ export async function createNev(options = {}) {
         const send = (text) => controller.enqueue(enc.encode(text));
         send(parts.head);
         try {
-          let tail;
-          try {
-            const out = await runLoader(c, route, params);
-            if (out instanceof Response) {
-              const location = out.headers.get('location');
-              if (out.status >= 300 && out.status < 400 && location) tail = parts.redirectTail(location);
-              else throw new HttpError(out.status >= 400 ? out.status : 500, 'Unsupported loader response');
-            } else {
-              tail = parts.tail(renderBody(c, loaded, propsFor(c, params, out, null, null)), bootFor(route, { params, data: out, error: null, actionData: null }));
-            }
-          } catch (err) {
-            const is404 = err instanceof HttpError && err.status === 404;
-            const spec = is404 ? notFoundSpec : errorSpec;
-            const info2 = describeError(err);
-            if (!is404 && info2.status >= 500 && !options.silent) console.error('[nev] error while rendering', c.path, '\n', err);
-            const l2 = await loadSpec(spec);
-            const error = is404 ? null : info2;
-            tail = parts.tail(renderBody(c, l2, propsFor(c, {}, null, error, null)), bootFor(spec, { params: {}, data: null, error, actionData: null }));
-          }
-          send(tail);
+          send(parts.tail(renderBody(c, loaded, propsFor(c, params, data, null, null)), bootFor(route, { params, data, error: null, actionData: null })));
         } catch (err) {
           console.error('[nev] streaming render failed:', err);
           send(parts.plainTail('Internal Server Error'));
@@ -310,17 +347,22 @@ export async function createNev(options = {}) {
       c.method === 'GET' &&
       !c.req.headers.get('cookie') &&
       !c.req.headers.get('authorization');
-    const key = cacheable ? c.path + c.url.search : null;
+    // Accept-Language can change loader output, so it is part of the key.
+    const key = cacheable ? c.path + c.url.search + '\n' + (c.req.headers.get('accept-language') ?? '') : null;
+    const clone = (v) => { try { return structuredClone(v); } catch { return v; } };
     if (key) {
       const hit = loaderCache.get(key);
-      if (hit && hit.expires > Date.now()) return hit.data;
+      // Clone on serve: callers must never mutate the shared cached object.
+      if (hit && hit.expires > Date.now()) return clone(hit.data);
       if (hit) loaderCache.delete(key);
     }
     const out = await mod.load(c);
     const data = out === undefined ? null : out;
     if (key && !(data instanceof Response)) {
       if (loaderCache.size >= MAX_CACHE_ENTRIES) loaderCache.delete(loaderCache.keys().next().value);
-      loaderCache.set(key, { data, expires: Date.now() + ttl * 1000 });
+      // Clone on store: later mutation of the returned object must not
+      // corrupt what later requests are served.
+      loaderCache.set(key, { data: clone(data), expires: Date.now() + ttl * 1000 });
     }
     return data;
   }
@@ -344,8 +386,18 @@ export async function createNev(options = {}) {
     const matchers = mod.matcher ? [].concat(mod.matcher).map((p) => compile(p.replace(/\/\*$/, '/*rest'))) : null;
     for (const fn of list) {
       app.use((c, next) => {
-        if (c.path.startsWith('/__nev/')) return next();
-        if (matchers && !matchers.some((m) => matchSegs(m, splitPath(c.path), true))) return next();
+        // /__nev/data is an app request in disguise: middleware must run for
+        // it (against the TARGET path, for matchers) so loaders see the
+        // c.state / c.session / c.valid the middleware set. Other /__nev/*
+        // assets stay untouched, as before.
+        let effectivePath = c.path;
+        if (c.path === '/__nev/data') {
+          const t = c.query.path;
+          if (typeof t === 'string' && t.startsWith('/')) {
+            try { effectivePath = new URL(t, c.url.origin).pathname; } catch { /* keep c.path */ }
+          }
+        } else if (c.path.startsWith('/__nev/')) return next();
+        if (matchers && !matchers.some((m) => matchSegs(m, splitPath(effectivePath), true))) return next();
         return fn(c, next);
       });
     }
@@ -363,6 +415,11 @@ export async function createNev(options = {}) {
   }
 
   app.get('/__nev/data', async (c) => {
+    // Hardening: a cross-site fetch/XHR cannot set this custom header
+    // without a CORS preflight, so plain cross-site reads are refused.
+    if (c.req.headers.get('x-nev-data') !== '1') {
+      return c.json({ error: { status: 403, message: 'Forbidden' } }, 403, { 'cache-control': 'no-store' });
+    }
     const bad = (message) => c.json({ error: { status: 400, message } }, 400, { 'cache-control': 'no-store' });
     const target = c.query.path;
     if (typeof target !== 'string' || !target.startsWith('/') || target.startsWith('//') || target.includes('\\')) {
@@ -375,10 +432,19 @@ export async function createNev(options = {}) {
     const headers = { 'cache-control': 'no-store' };
     if (!found) return c.json({ notFound: true }, 404, headers);
 
-    const c2 = new Context(new Request(url, { headers: c.req.headers }), c.env, app);
+    // Reuse THIS request's context — it has been through setup/session and
+    // middleware.js (see the wrapper above), so c.state/c.session/c.valid
+    // are visible to the loader. Only the URL view is retargeted, and it is
+    // restored before the response leaves so nothing downstream (logging,
+    // error handling) sees the fake target URL.
+    const origUrl = c.url;
+    const origPath = c.path;
+    const origQuery = c._query;
+    c.url = url;
+    c.path = url.pathname;
+    delete c._query;
     try {
-      const out = found.route.serverFile ? await runLoader(c2, found.route, found.params) : null;
-      for (const [k, v] of c2._headers) c._headers.append(k, v);
+      const out = found.route.serverFile ? await runLoader(c, found.route, found.params) : null;
       if (out instanceof Response) {
         const location = out.headers.get('location');
         if (out.status >= 300 && out.status < 400 && location) return c.json({ redirect: location }, 200, headers);
@@ -390,6 +456,11 @@ export async function createNev(options = {}) {
       const info = describeError(err);
       if (info.status >= 500 && !options.silent) console.error('[nev] loader error for', url.pathname, '\n', err);
       return c.json({ error: info }, info.status, headers);
+    } finally {
+      c.url = origUrl;
+      c.path = origPath;
+      if (origQuery === undefined) delete c._query;
+      else c._query = origQuery;
     }
   });
 
@@ -449,7 +520,8 @@ export async function createNev(options = {}) {
         status = out.status;
         actionData = out.data ?? null;
       }
-      const data = await runLoader(new Context(new Request(c.url, { headers: c.req.headers }), c.env, app), found.route, found.params);
+      // Reuse the action request's own context so middleware state survives.
+      const data = await runLoader(c, found.route, found.params);
       if (data instanceof Response) return data;
       return await renderSpec(c, found.route, { status, params: found.params, data, actionData });
     } catch (err) {

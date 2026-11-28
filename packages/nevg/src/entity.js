@@ -180,6 +180,7 @@ export class Sprite extends Entity {
     if (props.w == null) this.w = this.frameW || 16;
     if (props.h == null) this.h = this.frameH || 16;
     this._animTime = 0;
+    this._animDone = false;
     this._current = null;
     if (props.anim) this.play(props.anim);
   }
@@ -190,6 +191,7 @@ export class Sprite extends Entity {
     if (!a) throw new Error(`[nevg] Unknown animation "${name}"`);
     this._current = name;
     this._animTime = 0;
+    this._animDone = false;
     this.frame = a.frames[0];
     return this;
   }

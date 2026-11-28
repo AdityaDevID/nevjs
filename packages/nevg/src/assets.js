@@ -37,13 +37,15 @@ export class Assets {
   }
 
   async load(onProgress) {
-    const jobs = this.queue.splice(0);
+    // Snapshot the queue but only dequeue a job once it has loaded, so a
+    // failed asset stays queued and a later load() call retries it.
+    const jobs = [...this.queue];
     let done = 0;
     if (!jobs.length) {
       onProgress?.(1);
       return this;
     }
-    await Promise.all(
+    const results = await Promise.allSettled(
       jobs.map(async (job) => {
         try {
           const value = await this.loaders[job.type](this.baseURL + job.url);
@@ -52,8 +54,13 @@ export class Assets {
           throw new Error(`[nevg] Failed to load ${job.type} "${job.key}" (${job.url}): ${err?.message ?? err}`);
         }
         onProgress?.(++done / jobs.length);
+        return job;
       }),
     );
+    const succeeded = new Set(results.filter((r) => r.status === 'fulfilled').map((r) => r.value));
+    if (succeeded.size) this.queue = this.queue.filter((job) => !succeeded.has(job));
+    const failure = results.find((r) => r.status === 'rejected');
+    if (failure) throw failure.reason;
     return this;
   }
 }

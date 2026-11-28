@@ -47,10 +47,14 @@ describe('streaming SSR', () => {
       'pages/buffered.server.js': `export const load = async () => { await globalThis.__nevGate; return { ok: 2 }; };`,
     });
 
-  test('head is flushed before the loader finishes; body follows in a later chunk', async () => {
+  test('loader is awaited before streaming starts (real status); head and body are still separate chunks', async () => {
     const release = gate();
     const nev = await createNev({ root: app(), silent: true });
-    const res = await nev.app.request('/');
+    // Do not await the request yet: the loader is awaited server-side before
+    // any byte/status is produced, so the response only arrives after release.
+    const pending = nev.app.request('/');
+    release();
+    const res = await pending;
     assert.equal(res.status, 200);
     assert.match(res.headers.get('content-type'), /text\/html/);
     const chunks = await readChunks(res);
@@ -58,8 +62,7 @@ describe('streaming SSR', () => {
     assert.match(first, /<title>Streamed<\/title>/);
     assert.match(first, /name="description" content="early"/);
     assert.match(first, /rel="modulepreload"/);
-    assert.ok(!first.includes('BODY'), 'body is not sent yet');
-    release();
+    assert.ok(!first.includes('BODY'), 'head chunk does not contain the body');
     const rest = await chunks.all();
     assert.match(rest, /BODY \{"ok":1\}/);
     assert.match(rest, /id="__NEV_DATA__"/);
@@ -82,23 +85,25 @@ describe('streaming SSR', () => {
     assert.match(html, /<title>T 1<\/title>/);
   });
 
-  test('redirect after the head was sent becomes a client-side redirect', async () => {
+  test('a streamed loader redirect is a real HTTP redirect (loader runs before streaming)', async () => {
     const r = makeApp({
       'pages/index.js': page,
       'pages/index.server.js': `import { redirect } from '@adityadevid/nevjs'; export const streaming = true; export const load = () => redirect('/elsewhere?a=1&b=2');`,
     });
     const nev = await createNev({ root: r, silent: true });
-    const html = await (await nev.app.request('/')).text();
-    assert.match(html, /location\.replace\("\/elsewhere\?a=1\\u0026b=2"\)/);
-    assert.ok(!html.includes('__NEV_DATA__'));
+    const res = await nev.app.request('/');
+    assert.equal(res.status, 302);
+    assert.equal(res.headers.get('location'), '/elsewhere?a=1&b=2');
   });
 
-  test('notFound()/errors inside a streamed loader render the 404/error page body', async () => {
+  test('notFound()/errors inside a streamed loader return the real 404/500 status', async () => {
     const nf = makeApp({
       'pages/index.js': page,
       'pages/index.server.js': `import { notFound } from '@adityadevid/nevjs'; export const streaming = true; export const load = () => notFound();`,
     });
-    const html = await (await (await createNev({ root: nf, silent: true })).app.request('/')).text();
+    const nfRes = await (await createNev({ root: nf, silent: true })).app.request('/');
+    assert.equal(nfRes.status, 404, 'streamed loader 404 must not be masked as 200');
+    const html = await nfRes.text();
     assert.match(html, /404/);
     assert.match(html, /__NEV_DATA__/);
 
@@ -106,7 +111,9 @@ describe('streaming SSR', () => {
       'pages/index.js': page,
       'pages/index.server.js': `export const streaming = true; export const load = () => { throw new Error('kaboom secret'); };`,
     });
-    const html2 = await (await (await createNev({ root: er, silent: true })).app.request('/')).text();
+    const erRes = await (await createNev({ root: er, silent: true })).app.request('/');
+    assert.equal(erRes.status, 500, 'streamed loader error must not be masked as 200');
+    const html2 = await erRes.text();
     assert.ok(!html2.includes('kaboom secret'), 'production never leaks the message');
     assert.match(html2, /500/);
   });
@@ -146,7 +153,7 @@ describe('streaming SSR', () => {
   });
 });
 
-test('streaming over a real HTTP connection: the head arrives before the slow loader finishes', async () => {
+test('streaming over a real HTTP connection: status/head wait for the slow loader, then chunks stream', async () => {
   const root = makeApp({
     'pages/index.js': page,
     'pages/index.server.js': `export const streaming = true; export const load = async () => { await new Promise((r) => setTimeout(r, 400)); return { slow: true }; };`,
@@ -166,9 +173,12 @@ test('streaming over a real HTTP connection: the head arrives before the slow lo
       rest += dec.decode(value);
     }
     const tDone = Date.now() - t0;
-    assert.match(new TextDecoder().decode(first.value), /<title>/);
-    assert.match(rest, /"slow":true/);
-    assert.ok(tFirst < 300, `first chunk took ${tFirst}ms`);
+    const firstText = new TextDecoder().decode(first.value);
+    assert.match(firstText, /<title>/);
+    assert.match(firstText + rest, /"slow":true/, 'head and body chunks together carry the loader data');
+    // The loader is awaited before streaming starts (so failures get a real
+    // status), therefore the first chunk cannot beat the 400ms loader.
+    assert.ok(tFirst >= 300, `first chunk took ${tFirst}ms — it must wait for the loader`);
     assert.ok(tDone >= 380, `whole page took ${tDone}ms`);
   } finally {
     await new Promise((r) => srv.server.close(r));

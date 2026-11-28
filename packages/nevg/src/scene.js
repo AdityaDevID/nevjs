@@ -83,9 +83,24 @@ export class Scene extends Emitter {
     return this.withTag(tag)[0] ?? null;
   }
 
+  // Every entity in the tree, parents before their children. Entity#rect
+  // is already in world space, so children found this way collide and
+  // answer queries at their world position.
+  _allEntities() {
+    const out = [];
+    const visit = (list) => {
+      for (const e of list) {
+        out.push(e);
+        if (e.children.length) visit(e.children);
+      }
+    };
+    visit(this.entities);
+    return out;
+  }
+
   query(rect, tag) {
     const out = [];
-    for (const e of this.entities) {
+    for (const e of this._allEntities()) {
       if (e.dead || (tag && !e.tags.has(tag))) continue;
       if (rectsOverlap(rect, e.rect)) out.push(e);
     }
@@ -199,7 +214,7 @@ export class Scene extends Emitter {
   }
 
   _collide() {
-    const list = this.entities.filter((e) => !e.dead && e.collides && e.w > 0 && e.h > 0);
+    const list = this._allEntities().filter((e) => !e.dead && e.collides && e.w > 0 && e.h > 0);
     if (list.length < 2) return;
     const items = list.map((e) => ({ e, r: e.rect })).sort((a, b) => a.r.x - b.r.x);
     for (let i = 0; i < items.length; i++) {

@@ -331,4 +331,31 @@ export function mountInto(vnode, container) {
   container.appendChild(frag);
 }
 
-export const hydrate = render;
+function isDevMode() {
+  try {
+    if (typeof globalThis !== 'undefined' && globalThis.__NEV_DEV__) return true;
+    if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') return true;
+  } catch {
+  }
+  return false;
+}
+
+/**
+ * hydrate(vnode, container)
+ *
+ * NOTE: nevf does not implement true DOM hydration. This is currently a
+ * client takeover: it behaves exactly like `render` — the existing
+ * (server-rendered) DOM inside `container` is discarded and replaced with a
+ * freshly created client-side tree. Focus, form-field values, scroll state
+ * and any other transient DOM state from the SSR markup are therefore NOT
+ * preserved. Use it only where that takeover is acceptable; call `render`
+ * directly if you want the same behaviour without implying hydration.
+ */
+export function hydrate(vnode, container) {
+  if (isDevMode() && typeof console !== 'undefined' && console.warn) {
+    console.warn(
+      '[nevf] hydrate() is a client takeover, not true hydration: existing SSR DOM will be discarded and re-rendered on the client.',
+    );
+  }
+  return render(vnode, container);
+}

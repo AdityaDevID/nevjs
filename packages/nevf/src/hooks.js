@@ -15,10 +15,16 @@ export function persisted(key, initial, options = {}) {
   }
   const s = signal(start);
   if (storage && !isServer()) {
+    let lastSerialized;
+    let suppressWrite = false;
     effect(() => {
       const v = s();
+      if (suppressWrite) return;
       try {
-        storage.setItem(key, JSON.stringify(v));
+        const serialized = JSON.stringify(v);
+        if (serialized === lastSerialized) return;
+        lastSerialized = serialized;
+        storage.setItem(key, serialized);
       } catch {
       }
     });
@@ -26,7 +32,14 @@ export function persisted(key, initial, options = {}) {
       const onStorage = (e) => {
         if (e.key !== key || e.storageArea !== storage) return;
         try {
-          s.set(e.newValue == null ? initial : JSON.parse(e.newValue));
+          const next = e.newValue == null ? initial : JSON.parse(e.newValue);
+          lastSerialized = e.newValue == null ? JSON.stringify(next) : e.newValue;
+          suppressWrite = true;
+          try {
+            s.set(next);
+          } finally {
+            suppressWrite = false;
+          }
         } catch {
         }
       };

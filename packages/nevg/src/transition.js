@@ -11,6 +11,14 @@ export function transition(game, next, { duration = 0.4, color = '#000' } = {}) 
       resolve();
       return;
     }
+    // A paused scene never steps its tweens (Scene#_step returns early),
+    // so a fade driven by either scene's tweens would hang forever.
+    // When either side is paused, skip the animation and switch at once.
+    if (current.paused || next.paused) {
+      game.setScene(next);
+      resolve();
+      return;
+    }
     const out = current.add(cover());
     current.tween(out, { alpha: 1 }, {
       duration: half,

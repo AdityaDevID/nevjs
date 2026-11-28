@@ -16,7 +16,7 @@ Semuanya ES module murni, nol dependensi (kecuali saling memakai), Node ≥ 20.
 git clone https://github.com/AdityaDevID/nevjs.git
 cd nevjs
 npm install
-npm test                    # 290 tes untuk kelima paket
+npm test                    # 392 tes untuk kelima paket
 
 # bikin proyek fullstack baru
 node packages/nev/bin/nev.js create ../situs-saya
@@ -25,7 +25,7 @@ npm install                 # lihat catatan di bawah bila paket belum ada di npm
 npm run dev                 # http://localhost:3000
 ```
 
-> Status: **pra-1.0 (0.2.x)** — API masih bisa berubah. Paket npm: `@adityadevid/nevf`, `@adityadevid/nevb`, `@adityadevid/nevg`, dan **`@adityadevid/nevjs`** (fullstack; perintah CLI-nya tetap `nev`).
+> Status: **pra-1.0 (0.6.x)** — API masih bisa berubah. Paket npm: `@adityadevid/nevf`, `@adityadevid/nevb`, `@adityadevid/nevg`, dan **`@adityadevid/nevjs`** (fullstack; perintah CLI-nya tetap `nev`).
 > Pasang dari npm: `npx @adityadevid/nevjs create situs-saya` (template: `default`, `api`, `game`, `game3d`). Lihat [CHANGELOG](CHANGELOG.md).
 
 ---
@@ -115,6 +115,7 @@ nev start [folder] [--port N]  mode produksi (PORT env juga dibaca)
 nev routes [folder]            tampilkan semua route
 nev export [folder] [--out D] [--target netlify|cloudflare]  HTML statis (+ _redirects/_headers bila --target)
 nev build [folder] --target vercel|netlify                    build untuk Vercel / Netlify
+nev check [folder]             validasi proyek: config, route, dan kesalahan keamanan umum (exit 1 bila error)
 ```
 
 **Baru di 0.2** — `middleware.js` di root proyek (jalan sebelum semua route; `export const matcher = ['/admin/*']` untuk membatasi),
@@ -150,6 +151,15 @@ export const head = ({ data }) => ({
 // loader: notFound() → halaman 404 dengan status 404 asli
 import { notFound } from '@adityadevid/nevjs';
 ```
+
+**Baru di 0.6** — rilis hardening hasil audit menyeluruh (39 temuan diperbaiki, semuanya dikunci tes regresi; lihat [CHANGELOG](CHANGELOG.md)):
+
+- Loader kini menerima konteks middleware (`c.state`/`c.session`) juga saat navigasi client-side dan setelah `action`; streaming SSR mengembalikan status 404/500 asli; celah symlink ke file server di `/__nev/app` ditutup; guard `--out` menolak root filesystem; `/__nev/data` mewajibkan header `x-nev-data: 1`; cache `revalidate` tidak lagi berbagi objek antar-pengunjung.
+- **`nev check [folder]`** — validasi proyek sekali jalan: file server-only di `public/` (error), loader yatim, `site` belum diisi, `.env` belum masuk `.gitignore`.
+- **CSRF opt-in**: `csrf: true` di `nev.config.js` untuk page action + mutasi API.
+- NevB: `maxBodySize` ditegakkan di semua runtime, injeksi SSE ditutup, `verifyJWT`/`verifyPassword`/`safeParse` diperbaiki, **baru: middleware `keyAuth`** (API key statis, constant-time).
+- NevF: **baru: `createSelector()`**; loop tulis antar-tab `persisted()` dihentikan; `computed()` tidak lagi bocor.
+- NevG: A* kembali optimal untuk tile berbiaya < 1, **baru: `Timer`**; NevGThree: kolisi memperhitungkan skala & entitas anak.
 
 `nev build --target vercel` membuat `.vercel/output` (deploy: `vercel deploy --prebuilt`; belum dicoba di akun Vercel sungguhan). `nev info` mencetak ringkasan proyek (versi, route, file .env, config) untuk laporan bug. `createHandler()` mengembalikan handler Web-standar
 `(request) => Response` untuk runtime serverless/edge (lihat [packages/nev](packages/nev/README.md)). NevB: `trailingSlash('never' | 'always')`. NevF: `publicEnv`.
@@ -196,6 +206,7 @@ render(h(Todo), document.body);
 | --- | --- |
 | `signal(v)` · `.set` `.update` `.peek` | nilai reaktif |
 | `computed(fn)` · `memo(fn, eq)` | turunan (lazy) · turunan dengan pemotongan kesamaan |
+| `createSelector(source, eq?)` | pemilih per-kunci: observer hanya jalan ulang bila kunci miliknya mulai/berhenti cocok |
 | `effect(fn)` · `batch` · `untrack` | efek samping, gabung update, baca tanpa berlangganan |
 | `onMount` · `onCleanup` · `createRoot` | siklus hidup (onMount tidak jalan di server) |
 | `resource(fetcher)` | `{ data, loading, error, refetch }` |
@@ -226,7 +237,7 @@ await app.listen(3000);
 - Handler `(c, next)`; return `Response` / object (→ JSON) / string / `undefined` (→ 204). Middleware boleh `await next()` untuk memproses respons.
 - `app.fetch(request)` berstandar Web — bisa dipasang di runtime lain; `app.request('/path')` untuk tes.
 - `c`: `params query cookies body() json() text() html() redirect() header() setCookie() sse() ip state valid`.
-- Bawaan: `logger cors rateLimit secureHeaders serveStatic` (ETag, Range, anti-traversal), `HttpError/abort`, batas ukuran body (413, termasuk body streaming), cookie aman.
+- Bawaan: `logger cors rateLimit secureHeaders serveStatic keyAuth` (ETag, Range, anti-traversal), `HttpError/abort`, batas ukuran body (413, termasuk body streaming), cookie aman.
 - `rateLimit` bersifat in-memory per proses; pakai store bersama (Redis) bila memakai banyak instance.
 
 ---
@@ -287,7 +298,7 @@ Coba langsung: `nev create game-saya --template game3d` (Crystal Run 3D: kumpulk
 
 - **NevB**: `session` `MemoryStore` `jwtAuth` `signJWT/verifyJWT` `hashPassword/verifyPassword` `compress` `csrf` `requestId` `basicAuth` `bearerAuth` `timeout` `cacheControl` `etag` `health`; validasi `union literal record tuple date url uuid` + `.nullable() .refine() .transform()`.
 - **NevF**: `createStore` (store reaktif dalam), `createContext/useContext`, `createForm`, `lazy`, `Portal`, `Dynamic`, hooks `persisted debounced throttled interval timeout listen mediaQuery toggle previous`.
-- **NevG**: `ParticleEmitter`, `findPath` (A*), `Body` (fisika arcade), `StateMachine`, `Cooldown`, `Pool`, `SaveData`, `Button`, `ProgressBar`, `transition`, `Gamepads`, helper vektor.
+- **NevG**: `ParticleEmitter`, `findPath` (A*), `Body` (fisika arcade), `StateMachine`, `Cooldown`, `Timer`, `Pool`, `SaveData`, `Button`, `ProgressBar`, `transition`, `Gamepads`, helper vektor.
 - Semua paket menyertakan deklarasi TypeScript (`types/index.d.ts`).
 
 **Baru di 0.4** — tiga fitur untuk halaman dinamis:

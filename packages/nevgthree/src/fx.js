@@ -3,6 +3,8 @@ import { Entity3D } from './entity3d.js';
 
 export class Particles3D extends Entity3D {
   constructor({ max = 300, size = 0.28, gravity = 6, texture = null } = {}) {
+    // max < 1 would make the buffers empty and burst() divide by zero.
+    max = Math.max(1, Math.floor(max) || 1);
     const geo = new THREE.BufferGeometry();
     const pos = new Float32Array(max * 3);
     const col = new Float32Array(max * 3);

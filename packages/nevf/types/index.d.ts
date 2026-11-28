@@ -4,6 +4,7 @@ export type MaybeAccessor<T> = T | Accessor<T>;
 
 export function signal<T>(initial: T, options?: { equals?: (a: T, b: T) => boolean }): Signal<T>;
 export function computed<T>(fn: () => T): Accessor<T>;
+export function createSelector<T, K>(source: Accessor<T>, equals?: (a: T, b: K) => boolean): (key: K) => boolean;
 export function memo<T>(fn: () => T, equals?: (a: T, b: T) => boolean): Accessor<T>;
 export function effect(fn: () => void | (() => void)): () => void;
 export function batch<T>(fn: () => T): T;
@@ -71,7 +72,8 @@ export function createForm<V extends Record<string, any>>(o: {
   validateOnChange?: boolean; onSubmit?: (v: V) => unknown;
 }): Form<V>;
 
-export const Router: Component<{ routes?: { path: string; component: Component }[]; fallback?: Child }>;
+/** Router: `routes` defaults to [] (renders the fallback). `fallback` is the canonical not-found content/component; `notFound` is a legacy alias — when both are given, `fallback` wins. */
+export const Router: Component<{ routes?: { path: string; component: Component }[]; fallback?: Child | Component; notFound?: Child | Component }>;
 export const Link: Component<{ href: string; replace?: boolean; [k: string]: any }>;
 export function navigate(to: string, o?: { replace?: boolean }): void;
 export const location: Signal<{ pathname: string; search: string; hash: string }>;

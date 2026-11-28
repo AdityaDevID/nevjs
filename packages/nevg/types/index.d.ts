@@ -4,7 +4,7 @@ export class Emitter {
   on(event: string, fn: (...a: any[]) => void): () => void; once(event: string, fn: (...a: any[]) => void): () => void;
   off(event: string, fn?: (...a: any[]) => void): void; emit(event: string, ...a: any[]): void; clear(): void;
 }
-export interface GameOptions { canvas?: string | HTMLCanvasElement; width?: number; height?: number; fps?: number; pixelArt?: boolean; fit?: 'contain' | 'cover' | false; maxFrameTime?: number; maxDpr?: number; input?: Input; assets?: Assets; raf?: any; caf?: any; now?: () => number }
+export interface GameOptions { canvas?: string | HTMLCanvasElement; width?: number; height?: number; fps?: number; pixelArt?: boolean; fit?: 'contain' | 'cover' | 'none' | false; maxFrameTime?: number; maxDpr?: number; input?: Input; assets?: Assets; raf?: any; caf?: any; now?: () => number }
 export class Game extends Emitter {
   constructor(o?: GameOptions);
   width: number; height: number; fps: number; scene: Scene | null; input: Input; assets: Assets; sound: Sound; tweens: Tweens; running: boolean; timeScale: number;
@@ -36,7 +36,7 @@ export class Rect extends Entity { color: string }
 export class Circle extends Entity { color: string }
 export class Label extends Entity { text: string | (() => string); color: string; font: string; align: CanvasTextAlign; baseline: CanvasTextBaseline }
 export class Sprite extends Entity { play(name: string, o?: { restart?: boolean }): this; frame: number; flipX: boolean; readonly currentAnimation: string | null }
-export class Camera { x: number; y: number; zoom: number; follow(e: Entity, o?: { smoothing?: number }): void; shake(power?: number, duration?: number): void; worldToScreen(x: number, y: number): Point; screenToWorld(x: number, y: number): Point; view: Rectangle; [k: string]: any }
+export class Camera { x: number; y: number; zoom: number; follow(e: Entity, o?: { smoothing?: number; offsetX?: number; offsetY?: number }): this; shake(power?: number, duration?: number): void; worldToScreen(x: number, y: number): Point; screenToWorld(x: number, y: number): Point; view: Rectangle; [k: string]: any }
 export class Input extends Emitter {
   constructor(actions?: Record<string, string | string[]>);
   pointer: { x: number; y: number; down: boolean; pressed: boolean; released: boolean; id: number | null };
@@ -54,7 +54,7 @@ export class Tilemap {
 export class Assets { [k: string]: any }
 export class Sound { [k: string]: any }
 export interface TweenOptions { duration?: number; ease?: string | ((t: number) => number); delay?: number; repeat?: number; yoyo?: boolean; onUpdate?: (t: any, p: number) => void; onComplete?: (t: any) => void }
-export class Tween { stop(complete?: boolean): void; done: boolean }
+export class Tween { stop(complete?: boolean): void; done: boolean; paused: boolean; finished: Promise<boolean> }
 export class Tweens { to(target: object, props: object, o?: TweenOptions): Tween; wait(s: number): Promise<void>; update(dt: number): void; killTweensOf(t: object): void; clear(): void }
 export const ease: Record<string, (t: number) => number>;
 
@@ -100,6 +100,7 @@ export class StateMachine<C = any> extends Emitter {
   current: string | null; previous: string | null; time: number; history: string[]; is(name: string): boolean; go(name: string, ...a: any[]): boolean; back(): boolean; update(dt: number): void;
 }
 export class Cooldown { constructor(duration?: number, o?: { ready?: boolean }); duration: number; left: number; readonly ready: boolean; readonly progress: number; update(dt: number): this; use(): boolean; reset(): void }
+export class Timer extends Emitter { constructor(duration?: number, o?: { loop?: boolean; autostart?: boolean }); duration: number; loop: boolean; elapsed: number; running: boolean; done: boolean; readonly left: number; readonly progress: number; start(): this; pause(): this; reset(): this; restart(): this; update(dt: number): this }
 export class Pool<T> { constructor(create: () => T, reset?: (o: T) => void, o?: { max?: number; prewarm?: number }); readonly size: number; readonly active: number; get(): T | null; release(o: T): boolean; releaseAll(): void }
 export class SaveData<T extends Record<string, any> = Record<string, any>> {
   constructor(key: string, defaults?: T, o?: { storage?: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | null; version?: number; migrate?: Record<number, (old: any) => any> });
@@ -109,7 +110,9 @@ export class Button extends Entity { constructor(props?: Record<string, any>); t
 export class ProgressBar extends Entity { value: number | (() => number); max: number; readonly ratio: number }
 export class Body {
   constructor(entity: Entity, o?: { gravity?: number; drag?: number; airDrag?: number; maxSpeed?: number; maxFall?: number; bounce?: number; coyote?: number; jumpBuffer?: number });
-  vx: number; vy: number; onGround: boolean; jump(power: number): boolean; cutJump(factor?: number): void; step(dt: number): object;
+  entity: Entity; vx: number; vy: number; gravity: number; drag: number; airDrag: number; maxSpeed: number; maxFall: number; bounce: number; coyote: number; jumpBuffer: number;
+  onGround: boolean; hit: { x: boolean; y: boolean; left?: boolean; right?: boolean; top?: boolean; bottom?: boolean; entity: Entity | null } | null;
+  jump(power: number): boolean; cutJump(factor?: number): void; step(dt: number): { x: boolean; y: boolean; left?: boolean; right?: boolean; top?: boolean; bottom?: boolean; entity: Entity | null };
 }
 export function transition(game: Game, next: Scene, o?: { duration?: number; color?: string }): Promise<void>;
 export class Gamepads { constructor(input: Input, o?: { deadzone?: number; getGamepads?: () => any }); poll(): this; axis(i: number): number; release(): void; rumble(duration?: number, strong?: number, weak?: number): void }
