@@ -107,6 +107,11 @@
   #pgBox{position:absolute; top:34px; left:12px; width:52px; height:52px; border-radius:4px; background:var(--red)}
   label.fld{display:flex; flex-direction:column; gap:6px; font-size:10.5px; color:var(--mut); letter-spacing:.14em; text-transform:uppercase}
 
+  /* ===== stagger stage ===== */
+  #stageGrid{display:grid; gap:5px; justify-content:center; margin:6px auto 4px; max-width:520px}
+  #stageGrid i{display:block; width:100%; aspect-ratio:1; background:var(--cell); border-radius:2px}
+  .stageWrap{background:rgba(16,16,18,.88); border:1px solid var(--line); border-radius:6px; padding:30px 20px 22px; backdrop-filter:blur(6px)}
+
   footer{border-top:1px solid var(--line); padding:46px 28px 64px; text-align:center; color:var(--mut); font-size:13.5px;
     background:rgba(10,10,11,.85)}
   footer b{color:var(--txt)}
@@ -119,7 +124,7 @@
 <header>
   <div class="brand">NEVF — ANIMATION ENGINE</div>
   <nav>
-    <a href="#gridSec">Grid</a><a href="#race">Easing</a><a href="#theater">Keyframes</a>
+    <a href="#gridSec">Grid</a><a href="#stageSec">Stage</a><a href="#race">Easing</a><a href="#theater">Keyframes</a>
     <a href="#cinema">Timeline</a><a href="#dataSec">Data</a><a href="#playground">Playground</a>
   </nav>
 </header>
@@ -149,20 +154,58 @@
 <section id="gridSec">
   <div class="kicker">Latar — stagger grid</div>
   <h2>Latarnya adalah demonya.</h2>
-  <p class="sub">Pola latar diganti berkala oleh satu rantai animasi: gelombang radial dari tengah, sapuan sumbu-X,
-    denyut dari sudut, dan acak — semuanya dari satu primitif yang sama,
+  <p class="sub">Latar ini menari koreografi penuh: gelombang radial, lalu gridnya <b>menyusun diri menjadi cincin</b>,
+    lalu berlian, lalu <b>meledak acak dan menyatu lagi</b> dengan pegas elastis — target tiap kotak dihitung per sel
+    dengan function-based values dan diurutkan oleh
     <b class="mono">stagger(nilai, { grid: [baris, kolom], from })</b>. Klik di mana pun pada halaman untuk riak dari titik klik;
     tombol di bawah memicu pola tertentu ke seluruh grid.</p>
   <div class="row">
     <button data-pattern="center" class="patBtn">Radial tengah</button>
     <button data-pattern="x" class="patBtn">Sapuan X</button>
-    <button data-pattern="first" class="patBtn">Dari sudut</button>
-    <button data-pattern="random" class="patBtn">Acak</button>
+    <button data-pattern="first" class="patBtn">Cincin</button>
+    <button data-pattern="random" class="patBtn">Ledakan</button>
   </div>
   <pre style="margin-top:18px"><code>animate('#bg i', {
   scale: [ { to: .25, duration: 380 }, { to: 1, duration: 620, ease: 'easeOutBack' } ],
   backgroundColor: [ { to: '#ff4b33', duration: 380 }, { to: '#17171a', duration: 620 } ],
   delay: stagger(26, { grid: [rows, cols], from: 'center' }),
+});
+
+// dan formasi cincin — target BERBEDA untuk tiap sel:
+animate(cells, {
+  scale: (el, i) =&gt; onRing(i) ? 1.35 : 0.16,
+  rotate: (el, i) =&gt; onRing(i) ? 45 : 0,
+  borderRadius: (el, i) =&gt; onRing(i) ? '50%' : '2px',
+  backgroundColor: (el, i) =&gt; onRing(i) ? '#ff4b33' : '#17171a',
+  delay: stagger(16, { grid: [rows, cols], from: 'center' }),
+});</code></pre>
+</section>
+
+
+<!-- ================= STAGGER STAGE ================= -->
+<section id="stageSec">
+  <div class="kicker">Tanda tangan anime.js — stagger stage</div>
+  <h2>169 kotak. Satu panggilan. Bentuk apa pun.</h2>
+  <p class="sub">Inilah demo paling ikonik di dunia animasi web: grid yang <b>berubah bentuk</b>. Setiap kotak menerima
+    target berbeda — posisi, rotasi, skala, warna, radius — dihitung oleh <b>function-based values</b>
+    <span class="mono">(el, i) =&gt; …</span>, lalu diurutkan oleh <span class="mono">stagger({ grid: [13, 13], from: 'center' })</span>.
+    Tidak ada loop manual, tidak ada CSS keyframes.</p>
+  <div class="stageWrap">
+    <div id="stageGrid"></div>
+    <div class="row" style="justify-content:center; margin-top:20px">
+      <button data-shape="grid" class="shapeBtn on">Grid</button>
+      <button data-shape="circle" class="shapeBtn">Lingkaran</button>
+      <button data-shape="diamond" class="shapeBtn">Berlian</button>
+      <button data-shape="cross" class="shapeBtn">Silang</button>
+      <button data-shape="scatter" class="shapeBtn">Ledakan</button>
+    </div>
+  </div>
+  <pre style="margin-top:18px"><code>animate('#stageGrid i', {
+  scale:         (el, i) =&gt; inShape(i) ? 1.3 : 0.18,
+  rotate:        (el, i) =&gt; inShape(i) ? 45 : 0,
+  borderRadius:  (el, i) =&gt; inShape(i) ? '50%' : '2px',
+  backgroundColor: (el, i) =&gt; inShape(i) ? '#ff4b33' : '#17171a',
+  delay: stagger(14, { grid: [13, 13], from: 'center' }),
 });</code></pre>
 </section>
 
@@ -287,26 +330,63 @@ buildGrid();
 let resizeT;
 addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(buildGrid, 250); });
 
-const PATTERNS = [
-  { from: 'center' },
-  { from: 'first', axis: 'x' },
-  { from: 'last' },
-  { from: 'random' },
-  { from: 'first', axis: 'y' },
-];
-let patternIdx = 0, patternTimer = null;
-function runPattern(p) {
-  if (!cells.length) return;
+const BASE = '#17171a', RED = '#ff4b33';
+function cellRC(i) { return [Math.floor(i / COLS), i % COLS]; }
+function choreoWave(p) {
   animate(cells, {
     scale: [ { to: 0.2, duration: 400, ease: 'easeInOutQuad' }, { to: 1, duration: 700, ease: 'easeOutBack' } ],
-    backgroundColor: [ { to: '#ff4b33', duration: 400 }, { to: '#17171a', duration: 700 } ],
+    backgroundColor: [ { to: RED, duration: 400 }, { to: BASE, duration: 700 } ],
     delay: stagger(24, { grid: [ROWS, COLS], from: p.from, axis: p.axis }),
   });
 }
+function choreoFormation(kind) {
+  const cr = ROWS / 2, cc = COLS / 2, R = Math.min(ROWS, COLS) * 0.32;
+  const inBand = (i) => {
+    const [r, c] = cellRC(i);
+    if (kind === 'ring') { const d = Math.hypot(r - cr, c - cc); return Math.abs(d - R) < 1.3; }
+    const m = Math.abs(r - cr) + Math.abs(c - cc);
+    return Math.abs(m - R) < 1.6;
+  };
+  animate(cells, {
+    scale: (el, i) => inBand(i) ? 1.35 : 0.16,
+    rotate: (el, i) => inBand(i) ? 45 : 0,
+    borderRadius: (el, i) => inBand(i) ? '50%' : '2px',
+    backgroundColor: (el, i) => inBand(i) ? RED : BASE,
+    duration: 750, ease: 'easeInOutQuad',
+    delay: stagger(16, { grid: [ROWS, COLS], from: 'center' }),
+  });
+}
+function choreoScatter() {
+  animate(cells, {
+    x: () => (Math.random() - 0.5) * 260, y: () => (Math.random() - 0.5) * 260,
+    rotate: () => (Math.random() - 0.5) * 260, scale: () => 0.3 + Math.random(),
+    backgroundColor: () => Math.random() > 0.82 ? RED : '#232328',
+    duration: 850, ease: 'easeOutQuad', delay: stagger(6, { grid: [ROWS, COLS], from: 'random' }),
+  });
+  setTimeout(() => animate(cells, {
+    x: 0, y: 0, rotate: 0, scale: 1, backgroundColor: BASE,
+    duration: 1100, ease: 'easeOutElastic', delay: stagger(8, { grid: [ROWS, COLS], from: 'random' }),
+  }), 1050);
+}
+function choreoReset(delay = 0) {
+  animate(cells, { scale: 1, rotate: 0, x: 0, y: 0, borderRadius: '2px', backgroundColor: BASE,
+    duration: 600, ease: 'easeInOutQuad', delay: stagger(6, { grid: [ROWS, COLS], from: 'center' }) });
+}
+const CHOREO = [
+  () => choreoWave({ from: 'center' }),
+  () => choreoFormation('ring'),
+  () => choreoWave({ from: 'first', axis: 'x' }),
+  () => choreoFormation('diamond'),
+  () => choreoScatter(),
+  () => choreoWave({ from: 'random' }),
+];
+let choreoIdx = 0, patternTimer = null;
 function cyclePatterns() {
-  runPattern(PATTERNS[patternIdx % PATTERNS.length]);
-  patternIdx++;
-  patternTimer = setTimeout(cyclePatterns, 3400);
+  CHOREO[choreoIdx % CHOREO.length]();
+  choreoIdx++;
+  const holdMs = 3000;
+  setTimeout(() => { if (choreoIdx % CHOREO.length === 2 || choreoIdx % CHOREO.length === 4) choreoReset(); }, holdMs - 500);
+  patternTimer = setTimeout(cyclePatterns, holdMs + 1400);
 }
 setTimeout(cyclePatterns, 600);
 
@@ -326,8 +406,10 @@ function rippleAt(clientX, clientY) {
 addEventListener('pointermove', (e) => rippleAt(e.clientX, e.clientY), { passive: true });
 addEventListener('pointerdown', (e) => { lastRipple = 0; rippleAt(e.clientX, e.clientY); });
 $$('.patBtn').forEach((b) => b.addEventListener('click', () => {
-  const map = { center: { from: 'center' }, x: { from: 'first', axis: 'x' }, first: { from: 'first' }, random: { from: 'random' } };
-  runPattern(map[b.dataset.pattern]);
+  const map = { center: () => choreoWave({ from: 'center' }), x: () => choreoWave({ from: 'first', axis: 'x' }),
+    first: () => choreoFormation('ring'), random: () => choreoScatter() };
+  map[b.dataset.pattern]();
+  setTimeout(() => choreoReset(), 2600);
 }));
 
 /* ================= HERO ================= */
@@ -346,7 +428,7 @@ function countUp(el, to, dur = 1600) {
 function playIntro() {
   const tl = createTimeline({ defaults: { ease: 'easeOutQuad' } });
   tl.add('#hero .kicker', { opacity: [0, 1], y: [14, 0], duration: 500 }, 100)
-    .add('#heroTitle span', { y: [120, 0], rotate: [8, 0], opacity: [0, 1],
+    .add('#heroTitle span', { y: [140, 0], rotate: [16, 0], scale: [0.6, 1], opacity: [0, 1],
         ease: spring({ stiffness: 110, damping: 13 }), delay: stagger(45) }, 200)
     .add('#heroSub', { opacity: [0, 1], y: [22, 0], duration: 650 }, 750)
     .add('.hero-cta', { opacity: [0, 1], y: [22, 0], duration: 650 }, 900)
@@ -356,6 +438,60 @@ function playIntro() {
 }
 $$('#heroSub, .hero-cta, #hint, .hero-stats').forEach((el) => { el.style.opacity = '0'; });
 playIntro();
+
+
+/* ================= STAGGER STAGE ================= */
+const SG = 13;
+const stageEl = $('#stageGrid');
+stageEl.style.gridTemplateColumns = `repeat(${SG}, 1fr)`;
+{ const frag = document.createDocumentFragment();
+  for (let i = 0; i < SG * SG; i++) frag.appendChild(document.createElement('i'));
+  stageEl.appendChild(frag); }
+const stageCells = $$('#stageGrid i');
+function shapeAt(kind, i) {
+  const r = Math.floor(i / SG), c = i % SG, mid = (SG - 1) / 2;
+  const d = Math.hypot(r - mid, c - mid), m = Math.abs(r - mid) + Math.abs(c - mid);
+  switch (kind) {
+    case 'circle': return Math.abs(d - 4.6) < 0.75;
+    case 'diamond': return Math.abs(m - 6) < 0.9;
+    case 'cross': return Math.abs(r - mid) < 0.9 || Math.abs(c - mid) < 0.9;
+    default: return true;
+  }
+}
+function setShape(kind) {
+  $$('.shapeBtn').forEach((b) => b.classList.toggle('on', b.dataset.shape === kind));
+  if (kind === 'scatter') {
+    animate(stageCells, {
+      x: () => (Math.random() - 0.5) * 190, y: () => (Math.random() - 0.5) * 190,
+      rotate: () => (Math.random() - 0.5) * 300, scale: () => 0.25 + Math.random() * 1.1,
+      backgroundColor: () => Math.random() > 0.75 ? '#ff4b33' : '#2a2a30', borderRadius: '2px',
+      duration: 800, ease: 'easeOutQuad', delay: stagger(7, { grid: [SG, SG], from: 'random' }),
+    });
+    setTimeout(() => setShape('grid'), 1500);
+    return;
+  }
+  animate(stageCells, {
+    x: 0, y: 0,
+    scale: (el, i) => kind === 'grid' ? 1 : (shapeAt(kind, i) ? 1.3 : 0.16),
+    rotate: (el, i) => kind !== 'grid' && shapeAt(kind, i) ? 45 : 0,
+    borderRadius: (el, i) => kind !== 'grid' && shapeAt(kind, i) ? '50%' : '2px',
+    backgroundColor: (el, i) => kind === 'grid' ? '#17171a' : (shapeAt(kind, i) ? '#ff4b33' : '#17171a'),
+    duration: 720, ease: 'easeInOutQuad',
+    delay: stagger(15, { grid: [SG, SG], from: 'center' }),
+  });
+}
+$$('.shapeBtn').forEach((b) => b.addEventListener('click', () => setShape(b.dataset.shape)));
+let stageAuto = ['circle', 'diamond', 'cross', 'grid'], stageAutoIdx = 0;
+watch('stageSec', () => {
+  setShape('circle');
+  const iv = setInterval(() => {
+    if (!document.body.contains(stageEl)) { clearInterval(iv); return; }
+    const r = stageEl.getBoundingClientRect();
+    if (r.bottom < 0 || r.top > innerHeight) return;
+    stageAutoIdx++;
+    setShape(stageAuto[stageAutoIdx % stageAuto.length]);
+  }, 3400);
+});
 
 /* ================= LAB 01 — RACE ================= */
 const racers = [
