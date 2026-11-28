@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.1 — NevF 0.5.1 (dua perbaikan mesin animasi, ketahuan dari showcase)
+Rilis perbaikan cepat: halaman showcase baru (`examples/animation-showcase.html`, satu file, enam lab interaktif) membongkar dua bug yang lolos dari tes unit karena keduanya hanya muncul di browser sungguhan. **425 tes lulus (3 tes regresi baru)**.
+
+**NevF (`@adityadevid/nevf` 0.5.1)**
+- **`createTimeline()` sekarang autoplay secara default**, sama seperti `animate()` dan Anime.js (sebelumnya timeline diam tidak bergerak sampai `play()` dipanggil manual — inkonsistensi API; `autoplay: false` tetap didukung).
+- **Nilai angka polos tanpa satuan kini diberi satuan otomatis**: komponen `translate*`/`perspective` → `px`, `rotate*`/`skew*` → `deg`, dan properti dimensi CSS (`width`, `height`, `top`, `margin`, `fontSize`, `borderRadius`, dll.) → `px`. Sebelumnya `x: [0, 1500]` menghasilkan `translate3d(750, …)` tanpa satuan — CSS tidak valid yang diabaikan browser secara diam-diam, jadi animasi transform dari pasangan `[from, to]` tidak pernah bergerak di browser (di jsdom nilai awal kebetulan menutupi gejalanya).
+
+**Nev (`@adityadevid/nevjs` 0.7.1)**
+- Dependensi template diperbarui ke `^0.7.1`; contoh baru `examples/animation-showcase.html` ditautkan dari README.
+
 ## 0.7.0 — NevF 0.5.0 (mesin animasi premium setara Anime.js) + README extended
 Fitur terbesar sejak 0.2: NevF kini punya mesin animasi lengkap tanpa dependensi. **422 tes lulus (30 baru, khusus animasi)**. README dibangun ulang menjadi dokumentasi extended (daftar isi, bagian Animasi penuh, riwayat fitur per versi, kredit). Kredit rilis ini: AdityaDevID & AunuHost (collaborator).
 

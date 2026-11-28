@@ -10,11 +10,11 @@ game 2D, game 3D, dan framework fullstack — plus **mesin animasi premium setar
 
 | Paket | Versi | Fungsi | Mirip dengan |
 | --- | --- | --- | --- |
-| **`@adityadevid/nevf`** (NevF.js) | 0.5.0 | UI reaktif: signals, komponen, SSR, router, **animasi** | Solid / Preact / Anime.js |
+| **`@adityadevid/nevf`** (NevF.js) | 0.5.1 | UI reaktif: signals, komponen, SSR, router, **animasi** | Solid / Preact / Anime.js |
 | **`@adityadevid/nevb`** (NevB.js) | 0.4.0 | Backend HTTP: router, middleware, validasi, static, SSE | Hono / Express |
 | **`@adityadevid/nevg`** (NevG.js) | 0.3.0 | Game 2D: loop, scene, entity, collision, tween, tilemap, input | Phaser mini |
 | **`@adityadevid/nevgthree`** (NevGThree) | 0.2.0 | Game 3D di atas three.js: scene, entity, fisika, kamera, kontrol sentuh, terrain | Phaser 3D mini |
-| **`@adityadevid/nevjs`** (Nev.js) | 0.7.0 | Fullstack: routing berbasis file, SSR, loader, API routes, CLI | Next.js mini |
+| **`@adityadevid/nevjs`** (Nev.js) | 0.7.1 | Fullstack: routing berbasis file, SSR, loader, API routes, CLI | Next.js mini |
 
 Semuanya ES module murni, nol dependensi (kecuali saling memakai), Node ≥ 20.
 
@@ -42,7 +42,7 @@ Semuanya ES module murni, nol dependensi (kecuali saling memakai), Node ≥ 20.
 git clone https://github.com/AdityaDevID/nevjs.git
 cd nevjs
 npm install
-npm test                    # 422 tes untuk kelima paket
+npm test                    # 425 tes untuk kelima paket
 
 # bikin proyek fullstack baru
 node packages/nev/bin/nev.js create ../situs-saya
@@ -215,6 +215,10 @@ Nilai fungsi/signal pada prop atau anak otomatis reaktif.
 Baru di NevF 0.5 / Nev 0.7: mesin animasi lengkap setara **Anime.js** — tanpa dependensi, tanpa build step,
 jalan di browser maupun objek polos (dan aman di-import di server untuk SSR). Semua diekspor dari `@adityadevid/nevf`:
 `animate`, `createTimeline`, `stagger`, `easings`, `cubicBezier`, `steps`, `spring`.
+
+> 🎬 **Showcase langsung:** [examples/animation-showcase.html](examples/animation-showcase.html) — satu file HTML berisi
+> enam laboratorium interaktif (balapan easing, teater keyframes, stagger grid yang bisa diklik, timeline satu hari
+> dengan slider `seek`, tween data, dan playground easing). Jalankan `npx serve .` di root repo lalu buka file-nya.
 
 ### Dasar
 
@@ -505,7 +509,7 @@ Semua paket menyertakan deklarasi TypeScript (`types/index.d.ts`).
 
 ## Pengujian
 
-`npm test` menjalankan semua tes (**422 tes**, 117 suite): unit, HTTP nyata, dan Chromium via Playwright bila terpasang — jika tidak, tes browser dilewati.
+`npm test` menjalankan semua tes (**425 tes**, 117 suite): unit, HTTP nyata, dan Chromium via Playwright bila terpasang — jika tidak, tes browser dilewati.
 Per paket: `npm run test:f` (NevF), `test:b` (NevB), `test:g` (NevG), `test:g3` (NevGThree), `test:fullstack` (Nev).
 
 ## Kredit

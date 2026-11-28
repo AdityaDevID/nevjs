@@ -239,6 +239,17 @@ describe('timeline', () => {
     assert.equal(o4.v, 7);
   });
 
+  test('autoplay default: timeline jalan sendiri via rAF (sama seperti animate)', () => {
+    const o = { x: 0 };
+    const tl = createTimeline({ ease: 'linear' });
+    tl.add(o, { x: 100, duration: 400 });
+    pump(1000, 1200);
+    assert.equal(o.x, 50);
+    pump(1400);
+    assert.equal(o.x, 100);
+    assert.equal(tl.completed, true);
+  });
+
   test('bentuk add(params) dengan targets + defaults timeline diwarisi', () => {
     const o = { x: 0 };
     const tl = createTimeline({ autoplay: false, duration: 200, ease: 'linear' });
@@ -379,6 +390,30 @@ describe('animate: DOM', () => {
     assert.equal(d.style.transform, 'translate3d(100px, 50px, 0px) scale3d(2, 2, 1) rotate(90deg)');
     a.seek(500);
     assert.equal(d.style.transform, 'translate3d(50px, 25px, 0px) scale3d(1.5, 1.5, 1) rotate(45deg)');
+  });
+
+  test('regresi: [from, to] angka polos pada transform tetap dapat satuan px/deg', () => {
+    const d = el();
+    const a = animate(d, {
+      x: [0, 1500],
+      rotate: [0, 90],
+      duration: 12000,
+      ease: 'linear',
+      autoplay: false,
+    });
+    a.seek(6000);
+    assert.equal(d.style.transform, 'translate3d(750px, 0px, 0px) rotate(45deg)');
+    a.seek(12000);
+    assert.equal(d.style.transform, 'translate3d(1500px, 0px, 0px) rotate(90deg)');
+  });
+
+  test('regresi: properti dimensi CSS (width) angka polos dapat satuan px', () => {
+    const d = el();
+    const a = animate(d, { width: [0, 200], duration: 1000, ease: 'linear', autoplay: false });
+    a.seek(500);
+    assert.equal(d.style.width, '100px');
+    a.seek(1000);
+    assert.equal(d.style.width, '200px');
   });
 
   test('CSS custom property & opacity', () => {

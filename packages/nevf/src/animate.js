@@ -430,7 +430,24 @@ function composeTransform(values) {
   return parts.join(' ');
 }
 
+const DIMENSIONAL_PROPS = new Set([
+  'width', 'height', 'minWidth', 'minHeight', 'maxWidth', 'maxHeight',
+  'top', 'left', 'right', 'bottom', 'inset',
+  'margin', 'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
+  'padding', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+  'fontSize', 'borderRadius', 'borderWidth', 'gap', 'rowGap', 'columnGap',
+  'letterSpacing', 'wordSpacing', 'textIndent', 'outlineWidth',
+]);
+
+// Nilai transform & properti dimensi CSS WAJIB membawa satuan di browser
+// (translate3d(750, …) tanpa px tidak valid dan diabaikan diam-diam).
+function withUnit(parsed, unit) {
+  return parsed && parsed.type === 'num' && !parsed.unit ? { ...parsed, unit } : parsed;
+}
+
 function setTransformValue(el, prop, parsed) {
+  if (prop.startsWith('translate') || prop === 'perspective') parsed = withUnit(parsed, 'px');
+  else if (prop.startsWith('rotate') || prop.startsWith('skew')) parsed = withUnit(parsed, 'deg');
   const st = getTransformState(el);
   if (prop === 'scale') {
     st.values.set('scaleX', parsed);
@@ -491,6 +508,7 @@ function makeApplier(target, prop) {
     }
     if (prop.startsWith('--')) return (val) => target.style.setProperty(prop, formatValue(val, true));
     return (val) => {
+      if (DIMENSIONAL_PROPS.has(prop)) val = withUnit(val, 'px');
       target.style[prop] = formatValue(val, true);
     };
   }
@@ -974,7 +992,7 @@ class Timeline extends Playable {
     this._labels = new Map();
     this._lastChild = null;
     this.duration = 0;
-    if (params.autoplay) this.play();
+    if (params.autoplay !== false) this.play();
   }
 
   _iterTotal() {

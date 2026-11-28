@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NevF Animation Engine — Showcase</title>
+<style>
+  :root{
+    --bg:#07080d; --panel:#0e1017; --panel2:#12141f; --line:#1f2333;
+    --txt:#e8eaf2; --mut:#8b90a5; --acc:#6ee7b7; --acc2:#818cf8; --acc3:#f472b6; --acc4:#fbbf24;
+    --a:0deg;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg); color:var(--txt); font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; overflow-x:hidden}
+  ::selection{background:var(--acc2); color:#fff}
+  code, .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+  /* ---------- progress + nav ---------- */
+  #progress{position:fixed; top:0; left:0; height:3px; width:100%; transform-origin:0 50%; transform:scaleX(0);
+    background:linear-gradient(90deg,var(--acc),var(--acc2),var(--acc3)); z-index:60}
+  header{position:fixed; inset:0 0 auto 0; z-index:50; display:flex; justify-content:space-between; align-items:center;
+    padding:14px 26px; backdrop-filter:blur(10px); background:rgba(7,8,13,.55); border-bottom:1px solid rgba(31,35,51,.6)}
+  header .brand{font-weight:800; letter-spacing:.14em; font-size:13px}
+  header .brand em{font-style:normal; color:var(--acc)}
+  header nav{display:flex; gap:18px; font-size:13px}
+  header nav a{color:var(--mut); text-decoration:none}
+  header nav a:hover{color:var(--txt)}
+  @media (max-width:760px){ header nav{display:none} }
+
+  section{position:relative; padding:120px 26px 90px; max-width:1120px; margin:0 auto}
+  .kicker{font-size:12px; letter-spacing:.3em; text-transform:uppercase; color:var(--acc); margin-bottom:14px}
+  h2{font-size:clamp(28px,4.4vw,44px); line-height:1.12; letter-spacing:-.01em; margin-bottom:14px}
+  .sub{color:var(--mut); max-width:640px; margin-bottom:34px}
+  .panel{background:linear-gradient(180deg,var(--panel2),var(--panel)); border:1px solid var(--line); border-radius:18px; padding:26px}
+  .row{display:flex; flex-wrap:wrap; gap:12px; align-items:center}
+  button{cursor:pointer; border:1px solid var(--line); background:#171a28; color:var(--txt); padding:10px 18px; border-radius:999px; font-size:14px}
+  button:hover{border-color:var(--acc2)}
+  button.primary{background:linear-gradient(90deg,#0d3b2a,#123a6b); border-color:#2b5876}
+  button.on{border-color:var(--acc); color:var(--acc)}
+  select,input[type=range]{accent-color:var(--acc2)}
+  select{background:#171a28; color:var(--txt); border:1px solid var(--line); border-radius:10px; padding:9px 12px; font-size:14px}
+  pre{background:#0a0c13; border:1px solid var(--line); border-radius:14px; padding:18px; overflow:auto; font-size:13px; line-height:1.55; color:#c6cbdd}
+  pre .k{color:var(--acc3)} pre .s{color:var(--acc)} pre .n{color:var(--acc4)} pre .f{color:var(--acc2)}
+  .tag{display:inline-block; font-size:11px; letter-spacing:.12em; padding:3px 10px; border:1px solid var(--line); border-radius:999px; color:var(--mut)}
+
+  /* ---------- hero ---------- */
+  #hero{min-height:100svh; display:flex; flex-direction:column; justify-content:center; padding-top:90px}
+  #tilefield{position:absolute; inset:0; overflow:hidden; pointer-events:none; opacity:.5;
+    -webkit-mask-image:radial-gradient(70% 60% at 50% 40%, #000 30%, transparent 75%);
+            mask-image:radial-gradient(70% 60% at 50% 40%, #000 30%, transparent 75%)}
+  #tilefield i{position:absolute; width:34px; height:34px; border:1px solid #232842; border-radius:8px; background:#0d1020}
+  .hero-title{font-size:clamp(72px,17vw,220px); font-weight:900; line-height:.95; letter-spacing:-.02em; display:flex}
+  .hero-title span{display:inline-block; transform-origin:50% 100%}
+  .hero-title .dot{color:var(--acc)}
+  .hero-sub{font-size:clamp(17px,2.4vw,24px); color:var(--mut); max-width:620px; margin-top:22px}
+  .hero-sub b{color:var(--txt)}
+  .hero-cta{margin-top:36px; display:flex; gap:14px; flex-wrap:wrap}
+  .hero-stats{display:flex; gap:34px; margin-top:58px; flex-wrap:wrap}
+  .hero-stats .num{font-size:30px; font-weight:800}
+  .hero-stats .lbl{font-size:12px; color:var(--mut); letter-spacing:.14em; text-transform:uppercase}
+
+  /* ---------- easing race ---------- */
+  .lane{display:grid; grid-template-columns:150px 1fr 64px; gap:14px; align-items:center; margin:13px 0}
+  .lane .name{font-size:13px; color:var(--mut); text-align:right}
+  .lane .track{position:relative; height:26px; background:#0a0c13; border:1px solid var(--line); border-radius:999px}
+  .lane .dot{position:absolute; top:50%; left:0; width:18px; height:18px; margin-top:-9px; border-radius:50%;
+    background:var(--c,#fff); box-shadow:0 0 14px var(--c,#fff)}
+  .lane .pos{font-size:13px; color:var(--mut)}
+  @media (max-width:640px){ .lane{grid-template-columns:96px 1fr 48px} }
+
+  /* ---------- keyframe theater ---------- */
+  .stage{position:relative; height:300px; border-radius:14px; overflow:hidden;
+    background:radial-gradient(120% 130% at 50% 0%, #131830 0%, #0a0c13 70%); border:1px solid var(--line)}
+  .floor{position:absolute; left:0; right:0; bottom:44px; height:1px; background:#2a2f47}
+  #actor{position:absolute; left:12%; bottom:45px; width:64px; height:64px; border-radius:16px;
+    background:linear-gradient(135deg,var(--acc),var(--acc2)); transform-origin:50% 100%}
+  #actor::after{content:""; position:absolute; inset:16px 12px auto; height:10px; border-radius:6px;
+    background:radial-gradient(circle at 30% 50%, #0b0e18 4px, transparent 5px), radial-gradient(circle at 70% 50%, #0b0e18 4px, transparent 5px)}
+  #shadow{position:absolute; left:12%; bottom:38px; width:64px; height:10px; border-radius:50%; background:rgba(0,0,0,.55); filter:blur(3px)}
+  #blob{position:absolute; right:10%; bottom:60px; width:130px; height:130px;
+    background:conic-gradient(from var(--a), #f472b6, #818cf8, #6ee7b7, #fbbf24, #f472b6); filter:saturate(1.15)}
+  .stage .cap{position:absolute; top:14px; left:16px; font-size:12px; letter-spacing:.18em; color:var(--mut); text-transform:uppercase}
+
+  /* ---------- stagger grid ---------- */
+  #grid{display:grid; grid-template-columns:repeat(12,1fr); gap:6px}
+  #grid i{aspect-ratio:1; border-radius:6px; background:#171b2e; border:1px solid #20263f; display:block}
+  #gridWrap{cursor:pointer}
+
+  /* ---------- cinema ---------- */
+  #sky{position:relative; height:340px; border-radius:14px; overflow:hidden; border:1px solid var(--line); background:#0b1026}
+  #sun{position:absolute; left:50%; bottom:-70px; width:92px; height:92px; margin-left:-46px; border-radius:50%;
+    background:radial-gradient(circle at 50% 40%, #fde68a, #f59e0b 70%); box-shadow:0 0 70px 18px rgba(245,158,11,.45)}
+  #moon{position:absolute; top:36px; right:12%; width:44px; height:44px; border-radius:50%;
+    background:radial-gradient(circle at 38% 35%, #f8fafc, #cbd5e1 75%); box-shadow:0 0 34px 6px rgba(203,213,225,.35)}
+  .star{position:absolute; width:3px; height:3px; border-radius:50%; background:#e2e8f0}
+  .cloud{position:absolute; height:22px; border-radius:999px; background:rgba(226,232,240,.85); filter:blur(1px)}
+  #hill{position:absolute; left:-5%; right:-5%; bottom:-70px; height:150px; border-radius:50% 50% 0 0; background:#0d1f16}
+  #hill2{position:absolute; left:-20%; right:20%; bottom:-95px; height:150px; border-radius:50% 50% 0 0; background:#0a1811}
+  #stageName{font-size:14px; color:var(--acc4); min-height:22px}
+  input[type=range]{width:min(420px,70vw)}
+
+  /* ---------- counters / bars ---------- */
+  .counters{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:22px}
+  .counter{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:20px}
+  .counter .v{font-size:34px; font-weight:800}
+  .counter .l{font-size:12px; color:var(--mut); letter-spacing:.12em; text-transform:uppercase}
+  .bars{display:flex; align-items:flex-end; gap:10px; height:170px; padding:18px 6px 0}
+  .bars i{flex:1; border-radius:8px 8px 3px 3px; transform-origin:50% 100%;
+    background:linear-gradient(180deg,var(--acc2),#312e81)}
+
+  /* ---------- playground ---------- */
+  #pgTrack{position:relative; height:120px; background:#0a0c13; border:1px solid var(--line); border-radius:14px; overflow:hidden}
+  #pgBox{position:absolute; top:34px; left:12px; width:52px; height:52px; border-radius:13px;
+    background:linear-gradient(135deg,var(--acc3),var(--acc2))}
+  label.fld{display:flex; flex-direction:column; gap:6px; font-size:12px; color:var(--mut); letter-spacing:.08em; text-transform:uppercase}
+
+  footer{border-top:1px solid var(--line); padding:44px 26px 60px; text-align:center; color:var(--mut); font-size:14px}
+  footer b{color:var(--txt)}
+  .reveal{opacity:0}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<header>
+  <div class="brand">NEV<em>F</em> · ANIMATION ENGINE</div>
+  <nav>
+    <a href="#race">Easing</a><a href="#theater">Keyframes</a><a href="#staggerSec">Stagger</a>
+    <a href="#cinema">Timeline</a><a href="#dataSec">Data</a><a href="#playground">Playground</a>
+  </nav>
+</header>
+
+<!-- ================= HERO ================= -->
+<section id="hero">
+  <div id="tilefield"></div>
+  <div style="position:relative">
+    <div class="kicker reveal" id="heroKicker">NevF 0.5 · Nev.js 0.7 — mesin animasi premium</div>
+    <h1 class="hero-title" id="heroTitle" aria-label="Animasi."></h1>
+    <p class="hero-sub" id="heroSub">Satu fungsi <b class="mono">animate()</b> — keyframes, timeline, stagger grid,
+      30+ easing, dan <b>spring berbasis fisika</b>. Tanpa dependensi, tanpa build step.
+      Halaman ini seluruhnya digerakkan oleh mesin itu — dan hanya terdiri dari <b>satu file HTML</b>.</p>
+    <div class="hero-cta">
+      <button class="primary" id="replayHero">↻ Putar ulang intro</button>
+      <button onclick="document.getElementById('race').scrollIntoView({behavior:'smooth'})">Lihat laboratorium ↓</button>
+    </div>
+    <div class="hero-stats">
+      <div><div class="num" data-count="1056">0</div><div class="lbl">baris mesin animasi</div></div>
+      <div><div class="num" data-count="33">0</div><div class="lbl">tes animasi khusus</div></div>
+      <div><div class="num" data-count="425">0</div><div class="lbl">total tes monorepo</div></div>
+      <div><div class="num" data-count="0">0</div><div class="lbl">dependensi</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= EASING RACE ================= -->
+<section id="race">
+  <div class="kicker">Lab 01 — Easing</div>
+  <h2>Delapan easing, satu garis finis.</h2>
+  <p class="sub">Semua titik berangkat bersamaan dengan durasi yang sama. Yang membedakan hanya kurva easing-nya —
+    termasuk <b>spring</b> yang melampaui garis finis lalu kembali menetap, dan <b>steps</b> yang bergerak bertahap.</p>
+  <div class="panel">
+    <div id="lanes"></div>
+    <div class="row" style="margin-top:18px">
+      <button class="primary" id="raceBtn">🏁 Balapan lagi</button>
+      <span class="tag" id="raceNote">spring tidak punya durasi tetap — ia selesai saat pegasnya menetap</span>
+    </div>
+  </div>
+  <pre style="margin-top:16px"><code>animate('.dot', { x: <span class="n">560</span>, duration: <span class="n">1600</span>, ease: <span class="s">'easeOutExpo'</span> });
+animate('.dot', { x: <span class="n">560</span>, ease: spring({ stiffness: <span class="n">90</span>, damping: <span class="n">11</span> }) });</code></pre>
+</section>
+
+<!-- ================= KEYFRAME THEATER ================= -->
+<section id="theater">
+  <div class="kicker">Lab 02 — Keyframes &amp; warna</div>
+  <h2>Squash, stretch, dan blob yang bermetamorfosis.</h2>
+  <p class="sub">Karakter di kiri bergerak murni dari <b>keyframes</b> (antisipasi → lompat → mendarat dengan squash).
+    Blob di kanan menganimasikan <b>border-radius organik</b>, <b>warna conic-gradient lewat CSS variable <span class="mono">--a</span></b>, dan skala — tiga jenis nilai berbeda dalam satu panggilan.</p>
+  <div class="stage">
+    <div class="cap">keyframes · css var · color</div>
+    <div id="shadow"></div><div id="actor"></div><div id="blob"></div><div class="floor"></div>
+  </div>
+  <div class="row" style="margin-top:16px">
+    <button class="primary" id="actBtn">▶ Adegan lagi</button>
+    <button id="blobBtn">◉ Metamorfosis blob</button>
+  </div>
+</section>
+
+<!-- ================= STAGGER GRID ================= -->
+<section id="staggerSec">
+  <div class="kicker">Lab 03 — Stagger grid</div>
+  <h2>Klik petaknya. Gelombangnya dihitung dari titik itu.</h2>
+  <p class="sub"><span class="mono">stagger()</span> dengan <span class="mono">grid: [8, 12]</span> menghitung jarak tiap sel
+    dari titik asal — gelombang di bawah berangkat dari sel yang kamu klik, bukan dari sudut.</p>
+  <div class="panel" id="gridWrap"><div id="grid"></div></div>
+  <div class="row" style="margin-top:16px">
+    <span style="color:var(--mut); font-size:13px">Mode from:</span>
+    <button data-from="center" class="fromBtn on">center</button>
+    <button data-from="first" class="fromBtn">first</button>
+    <button data-from="last" class="fromBtn">last</button>
+    <button data-from="random" class="fromBtn">random</button>
+    <button class="primary" id="waveBtn">🌊 Gelombang dari tengah</button>
+  </div>
+</section>
+
+<!-- ================= CINEMA / TIMELINE ================= -->
+<section id="cinema">
+  <div class="kicker">Lab 04 — Timeline</div>
+  <h2>Satu hari, disutradarai oleh satu timeline.</h2>
+  <p class="sub">Fajar → siang → senja → malam ditulis sebagai satu <span class="mono">createTimeline()</span> berlabel.
+    Geser slider-nya: <span class="mono">seek()</span> bersifat deterministik — posisi matahari, warna langit, dan bintang
+    selalu persis sama di milidetik yang sama, maju maupun mundur.</p>
+  <div id="sky">
+    <div id="moon"></div><div id="sun"></div>
+    <div class="cloud" id="cloud1" style="top:52px; left:-160px; width:130px"></div>
+    <div class="cloud" id="cloud2" style="top:96px; left:-260px; width:90px; opacity:.7"></div>
+    <div id="hill2"></div><div id="hill"></div>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <div class="row">
+      <button class="primary" id="tlPlay">▶ Putar</button>
+      <button id="tlRev">⏪ Reverse</button>
+      <input type="range" id="tlSeek" min="0" max="12000" value="0" step="10">
+      <span class="mono" id="tlTime" style="color:var(--mut)">0.0s / 12.0s</span>
+    </div>
+    <div id="stageName" style="margin-top:10px">Babak: —</div>
+  </div>
+</section>
+
+<!-- ================= DATA ================= -->
+<section id="dataSec">
+  <div class="kicker">Lab 05 — Objek &amp; data</div>
+  <h2>Yang dianimasikan tidak harus elemen.</h2>
+  <p class="sub">Target boleh <b>objek polos</b>: angka di-tween lalu ditulis ke DOM lewat <span class="mono">onUpdate</span>.
+    Bagian ini berjalan otomatis saat masuk layar — grafik batang di bawah adalah properti <span class="mono">scaleY</span> dengan stagger.</p>
+  <div class="counters">
+    <div class="counter"><div class="v" id="c1">0</div><div class="l">token diproses AunuCore</div></div>
+    <div class="counter"><div class="v" id="c2">0</div><div class="l">tes hijau di nevjs</div></div>
+    <div class="counter"><div class="v" id="c3">0</div><div class="l">bug diaudit &amp; diperbaiki</div></div>
+    <div class="counter"><div class="v" id="c4">0</div><div class="l">dependensi ditambahkan</div></div>
+  </div>
+  <div class="panel"><div class="bars" id="bars"></div></div>
+</section>
+
+<!-- ================= PLAYGROUND ================= -->
+<section id="playground">
+  <div class="kicker">Lab 06 — Playground</div>
+  <h2>Coba sendiri: pilih easing, atur durasi.</h2>
+  <p class="sub">Kode di bawah berubah mengikuti pilihanmu — persis panggilan yang dijalankan saat kamu menekan tombol.</p>
+  <div id="pgTrack"><div id="pgBox"></div></div>
+  <div class="row" style="margin:18px 0">
+    <label class="fld">Easing <select id="pgEase"></select></label>
+    <label class="fld">Durasi <span><input type="range" id="pgDur" min="300" max="3000" step="100" value="1200"> <span class="mono" id="pgDurVal">1200ms</span></span></label>
+    <button class="primary" id="pgGo">▶ Jalankan</button>
+    <button id="pgBack">⏪ Balik (reverse)</button>
+  </div>
+  <pre><code id="pgCode"></code></pre>
+</section>
+
+<footer>
+  <p>Showcase satu file untuk <b>NevF Animation Engine</b> — bagian dari monorepo <b>nevjs</b>.</p>
+  <p style="margin-top:6px">Dibuat oleh <b>AdityaDevID</b> · dikembangkan bersama <b>AunuHost (Dwi Aunu Santoso)</b>, collaborator — AunuCore.</p>
+  <p style="margin-top:6px">Lisensi MIT.</p>
+</footer>
+
+<script type="module">
+import { animate, createTimeline, stagger, easings, cubicBezier, steps, spring } from '../packages/nevf/src/animate.js';
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+/* ================= progress bar ================= */
+addEventListener('scroll', () => {
+  const h = document.documentElement;
+  const f = h.scrollTop / (h.scrollHeight - h.clientHeight || 1);
+  $('#progress').style.transform = `scaleX(${f})`;
+}, { passive: true });
+
+/* ================= HERO ================= */
+const title = $('#heroTitle');
+'Animasi.'.split('').forEach((ch) => {
+  const s = document.createElement('span');
+  s.textContent = ch;
+  if (ch === '.') s.className = 'dot';
+  title.appendChild(s);
+});
+const field = $('#tilefield');
+for (let i = 0; i < 30; i++) {
+  const t = document.createElement('i');
+  t.style.left = `${(i * 37) % 100}%`;
+  t.style.top = `${(i * 53) % 100}%`;
+  field.appendChild(t);
+}
+function countUp(el, to, dur = 1600) {
+  const o = { v: 0 };
+  animate(o, { v: to, duration: dur, ease: 'easeOutQuart',
+    onUpdate: () => { el.textContent = Math.round(o.v).toLocaleString('id-ID'); } });
+}
+function playIntro() {
+  const tl = createTimeline({ defaults: { ease: 'easeOutQuad' } });
+  tl.add('#tilefield i', { scale: [0, 1], rotate: [90, 0], opacity: [0, 1], duration: 700,
+      delay: stagger(28, { from: 'center' }) }, 0)
+    .add('#heroKicker', { opacity: [0, 1], y: [16, 0], duration: 500 }, 150)
+    .add('#heroTitle span', { y: [130, 0], rotate: [10, 0], opacity: [0, 1], duration: 900,
+        ease: spring({ stiffness: 110, damping: 13 }), delay: stagger(45) }, 250)
+    .add('#heroSub', { opacity: [0, 1], y: [24, 0], duration: 700 }, 800)
+    .add('.hero-cta', { opacity: [0, 1], y: [24, 0], duration: 700 }, 950)
+    .add('.hero-stats', { opacity: [0, 1], y: [24, 0], duration: 700 }, 1100);
+  setTimeout(() => $$('.hero-stats .num').forEach((n) => countUp(n, +n.dataset.count)), 1150);
+  return tl;
+}
+$$('#heroSub, .hero-cta, .hero-stats').forEach((el) => { el.style.opacity = '0'; });
+playIntro();
+$('#replayHero').addEventListener('click', () => {
+  $$('.hero-stats .num').forEach((n) => { n.textContent = '0'; });
+  playIntro();
+});
+
+/* ================= LAB 01 — EASING RACE ================= */
+const racers = [
+  ['linear',        (d) => ({ ease: 'linear', duration: d }), '#94a3b8'],
+  ['easeInQuad',    (d) => ({ ease: 'easeInQuad', duration: d }), '#38bdf8'],
+  ['easeOutExpo',   (d) => ({ ease: 'easeOutExpo', duration: d }), '#6ee7b7'],
+  ['easeInOutQuart',(d) => ({ ease: 'easeInOutQuart', duration: d }), '#818cf8'],
+  ['easeOutBack',   (d) => ({ ease: 'easeOutBack', duration: d }), '#fbbf24'],
+  ['easeOutElastic',(d) => ({ ease: 'easeOutElastic', duration: d }), '#f472b6'],
+  ['steps(14)',     (d) => ({ ease: steps(14), duration: d }), '#fb923c'],
+  ['spring(90, 11)',() => ({ ease: spring({ stiffness: 90, damping: 11 }) }), '#e879f9'],
+];
+const lanesEl = $('#lanes');
+racers.forEach(([name, , color]) => {
+  const row = document.createElement('div');
+  row.className = 'lane';
+  row.innerHTML = `<div class="name mono">${name}</div><div class="track"><div class="dot" style="--c:${color}; background:${color}"></div></div><div class="pos mono">—</div>`;
+  lanesEl.appendChild(row);
+});
+let raceAnims = [];
+function race() {
+  raceAnims.forEach((a) => a.cancel());
+  raceAnims = [];
+  let place = 0;
+  $$('.lane').forEach((lane, i) => {
+    const dot = $('.dot', lane), pos = $('.pos', lane), track = $('.track', lane);
+    pos.textContent = '—';
+    const maxX = track.clientWidth - 30;
+    const anim = animate(dot, { x: [0, maxX], ...racers[i][1](1700),
+      onComplete: () => { pos.textContent = `#${++place}`; } });
+    raceAnims.push(anim);
+  });
+}
+$('#raceBtn').addEventListener('click', race);
+
+/* ================= LAB 02 — KEYFRAME THEATER ================= */
+function act() {
+  animate('#actor', {
+    y: [ { to: 16, duration: 200, ease: 'easeOutQuad' },
+         { to: -180, duration: 560, ease: 'easeOutCubic' },
+         { to: 0, duration: 500, ease: 'easeInQuad' },
+         { to: 12, duration: 130, ease: 'easeOutQuad' },
+         { to: 0, duration: 220, ease: 'easeOutBack' } ],
+    scaleY: [ { to: 0.74, duration: 200 }, { to: 1.14, duration: 560 }, { to: 1, duration: 500 },
+              { to: 0.78, duration: 130 }, { to: 1, duration: 220 } ],
+    scaleX: [ { to: 1.22, duration: 200 }, { to: 0.9, duration: 560 }, { to: 1, duration: 500 },
+              { to: 1.2, duration: 130 }, { to: 1, duration: 220 } ],
+    rotate: [ { to: -6, duration: 760 }, { to: 8, duration: 630 }, { to: 0, duration: 220 } ],
+  });
+  animate('#shadow', {
+    scaleX: [ { to: 1.25, duration: 200 }, { to: 0.45, duration: 560 }, { to: 1, duration: 500 },
+              { to: 1.2, duration: 130 }, { to: 1, duration: 220 } ],
+    opacity: [ { to: 0.9, duration: 200 }, { to: 0.35, duration: 560 }, { to: 0.85, duration: 850 },
+               { to: 0.85, duration: 350 } ],
+  });
+}
+function morph() {
+  animate('#blob', {
+    borderRadius: [ { to: '12%', duration: 600, ease: 'easeInOutQuad' },
+                    { to: '50%', duration: 600, ease: 'easeInOutQuad' },
+                    { to: '30%', duration: 600, ease: 'easeInOutQuad' },
+                    { to: '46%', duration: 600, ease: 'easeOutBack' } ],
+    rotate: [ { to: 180, duration: 1200, ease: 'easeInOutCubic' }, { to: 360, duration: 1200, ease: 'easeOutBack' } ],
+    scale: [ { to: 0.82, duration: 800 }, { to: 1.12, duration: 800 }, { to: 1, duration: 800, ease: 'easeOutElastic' } ],
+  });
+}
+$('#actBtn').addEventListener('click', act);
+$('#blobBtn').addEventListener('click', morph);
+animate('#blob', { '--a': ['0deg', '360deg'], duration: 9000, ease: 'linear', loop: true });
+
+/* ================= LAB 03 — STAGGER GRID ================= */
+const grid = $('#grid');
+for (let i = 0; i < 96; i++) grid.appendChild(document.createElement('i'));
+let fromMode = 'center';
+function wave(from) {
+  animate('#grid i', {
+    scale: [ { to: 1.45, duration: 260, ease: 'easeOutQuad' }, { to: 1, duration: 520, ease: 'easeOutBack' } ],
+    backgroundColor: [ { to: '#818cf8', duration: 260 }, { to: '#171b2e', duration: 520 } ],
+    delay: stagger(30, { grid: [8, 12], from }),
+  });
+}
+$$('.fromBtn').forEach((b) => b.addEventListener('click', () => {
+  $$('.fromBtn').forEach((x) => x.classList.remove('on'));
+  b.classList.add('on');
+  fromMode = b.dataset.from;
+  wave(fromMode);
+}));
+$('#gridWrap').addEventListener('click', (e) => {
+  const cell = e.target.closest('#grid i');
+  wave(cell ? $$('#grid i').indexOf(cell) : fromMode);
+});
+$('#waveBtn').addEventListener('click', () => wave(fromMode));
+
+/* ================= LAB 04 — TIMELINE CINEMA ================= */
+const sky = $('#sky');
+for (let i = 0; i < 42; i++) {
+  const s = document.createElement('i');
+  s.className = 'star';
+  s.style.left = `${(i * 23.7) % 100}%`;
+  s.style.top = `${(i * 13.3) % 55}%`;
+  sky.appendChild(s);
+}
+const stageFor = (t) => t < 2200 ? '🌅 Fajar — matahari terbit, bintang memudar'
+  : t < 5200 ? '🌤️ Pagi menuju siang — langit membiru, awan lewat'
+  : t < 8600 ? '🌇 Senja — cahaya menghangat, matahari turun'
+  : '🌙 Malam — bulan & bintang kembali';
+const tl = createTimeline({ autoplay: false,
+  onUpdate: (self) => {
+    $('#tlTime').textContent = `${(self.currentTime / 1000).toFixed(1)}s / 12.0s`;
+    $('#stageName').textContent = `Babak: ${stageFor(self.currentTime)}`;
+    if (document.activeElement !== $('#tlSeek')) $('#tlSeek').value = self.currentTime;
+  } });
+tl.add('#sky', { backgroundColor: [
+      { to: '#0b1026', duration: 400 }, { to: '#43305e', duration: 1800, ease: 'easeInOutQuad' },
+      { to: '#2563eb', duration: 3000, ease: 'easeInOutQuad' }, { to: '#b45309', duration: 3400, ease: 'easeInOutQuad' },
+      { to: '#0b1026', duration: 3400, ease: 'easeInOutQuad' } ] }, 0)
+  .add('#sun', { y: [ { to: -290, duration: 4200, ease: 'easeOutQuad' },
+                      { to: -290, duration: 3600 }, { to: 0, duration: 4200, ease: 'easeInQuad' } ] }, 0)
+  .add('#moon', { opacity: [1, 0], duration: 2000 }, 0)
+  .add('.star', { opacity: [1, 0], duration: 1800, delay: stagger(18) }, 0)
+  .add('#cloud1', { x: [0, 1500], duration: 12000, ease: 'linear' }, 0)
+  .add('#cloud2', { x: [0, 1500], duration: 9500, ease: 'linear' }, 800)
+  .label('senja', 8600)
+  .add('#moon', { opacity: [0, 1], duration: 2200 }, 9800)
+  .add('.star', { opacity: [0, 1], duration: 2000, delay: stagger(18) }, 9800);
+tl.seek(0);
+let tlPlaying = false;
+$('#tlPlay').addEventListener('click', (e) => {
+  if (tlPlaying) { tl.pause(); e.target.textContent = '▶ Putar'; }
+  else { if (tl.currentTime >= 11999) tl.restart(); else tl.play(); e.target.textContent = '⏸ Jeda'; }
+  tlPlaying = !tlPlaying;
+});
+$('#tlRev').addEventListener('click', () => { tl.reverse(); tlPlaying = true; $('#tlPlay').textContent = '⏸ Jeda'; });
+$('#tlSeek').addEventListener('input', (e) => { tl.pause(); tlPlaying = false; $('#tlPlay').textContent = '▶ Putar'; tl.seek(+e.target.value); });
+
+/* ================= LAB 05 — DATA ================= */
+const barsEl = $('#bars');
+[42, 68, 55, 90, 74, 100, 63, 85, 48, 77, 95, 58, 82, 70].forEach((hgt) => {
+  const b = document.createElement('i');
+  b.style.height = `${hgt}%`;
+  b.style.transform = 'scaleY(0)';
+  barsEl.appendChild(b);
+});
+let dataPlayed = false;
+new IntersectionObserver((es, ob) => {
+  if (!es[0].isIntersecting || dataPlayed) return;
+  dataPlayed = true; ob.disconnect();
+  const fmt = (el, to) => { const o = { v: 0 };
+    animate(o, { v: to, duration: 1900, ease: 'easeOutQuart',
+      onUpdate: () => { el.textContent = Math.round(o.v).toLocaleString('id-ID'); } }); };
+  fmt($('#c1'), 10900000000); fmt($('#c2'), 425); fmt($('#c3'), 39); fmt($('#c4'), 0);
+  animate('#bars i', { scaleY: [0, 1], duration: 900, ease: 'easeOutBack', delay: stagger(55) });
+}, { threshold: 0.35 }).observe($('#dataSec'));
+
+/* ================= LAB 06 — PLAYGROUND ================= */
+const easeSel = $('#pgEase');
+Object.keys(easings).forEach((n) => easeSel.add(new Option(n, n)));
+['spring({stiffness:120,damping:12})', 'steps(10)', 'cubicBezier(.25,.1,.25,1)'].forEach((n) => easeSel.add(new Option(n, n)));
+easeSel.value = 'easeOutExpo';
+let pgAnim = null;
+function pgRenderCode() {
+  const e = easeSel.value, d = $('#pgDur').value;
+  $('#pgDurVal').textContent = `${d}ms`;
+  const easeTxt = e.startsWith('spring') || e.startsWith('steps') || e.startsWith('cubicBezier') ? e : `'${e}'`;
+  const durTxt = e.startsWith('spring') ? '' : `, duration: ${d}`;
+  $('#pgCode').textContent = `animate('#pgBox', { x: 420, ease: ${easeTxt}${durTxt} });`;
+}
+function pgEase() {
+  const e = easeSel.value;
+  if (e.startsWith('spring')) return spring({ stiffness: 120, damping: 12 });
+  if (e.startsWith('steps')) return steps(10);
+  if (e.startsWith('cubicBezier')) return cubicBezier(0.25, 0.1, 0.25, 1);
+  return e;
+}
+$('#pgGo').addEventListener('click', () => {
+  const maxX = $('#pgTrack').clientWidth - 76;
+  const e = easeSel.value;
+  pgAnim = animate('#pgBox', { x: [0, maxX], ease: pgEase(),
+    ...(e.startsWith('spring') ? {} : { duration: +$('#pgDur').value }) });
+});
+$('#pgBack').addEventListener('click', () => { if (pgAnim) pgAnim.reverse(); });
+easeSel.addEventListener('change', pgRenderCode);
+$('#pgDur').addEventListener('input', pgRenderCode);
+pgRenderCode();
+
+/* ================= section reveals + first-run triggers ================= */
+const seen = new WeakSet();
+new IntersectionObserver((es) => {
+  es.forEach((en) => {
+    if (!en.isIntersecting || seen.has(en.target)) return;
+    seen.add(en.target);
+    animate($$('h2, .sub, .panel, .stage, #sky, #pgTrack, pre', en.target),
+      { opacity: [0, 1], y: [26, 0], duration: 750, ease: 'easeOutQuad', delay: stagger(70) });
+    if (en.target.id === 'race') race();
+    if (en.target.id === 'theater') { act(); morph(); }
+    if (en.target.id === 'staggerSec') wave('center');
+    if (en.target.id === 'cinema') { tl.play(); tlPlaying = true; $('#tlPlay').textContent = '⏸ Jeda'; }
+  });
+}, { threshold: 0.25 }).observe($('#race'));
+['theater', 'staggerSec', 'cinema', 'playground'].forEach((id) => {
+  const el = document.getElementById(id);
+  const ob = new IntersectionObserver((es) => {
+    es.forEach((en) => {
+      if (!en.isIntersecting || seen.has(en.target)) return;
+      seen.add(en.target);
+      animate($$('h2, .sub, .panel, .stage, #sky, #pgTrack, pre', en.target),
+        { opacity: [0, 1], y: [26, 0], duration: 750, ease: 'easeOutQuad', delay: stagger(70) });
+      if (id === 'theater') { act(); morph(); }
+      if (id === 'staggerSec') wave('center');
+      if (id === 'cinema') { tl.play(); tlPlaying = true; $('#tlPlay').textContent = '⏸ Jeda'; }
+    });
+  }, { threshold: 0.25 });
+  ob.observe(el);
+});
+</script>
+</body>
+</html>

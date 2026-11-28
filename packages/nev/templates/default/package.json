@@ -9,7 +9,7 @@
     "routes": "nev routes"
   },
   "dependencies": {
-    "@adityadevid/nevjs": "^0.7.0",
+    "@adityadevid/nevjs": "^0.7.1",
     "@adityadevid/nevf": "^0.5.0",
     "@adityadevid/nevg": "^0.3.0"
   }
