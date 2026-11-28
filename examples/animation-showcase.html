@@ -133,6 +133,7 @@
   </div>
   <div id="errBox">
     <p><b>Model 3D gagal dimuat.</b><br>Showcase ini memuat karakter &amp; motion asli dari CDN (three.js / model MMD) — periksa koneksi internetmu, lalu coba lagi.</p>
+    <p class="mono" id="errDetail" style="font-size:12px; color:#9c9ca3"></p>
     <button class="primary" onclick="location.reload()">Muat ulang</button>
   </div>
 
@@ -276,11 +277,15 @@ window.__nevLoadDone = () => {
   setTimeout(() => animate('#loadBox', { opacity: [1, 0], duration: 600,
     onComplete: () => { $('#loadBox').style.display = 'none'; } }), 250);
 };
-window.__nevLoadError = () => {
+window.__nevLoadError = (why) => {
+  if (window.__nevLoaded) return;
   $('#loadBox').style.display = 'none';
+  const d = $('#errDetail');
+  if (d && why) d.textContent = `Detail: ${why}`;
   $('#errBox').style.display = 'flex';
 };
-setTimeout(() => { if (!window.__nevLoaded) window.__nevLoadError(); }, 45000);
+window.__nevFailReason = '';
+setTimeout(() => { if (!window.__nevLoaded) window.__nevLoadError(window.__nevFailReason || 'timeout 20s — CDN lambat/terblokir dari jaringan ini'); }, 20000);
 
 /* ================= LAB 01 — RACE ================= */
 const racers = [
@@ -435,8 +440,6 @@ import { MMDLoader } from 'three/addons/loaders/MMDLoader.js';
 import { MMDAnimationHelper } from 'three/addons/animation/MMDAnimationHelper.js';
 import { animate as nevAnimate } from '../packages/nevf/src/animate.js';
 
-const MODEL = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/models/mmd/miku/miku_v2.pmd';
-const VMD = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/models/mmd/vmds/wavefile_v2.vmd';
 const container = document.getElementById('stage3d');
 
 const scene = new THREE.Scene();
@@ -512,19 +515,46 @@ addEventListener('pointermove', (e) => {
 });
 addEventListener('pointerup', () => { dragging = false; });
 
-/* muat karakter + motion dansa asli */
-const loader = new MMDLoader();
-loader.loadWithAnimation(MODEL, VMD,
-  ({ mesh, animation }) => {
-    mesh.traverse((o) => { if (o.isMesh) { o.castShadow = true; } });
-    scene.add(mesh);
-    helper = new MMDAnimationHelper();
-    helper.add(mesh, { animation, physics: false });
-    window.__nevLoaded = true;
-    window.__nevLoadDone();
-  },
-  (xhr) => { if (xhr.total) window.__nevSetLoad(xhr.loaded / xhr.total * 100); },
-  () => window.__nevLoadError());
+/* muat karakter + motion dansa asli — dua mirror, ganti otomatis bila lambat/gagal */
+const BASES = [
+  'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/models/mmd',
+  'https://raw.githubusercontent.com/mrdoob/three.js/r160/examples/models/mmd',
+];
+let loadAttempt = 0, loadTimer = null;
+function attemptLoad() {
+  const base = BASES[loadAttempt];
+  const loader = new MMDLoader();
+  loader.loadWithAnimation(`${base}/miku/miku_v2.pmd`, `${base}/vmds/wavefile_v2.vmd`,
+    ({ mesh, animation }) => {
+      clearTimeout(loadTimer);
+      mesh.traverse((o) => { if (o.isMesh) { o.castShadow = true; } });
+      scene.add(mesh);
+      helper = new MMDAnimationHelper();
+      helper.add(mesh, { animation, physics: false });
+      window.__nevLoaded = true;
+      window.__nevLoadDone();
+    },
+    (xhr) => {
+      if (xhr.total) window.__nevSetLoad(Math.min(95, xhr.loaded / xhr.total * 100));
+      else window.__nevSetLoad(30);
+    },
+    (err) => {
+      clearTimeout(loadTimer);
+      window.__nevFailReason = `mirror ${loadAttempt + 1} gagal (${(err && err.message) || 'network error'})`;
+      nextBase();
+    });
+  loadTimer = setTimeout(() => {
+    if (window.__nevLoaded) return;
+    window.__nevFailReason = `mirror ${loadAttempt + 1} timeout 15s`;
+    nextBase();
+  }, 15000);
+}
+function nextBase() {
+  loadAttempt++;
+  if (loadAttempt < BASES.length) { window.__nevSetLoad(5); attemptLoad(); }
+  else window.__nevLoadError(window.__nevFailReason);
+}
+attemptLoad();
 
 /* kontrol UI */
 const btnPlay = document.getElementById('btnPlay');
