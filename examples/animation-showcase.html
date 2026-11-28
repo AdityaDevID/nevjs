@@ -3,25 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NevF Animation Engine — Showcase</title>
+<title>NevF × NevGThree — Showcase Karakter Anime 3D</title>
 <style>
   :root{
     --bg:#0a0a0b; --panel:#101012; --line:#232326; --txt:#f2f2f0; --mut:#9c9ca3;
-    --red:#ff4b33; --red2:#ff7a5c; --cell:#17171a;
+    --red:#ff4b33; --red2:#ff7a5c;
   }
   *{box-sizing:border-box; margin:0; padding:0}
   body{background:var(--bg); color:var(--txt); font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; overflow-x:hidden}
   ::selection{background:var(--red); color:#fff}
   .mono, code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 
-  /* ===== background grid (the showcase itself) ===== */
-  #bg{position:fixed; inset:0; z-index:0; display:grid; pointer-events:none}
-  #bg i{display:block; background:var(--cell); border-radius:2px; transform-origin:50% 50%}
-  #veil{position:fixed; inset:0; z-index:1; pointer-events:none;
-    background:radial-gradient(90% 70% at 50% 42%, transparent 40%, rgba(10,10,11,.55) 100%)}
-  main, footer{position:relative; z-index:2}
-
-  header{position:fixed; inset:0 0 auto 0; z-index:50; display:flex; justify-content:space-between; align-items:center;
+  header{position:fixed; inset:0 0 auto 0; z-index:60; display:flex; justify-content:space-between; align-items:center;
     padding:16px 28px; mix-blend-mode:difference}
   header .brand{font-weight:700; letter-spacing:.22em; font-size:12px; color:#fff}
   header nav{display:flex; gap:20px; font-size:12px; letter-spacing:.08em}
@@ -29,38 +22,51 @@
   header nav a:hover{opacity:1}
   @media (max-width:760px){ header nav{display:none} }
 
-  section{padding:130px 28px 100px; max-width:1080px; margin:0 auto}
+  section{padding:120px 28px 90px; max-width:1080px; margin:0 auto; position:relative; z-index:2}
   .kicker{font-size:11px; letter-spacing:.34em; text-transform:uppercase; color:var(--red); margin-bottom:16px; font-weight:600}
   h2{font-size:clamp(30px,4.6vw,46px); line-height:1.08; font-weight:800; letter-spacing:-.02em; margin-bottom:16px}
-  .sub{color:var(--mut); max-width:600px; margin-bottom:36px; font-size:16.5px}
+  .sub{color:var(--mut); max-width:620px; margin-bottom:36px; font-size:16.5px}
   .sub b{color:var(--txt); font-weight:600}
-  .panel{background:rgba(16,16,18,.88); border:1px solid var(--line); border-radius:6px; padding:26px; backdrop-filter:blur(6px)}
+  .panel{background:rgba(16,16,18,.92); border:1px solid var(--line); border-radius:6px; padding:26px}
   .row{display:flex; flex-wrap:wrap; gap:10px; align-items:center}
-  button{cursor:pointer; border:1px solid var(--line); background:transparent; color:var(--txt);
-    padding:9px 18px; border-radius:3px; font-size:13px; letter-spacing:.04em}
+  button{cursor:pointer; border:1px solid var(--line); background:rgba(12,12,14,.72); color:var(--txt);
+    padding:9px 18px; border-radius:3px; font-size:13px; letter-spacing:.04em; backdrop-filter:blur(4px)}
   button:hover{border-color:var(--red); color:var(--red2)}
   button.primary{background:var(--red); border-color:var(--red); color:#fff; font-weight:600}
   button.primary:hover{background:var(--red2); color:#fff}
   button.on{border-color:var(--red); color:var(--red)}
   select{background:#141416; color:var(--txt); border:1px solid var(--line); border-radius:3px; padding:9px 12px; font-size:13.5px}
   input[type=range]{accent-color:var(--red); width:min(400px,65vw)}
-  pre{background:rgba(13,13,15,.92); border:1px solid var(--line); border-radius:6px; padding:18px 20px; overflow:auto;
+  pre{background:rgba(13,13,15,.94); border:1px solid var(--line); border-radius:6px; padding:18px 20px; overflow:auto;
     font-size:13px; line-height:1.6; color:#c9c9ce}
   .tag{font-size:11px; letter-spacing:.1em; color:var(--mut)}
 
-  /* ===== hero ===== */
-  #hero{min-height:100svh; display:flex; flex-direction:column; justify-content:center; align-items:flex-start; padding-top:80px}
-  #hero .kicker{color:var(--txt); opacity:.75}
-  .hero-title{font-size:clamp(84px,19vw,240px); font-weight:900; line-height:.9; letter-spacing:-.03em; display:flex}
+  /* ===== 3D HERO ===== */
+  #hero{position:relative; min-height:100svh; padding:0; max-width:none; overflow:hidden;
+    background:radial-gradient(110% 85% at 50% 108%, #2b0f0c 0%, #131315 46%, #0a0a0b 78%)}
+  #stage3d{position:absolute; inset:0; cursor:grab}
+  #stage3d:active{cursor:grabbing}
+  #stage3d canvas{display:block}
+  .hero-ui{position:absolute; inset:auto 0 0 0; z-index:5; padding:0 28px 30px; pointer-events:none;
+    background:linear-gradient(to top, rgba(10,10,11,.88) 0%, rgba(10,10,11,0) 190px)}
+  .hero-ui .inner{max-width:1080px; margin:0 auto}
+  .hero-ui .kicker{color:#fff; opacity:.8; pointer-events:none}
+  .hero-title{font-size:clamp(56px,11.5vw,132px); font-weight:900; line-height:.92; letter-spacing:-.03em; display:flex}
   .hero-title span{display:inline-block}
   .hero-title .dot{color:var(--red)}
-  .hero-sub{font-size:clamp(16px,2.2vw,21px); color:#d8d8d3; max-width:560px; margin-top:26px; line-height:1.55}
+  .hero-sub{font-size:clamp(15px,1.9vw,19px); color:#dcdcd6; max-width:600px; margin-top:16px; line-height:1.55}
   .hero-sub b{color:#fff}
-  .hero-cta{margin-top:38px; display:flex; gap:12px; flex-wrap:wrap}
-  .hero-stats{display:flex; gap:40px; margin-top:64px; flex-wrap:wrap}
-  .hero-stats .num{font-size:26px; font-weight:800}
-  .hero-stats .lbl{font-size:10.5px; color:var(--mut); letter-spacing:.18em; text-transform:uppercase; margin-top:2px}
-  #hint{margin-top:22px; font-size:12.5px; color:var(--mut); letter-spacing:.06em}
+  .hero-controls{margin-top:22px; display:flex; gap:10px; flex-wrap:wrap; pointer-events:auto; align-items:center}
+  .hero-hint{margin-top:14px; font-size:12.5px; color:var(--mut); letter-spacing:.05em}
+  #loadBox{position:absolute; inset:0; z-index:8; display:flex; flex-direction:column; gap:16px;
+    align-items:center; justify-content:center; background:rgba(10,10,11,.55); backdrop-filter:blur(2px)}
+  #loadBox .lbl{font-size:12px; letter-spacing:.3em; text-transform:uppercase; color:#e8e8e4}
+  #loadTrack{width:min(340px,70vw); height:3px; background:#26262b; border-radius:99px; overflow:hidden}
+  #loadBar{height:100%; width:0%; background:var(--red)}
+  #loadPct{font-size:12px; color:var(--mut)}
+  #errBox{position:absolute; inset:0; z-index:9; display:none; flex-direction:column; gap:14px;
+    align-items:center; justify-content:center; background:rgba(10,10,11,.78); text-align:center; padding:20px}
+  #errBox p{color:#dcdcd6; max-width:460px}
 
   /* ===== race ===== */
   .lane{display:grid; grid-template-columns:150px 1fr 56px; gap:14px; align-items:center; margin:12px 0}
@@ -69,18 +75,6 @@
   .lane .dot{position:absolute; top:50%; left:0; width:16px; height:16px; margin-top:-8px; border-radius:50%; background:var(--c,#fff)}
   .lane .pos{font-size:12.5px; color:var(--mut)}
   @media (max-width:640px){ .lane{grid-template-columns:92px 1fr 44px} }
-
-  /* ===== theater ===== */
-  .stage{position:relative; height:300px; border-radius:6px; overflow:hidden; background:#0c0c0e; border:1px solid var(--line)}
-  .floor{position:absolute; left:0; right:0; bottom:44px; height:1px; background:#26262b}
-  #actor{position:absolute; left:12%; bottom:45px; width:64px; height:64px; border-radius:6px;
-    background:var(--red); transform-origin:50% 100%}
-  #actor::after{content:""; position:absolute; inset:17px 12px auto; height:10px;
-    background:radial-gradient(circle at 30% 50%, #141416 4px, transparent 5px), radial-gradient(circle at 70% 50%, #141416 4px, transparent 5px)}
-  #shadow{position:absolute; left:12%; bottom:38px; width:64px; height:10px; border-radius:50%; background:rgba(0,0,0,.6); filter:blur(3px)}
-  #blob{position:absolute; right:10%; bottom:60px; width:128px; height:128px; border-radius:46%;
-    background:conic-gradient(from var(--a, 0deg), #ff4b33, #f2f2f0, #ff7a5c, #57575e, #ff4b33)}
-  .stage .cap{position:absolute; top:14px; left:16px; font-size:10.5px; letter-spacing:.22em; color:var(--mut); text-transform:uppercase}
 
   /* ===== cinema ===== */
   #sky{position:relative; height:340px; border-radius:6px; overflow:hidden; border:1px solid var(--line); background:#0b1026}
@@ -96,117 +90,73 @@
 
   /* ===== data ===== */
   .counters{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:14px}
-  .counter{background:rgba(16,16,18,.88); border:1px solid var(--line); border-radius:6px; padding:20px}
+  .counter{background:rgba(16,16,18,.92); border:1px solid var(--line); border-radius:6px; padding:20px}
   .counter .v{font-size:32px; font-weight:800}
   .counter .l{font-size:10.5px; color:var(--mut); letter-spacing:.14em; text-transform:uppercase; margin-top:4px}
   .bars{display:flex; align-items:flex-end; gap:10px; height:170px; padding:18px 6px 0}
   .bars i{flex:1; border-radius:3px 3px 1px 1px; transform-origin:50% 100%; background:#e8e8e4}
 
   /* ===== playground ===== */
-  #pgTrack{position:relative; height:120px; background:rgba(12,12,14,.9); border:1px solid var(--line); border-radius:6px; overflow:hidden}
+  #pgTrack{position:relative; height:120px; background:rgba(12,12,14,.94); border:1px solid var(--line); border-radius:6px; overflow:hidden}
   #pgBox{position:absolute; top:34px; left:12px; width:52px; height:52px; border-radius:4px; background:var(--red)}
   label.fld{display:flex; flex-direction:column; gap:6px; font-size:10.5px; color:var(--mut); letter-spacing:.14em; text-transform:uppercase}
 
-  /* ===== stagger stage ===== */
-  #stageGrid{display:grid; gap:5px; justify-content:center; margin:6px auto 4px; max-width:520px}
-  #stageGrid i{display:block; width:100%; aspect-ratio:1; background:var(--cell); border-radius:2px}
-  .stageWrap{background:rgba(16,16,18,.88); border:1px solid var(--line); border-radius:6px; padding:30px 20px 22px; backdrop-filter:blur(6px)}
-
   footer{border-top:1px solid var(--line); padding:46px 28px 64px; text-align:center; color:var(--mut); font-size:13.5px;
-    background:rgba(10,10,11,.85)}
+    background:rgba(10,10,11,.9); position:relative; z-index:2}
   footer b{color:var(--txt)}
 </style>
+<script type="importmap">
+{ "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
 </head>
 <body>
-<div id="bg"></div>
-<div id="veil"></div>
 
 <header>
-  <div class="brand">NEVF — ANIMATION ENGINE</div>
+  <div class="brand">NEVF × NEVGTHREE</div>
   <nav>
-    <a href="#gridSec">Grid</a><a href="#stageSec">Stage</a><a href="#race">Easing</a><a href="#theater">Keyframes</a>
-    <a href="#cinema">Timeline</a><a href="#dataSec">Data</a><a href="#playground">Playground</a>
+    <a href="#race">Easing</a><a href="#cinema">Timeline</a><a href="#dataSec">Data</a><a href="#playground">Playground</a>
   </nav>
 </header>
 
 <main>
-<!-- ================= HERO ================= -->
+<!-- ================= 3D HERO ================= -->
 <section id="hero">
-  <div class="kicker">NevF 0.5.1 · Nev.js 0.7.1 — mesin animasi</div>
-  <h1 class="hero-title" id="heroTitle" aria-label="Animasi."></h1>
-  <p class="hero-sub" id="heroSub">Grid di belakang teks ini bukan video dan bukan CSS — ratusan kotak dianimasikan
-    langsung oleh <b class="mono">animate()</b> + <b class="mono">stagger({ grid })</b>, terus-menerus, dengan pola yang berganti-ganti.
-    Gerakkan kursor atau klik di mana saja: riaknya berangkat dari titik itu.</p>
-  <div class="hero-cta">
-    <button class="primary" onclick="document.getElementById('gridSec').scrollIntoView({behavior:'smooth'})">Cara grid ini bekerja</button>
-    <button onclick="document.getElementById('race').scrollIntoView({behavior:'smooth'})">Laboratorium</button>
+  <div id="stage3d"></div>
+
+  <div id="loadBox">
+    <div class="lbl">Memuat karakter 3D</div>
+    <div id="loadTrack"><div id="loadBar"></div></div>
+    <div id="loadPct" class="mono">0%</div>
   </div>
-  <div id="hint">Satu file HTML. Tanpa dependensi. Tanpa build step.</div>
-  <div class="hero-stats">
-    <div><div class="num" data-count="1074">0</div><div class="lbl">baris mesin animasi</div></div>
-    <div><div class="num" data-count="33">0</div><div class="lbl">tes animasi khusus</div></div>
-    <div><div class="num" data-count="425">0</div><div class="lbl">total tes monorepo</div></div>
-    <div><div class="num" data-count="0">0</div><div class="lbl">dependensi</div></div>
+  <div id="errBox">
+    <p><b>Model 3D gagal dimuat.</b><br>Showcase ini memuat karakter &amp; motion asli dari CDN (three.js / model MMD) — periksa koneksi internetmu, lalu coba lagi.</p>
+    <button class="primary" onclick="location.reload()">Muat ulang</button>
   </div>
-</section>
 
-<!-- ================= GRID ================= -->
-<section id="gridSec">
-  <div class="kicker">Latar — stagger grid</div>
-  <h2>Latarnya adalah demonya.</h2>
-  <p class="sub">Latar ini menari koreografi penuh: gelombang radial, lalu gridnya <b>menyusun diri menjadi cincin</b>,
-    lalu berlian, lalu <b>meledak acak dan menyatu lagi</b> dengan pegas elastis — target tiap kotak dihitung per sel
-    dengan function-based values dan diurutkan oleh
-    <b class="mono">stagger(nilai, { grid: [baris, kolom], from })</b>. Klik di mana pun pada halaman untuk riak dari titik klik;
-    tombol di bawah memicu pola tertentu ke seluruh grid.</p>
-  <div class="row">
-    <button data-pattern="center" class="patBtn">Radial tengah</button>
-    <button data-pattern="x" class="patBtn">Sapuan X</button>
-    <button data-pattern="first" class="patBtn">Cincin</button>
-    <button data-pattern="random" class="patBtn">Ledakan</button>
-  </div>
-  <pre style="margin-top:18px"><code>animate('#bg i', {
-  scale: [ { to: .25, duration: 380 }, { to: 1, duration: 620, ease: 'easeOutBack' } ],
-  backgroundColor: [ { to: '#ff4b33', duration: 380 }, { to: '#17171a', duration: 620 } ],
-  delay: stagger(26, { grid: [rows, cols], from: 'center' }),
-});
-
-// dan formasi cincin — target BERBEDA untuk tiap sel:
-animate(cells, {
-  scale: (el, i) =&gt; onRing(i) ? 1.35 : 0.16,
-  rotate: (el, i) =&gt; onRing(i) ? 45 : 0,
-  borderRadius: (el, i) =&gt; onRing(i) ? '50%' : '2px',
-  backgroundColor: (el, i) =&gt; onRing(i) ? '#ff4b33' : '#17171a',
-  delay: stagger(16, { grid: [rows, cols], from: 'center' }),
-});</code></pre>
-</section>
-
-
-<!-- ================= STAGGER STAGE ================= -->
-<section id="stageSec">
-  <div class="kicker">Tanda tangan anime.js — stagger stage</div>
-  <h2>169 kotak. Satu panggilan. Bentuk apa pun.</h2>
-  <p class="sub">Inilah demo paling ikonik di dunia animasi web: grid yang <b>berubah bentuk</b>. Setiap kotak menerima
-    target berbeda — posisi, rotasi, skala, warna, radius — dihitung oleh <b>function-based values</b>
-    <span class="mono">(el, i) =&gt; …</span>, lalu diurutkan oleh <span class="mono">stagger({ grid: [13, 13], from: 'center' })</span>.
-    Tidak ada loop manual, tidak ada CSS keyframes.</p>
-  <div class="stageWrap">
-    <div id="stageGrid"></div>
-    <div class="row" style="justify-content:center; margin-top:20px">
-      <button data-shape="grid" class="shapeBtn on">Grid</button>
-      <button data-shape="circle" class="shapeBtn">Lingkaran</button>
-      <button data-shape="diamond" class="shapeBtn">Berlian</button>
-      <button data-shape="cross" class="shapeBtn">Silang</button>
-      <button data-shape="scatter" class="shapeBtn">Ledakan</button>
+  <div class="hero-ui">
+    <div class="inner">
+      <div class="kicker">NevGThree · WebGL — karakter anime 3D asli, bukan primitif</div>
+      <h1 class="hero-title" id="heroTitle" aria-label="Menari."></h1>
+      <p class="hero-sub" id="heroSub">Ini <b>model 3D beneran</b> — karakter anime berformat PMD (Miku, dari repositori resmi three.js)
+        yang menari dengan <b>motion capture VMD asli</b>, dirender real-time via WebGL. Gerakan kameranya —
+        orbit, dolly, transisi dekat/jauh — di-tween oleh <b class="mono">NevF animate()</b> pada objek polos,
+        dan seluruh UI halaman ini juga dianimasikan NevF.</p>
+      <div class="hero-controls">
+        <button class="primary" id="btnPlay">Jeda tari</button>
+        <button id="btnCam" class="on">Kamera otomatis</button>
+        <button id="btnDist">Sudut jauh</button>
+        <select id="selSpeed" aria-label="Kecepatan tari">
+          <option value="0.5">0.5×</option>
+          <option value="1" selected>1×</option>
+          <option value="1.5">1.5×</option>
+        </select>
+      </div>
+      <div class="hero-hint">Seret panggungnya untuk mengorbit manual. Scroll untuk laboratorium mesin animasinya.</div>
     </div>
   </div>
-  <pre style="margin-top:18px"><code>animate('#stageGrid i', {
-  scale:         (el, i) =&gt; inShape(i) ? 1.3 : 0.18,
-  rotate:        (el, i) =&gt; inShape(i) ? 45 : 0,
-  borderRadius:  (el, i) =&gt; inShape(i) ? '50%' : '2px',
-  backgroundColor: (el, i) =&gt; inShape(i) ? '#ff4b33' : '#17171a',
-  delay: stagger(14, { grid: [13, 13], from: 'center' }),
-});</code></pre>
 </section>
 
 <!-- ================= EASING RACE ================= -->
@@ -225,26 +175,9 @@ animate(cells, {
   </div>
 </section>
 
-<!-- ================= KEYFRAME THEATER ================= -->
-<section id="theater">
-  <div class="kicker">Lab 02 — Keyframes</div>
-  <h2>Squash &amp; stretch, dan blob yang berputar.</h2>
-  <p class="sub">Karakter di kiri bergerak murni dari <b>keyframes</b>: antisipasi, lompat, mendarat.
-    Blob di kanan menganimasikan <b>border-radius</b>, <b>rotasi</b>, dan sudut conic-gradient lewat
-    <b>CSS variable <span class="mono">--a</span></b> — tiga jenis nilai dalam satu panggilan <span class="mono">animate()</span>.</p>
-  <div class="stage">
-    <div class="cap">keyframes · css var · color</div>
-    <div id="shadow"></div><div id="actor"></div><div id="blob"></div><div class="floor"></div>
-  </div>
-  <div class="row" style="margin-top:16px">
-    <button class="primary" id="actBtn">Adegan lagi</button>
-    <button id="blobBtn">Metamorfosis blob</button>
-  </div>
-</section>
-
 <!-- ================= CINEMA ================= -->
 <section id="cinema">
-  <div class="kicker">Lab 03 — Timeline</div>
+  <div class="kicker">Lab 02 — Timeline</div>
   <h2>Satu hari, disutradarai satu timeline.</h2>
   <p class="sub">Fajar → siang → senja → malam ditulis sebagai satu <span class="mono">createTimeline()</span> berlabel.
     Geser slider-nya: <span class="mono">seek()</span> deterministik — posisi matahari, warna langit, dan bintang selalu
@@ -268,9 +201,10 @@ animate(cells, {
 
 <!-- ================= DATA ================= -->
 <section id="dataSec">
-  <div class="kicker">Lab 04 — Objek &amp; data</div>
+  <div class="kicker">Lab 03 — Objek &amp; data</div>
   <h2>Yang dianimasikan tidak harus elemen.</h2>
   <p class="sub">Target boleh <b>objek polos</b> — angka di-tween lalu ditulis ke DOM lewat <span class="mono">onUpdate</span>.
+    Teknik yang sama menggerakkan kamera 3D di atas: rig kamera hanyalah objek <span class="mono">{ angle, dist, height }</span>.
     Grafik batang di bawah adalah properti <span class="mono">scaleY</span> dengan stagger, berjalan saat bagian ini masuk layar.</p>
   <div class="counters">
     <div class="counter"><div class="v" id="c1">0</div><div class="l">token diproses AunuCore</div></div>
@@ -283,7 +217,7 @@ animate(cells, {
 
 <!-- ================= PLAYGROUND ================= -->
 <section id="playground">
-  <div class="kicker">Lab 05 — Playground</div>
+  <div class="kicker">Lab 04 — Playground</div>
   <h2>Pilih easing. Atur durasi. Jalankan.</h2>
   <p class="sub">Kode di bawah berubah mengikuti pilihanmu — persis panggilan yang dijalankan tombolnya.</p>
   <div id="pgTrack"><div id="pgBox"></div></div>
@@ -298,7 +232,8 @@ animate(cells, {
 </main>
 
 <footer>
-  <p>Showcase satu file untuk <b>NevF Animation Engine</b> — bagian dari monorepo <b>nevjs</b>.</p>
+  <p>Showcase untuk <b>NevF Animation Engine</b> × <b>NevGThree</b> — bagian dari monorepo <b>nevjs</b>.</p>
+  <p style="margin-top:6px">Karakter: model PMD “Miku” &amp; motion VMD dari repositori resmi three.js (MIT). Mesin 3D: three.js via CDN.</p>
   <p style="margin-top:6px">Dibuat oleh <b>AdityaDevID</b> · dikembangkan bersama <b>AunuHost (Dwi Aunu Santoso)</b>, collaborator — AunuCore.</p>
   <p style="margin-top:6px">Lisensi MIT.</p>
 </footer>
@@ -309,189 +244,43 @@ import { animate, createTimeline, stagger, easings, cubicBezier, steps, spring }
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-/* ================= BACKGROUND GRID ================= */
-const bg = $('#bg');
-let COLS = 0, ROWS = 0, cells = [];
-function buildGrid() {
-  const size = innerWidth < 640 ? 30 : 36;
-  COLS = Math.ceil(innerWidth / size);
-  ROWS = Math.ceil(innerHeight / size);
-  bg.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
-  bg.style.gridTemplateRows = `repeat(${ROWS}, 1fr)`;
-  bg.style.gap = '3px';
-  bg.style.padding = '3px';
-  bg.innerHTML = '';
-  const frag = document.createDocumentFragment();
-  for (let i = 0; i < COLS * ROWS; i++) frag.appendChild(document.createElement('i'));
-  bg.appendChild(frag);
-  cells = $$('#bg i');
-}
-buildGrid();
-let resizeT;
-addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(buildGrid, 250); });
-
-const BASE = '#17171a', RED = '#ff4b33';
-function cellRC(i) { return [Math.floor(i / COLS), i % COLS]; }
-function choreoWave(p) {
-  animate(cells, {
-    scale: [ { to: 0.2, duration: 400, ease: 'easeInOutQuad' }, { to: 1, duration: 700, ease: 'easeOutBack' } ],
-    backgroundColor: [ { to: RED, duration: 400 }, { to: BASE, duration: 700 } ],
-    delay: stagger(24, { grid: [ROWS, COLS], from: p.from, axis: p.axis }),
-  });
-}
-function choreoFormation(kind) {
-  const cr = ROWS / 2, cc = COLS / 2, R = Math.min(ROWS, COLS) * 0.32;
-  const inBand = (i) => {
-    const [r, c] = cellRC(i);
-    if (kind === 'ring') { const d = Math.hypot(r - cr, c - cc); return Math.abs(d - R) < 1.3; }
-    const m = Math.abs(r - cr) + Math.abs(c - cc);
-    return Math.abs(m - R) < 1.6;
-  };
-  animate(cells, {
-    scale: (el, i) => inBand(i) ? 1.35 : 0.16,
-    rotate: (el, i) => inBand(i) ? 45 : 0,
-    borderRadius: (el, i) => inBand(i) ? '50%' : '2px',
-    backgroundColor: (el, i) => inBand(i) ? RED : BASE,
-    duration: 750, ease: 'easeInOutQuad',
-    delay: stagger(16, { grid: [ROWS, COLS], from: 'center' }),
-  });
-}
-function choreoScatter() {
-  animate(cells, {
-    x: () => (Math.random() - 0.5) * 260, y: () => (Math.random() - 0.5) * 260,
-    rotate: () => (Math.random() - 0.5) * 260, scale: () => 0.3 + Math.random(),
-    backgroundColor: () => Math.random() > 0.82 ? RED : '#232328',
-    duration: 850, ease: 'easeOutQuad', delay: stagger(6, { grid: [ROWS, COLS], from: 'random' }),
-  });
-  setTimeout(() => animate(cells, {
-    x: 0, y: 0, rotate: 0, scale: 1, backgroundColor: BASE,
-    duration: 1100, ease: 'easeOutElastic', delay: stagger(8, { grid: [ROWS, COLS], from: 'random' }),
-  }), 1050);
-}
-function choreoReset(delay = 0) {
-  animate(cells, { scale: 1, rotate: 0, x: 0, y: 0, borderRadius: '2px', backgroundColor: BASE,
-    duration: 600, ease: 'easeInOutQuad', delay: stagger(6, { grid: [ROWS, COLS], from: 'center' }) });
-}
-const CHOREO = [
-  () => choreoWave({ from: 'center' }),
-  () => choreoFormation('ring'),
-  () => choreoWave({ from: 'first', axis: 'x' }),
-  () => choreoFormation('diamond'),
-  () => choreoScatter(),
-  () => choreoWave({ from: 'random' }),
-];
-let choreoIdx = 0, patternTimer = null;
-function cyclePatterns() {
-  CHOREO[choreoIdx % CHOREO.length]();
-  choreoIdx++;
-  const holdMs = 3000;
-  setTimeout(() => { if (choreoIdx % CHOREO.length === 2 || choreoIdx % CHOREO.length === 4) choreoReset(); }, holdMs - 500);
-  patternTimer = setTimeout(cyclePatterns, holdMs + 1400);
-}
-setTimeout(cyclePatterns, 600);
-
-/* riak dari titik tertentu (klik / hover) — hanya backgroundColor agar tidak berebut properti scale dengan pola ambient */
-let lastRipple = 0;
-function rippleAt(clientX, clientY) {
-  const now = performance.now();
-  if (now - lastRipple < 120 || !cells.length) return;
-  lastRipple = now;
-  const col = Math.min(COLS - 1, Math.max(0, Math.floor(clientX / innerWidth * COLS)));
-  const row = Math.min(ROWS - 1, Math.max(0, Math.floor(clientY / innerHeight * ROWS)));
-  animate(cells, {
-    backgroundColor: [ { to: '#ff7a5c', duration: 200 }, { to: '#17171a', duration: 650 } ],
-    delay: stagger(16, { grid: [ROWS, COLS], from: row * COLS + col }),
-  });
-}
-addEventListener('pointermove', (e) => rippleAt(e.clientX, e.clientY), { passive: true });
-addEventListener('pointerdown', (e) => { lastRipple = 0; rippleAt(e.clientX, e.clientY); });
-$$('.patBtn').forEach((b) => b.addEventListener('click', () => {
-  const map = { center: () => choreoWave({ from: 'center' }), x: () => choreoWave({ from: 'first', axis: 'x' }),
-    first: () => choreoFormation('ring'), random: () => choreoScatter() };
-  map[b.dataset.pattern]();
-  setTimeout(() => choreoReset(), 2600);
-}));
-
-/* ================= HERO ================= */
+/* ================= HERO UI (NevF) ================= */
 const title = $('#heroTitle');
-'Animasi.'.split('').forEach((ch) => {
+'Menari.'.split('').forEach((ch) => {
   const s = document.createElement('span');
   s.textContent = ch;
   if (ch === '.') s.className = 'dot';
   title.appendChild(s);
 });
-function countUp(el, to, dur = 1600) {
-  const o = { v: 0 };
-  animate(o, { v: to, duration: dur, ease: 'easeOutQuart',
-    onUpdate: () => { el.textContent = Math.round(o.v).toLocaleString('id-ID'); } });
-}
-function playIntro() {
-  const tl = createTimeline({ defaults: { ease: 'easeOutQuad' } });
-  tl.add('#hero .kicker', { opacity: [0, 1], y: [14, 0], duration: 500 }, 100)
-    .add('#heroTitle span', { y: [140, 0], rotate: [16, 0], scale: [0.6, 1], opacity: [0, 1],
-        ease: spring({ stiffness: 110, damping: 13 }), delay: stagger(45) }, 200)
-    .add('#heroSub', { opacity: [0, 1], y: [22, 0], duration: 650 }, 750)
-    .add('.hero-cta', { opacity: [0, 1], y: [22, 0], duration: 650 }, 900)
-    .add('#hint', { opacity: [0, 1], duration: 650 }, 1050)
-    .add('.hero-stats', { opacity: [0, 1], y: [22, 0], duration: 650 }, 1150);
-  setTimeout(() => $$('.hero-stats .num').forEach((n) => countUp(n, +n.dataset.count)), 1200);
-}
-$$('#heroSub, .hero-cta, #hint, .hero-stats').forEach((el) => { el.style.opacity = '0'; });
-playIntro();
+$$('#heroSub, .hero-controls, .hero-hint').forEach((el) => { el.style.opacity = '0'; });
+const introTl = createTimeline({ defaults: { ease: 'easeOutQuad' } });
+introTl.add('#hero .kicker', { opacity: [0, 1], y: [14, 0], duration: 500 }, 150)
+  .add('#heroTitle span', { y: [130, 0], rotate: [16, 0], scale: [0.6, 1], opacity: [0, 1],
+      ease: spring({ stiffness: 110, damping: 13 }), delay: stagger(45) }, 250)
+  .add('#heroSub', { opacity: [0, 1], y: [22, 0], duration: 650 }, 800)
+  .add('.hero-controls', { opacity: [0, 1], y: [22, 0], duration: 650 }, 950)
+  .add('.hero-hint', { opacity: [0, 1], duration: 650 }, 1100);
 
-
-/* ================= STAGGER STAGE ================= */
-const SG = 13;
-const stageEl = $('#stageGrid');
-stageEl.style.gridTemplateColumns = `repeat(${SG}, 1fr)`;
-{ const frag = document.createDocumentFragment();
-  for (let i = 0; i < SG * SG; i++) frag.appendChild(document.createElement('i'));
-  stageEl.appendChild(frag); }
-const stageCells = $$('#stageGrid i');
-function shapeAt(kind, i) {
-  const r = Math.floor(i / SG), c = i % SG, mid = (SG - 1) / 2;
-  const d = Math.hypot(r - mid, c - mid), m = Math.abs(r - mid) + Math.abs(c - mid);
-  switch (kind) {
-    case 'circle': return Math.abs(d - 4.6) < 0.75;
-    case 'diamond': return Math.abs(m - 6) < 0.9;
-    case 'cross': return Math.abs(r - mid) < 0.9 || Math.abs(c - mid) < 0.9;
-    default: return true;
-  }
+/* loading bar digerakkan NevF dari progress asli loader */
+const loadState = { pct: 0 };
+function setLoad(p) {
+  animate(loadState, { pct: Math.max(loadState.pct, p), duration: 400, ease: 'easeOutQuad',
+    onUpdate: () => {
+      $('#loadBar').style.width = `${loadState.pct}%`;
+      $('#loadPct').textContent = `${Math.round(loadState.pct)}%`;
+    } });
 }
-function setShape(kind) {
-  $$('.shapeBtn').forEach((b) => b.classList.toggle('on', b.dataset.shape === kind));
-  if (kind === 'scatter') {
-    animate(stageCells, {
-      x: () => (Math.random() - 0.5) * 190, y: () => (Math.random() - 0.5) * 190,
-      rotate: () => (Math.random() - 0.5) * 300, scale: () => 0.25 + Math.random() * 1.1,
-      backgroundColor: () => Math.random() > 0.75 ? '#ff4b33' : '#2a2a30', borderRadius: '2px',
-      duration: 800, ease: 'easeOutQuad', delay: stagger(7, { grid: [SG, SG], from: 'random' }),
-    });
-    setTimeout(() => setShape('grid'), 1500);
-    return;
-  }
-  animate(stageCells, {
-    x: 0, y: 0,
-    scale: (el, i) => kind === 'grid' ? 1 : (shapeAt(kind, i) ? 1.3 : 0.16),
-    rotate: (el, i) => kind !== 'grid' && shapeAt(kind, i) ? 45 : 0,
-    borderRadius: (el, i) => kind !== 'grid' && shapeAt(kind, i) ? '50%' : '2px',
-    backgroundColor: (el, i) => kind === 'grid' ? '#17171a' : (shapeAt(kind, i) ? '#ff4b33' : '#17171a'),
-    duration: 720, ease: 'easeInOutQuad',
-    delay: stagger(15, { grid: [SG, SG], from: 'center' }),
-  });
-}
-$$('.shapeBtn').forEach((b) => b.addEventListener('click', () => setShape(b.dataset.shape)));
-let stageAuto = ['circle', 'diamond', 'cross', 'grid'], stageAutoIdx = 0;
-watch('stageSec', () => {
-  setShape('circle');
-  const iv = setInterval(() => {
-    if (!document.body.contains(stageEl)) { clearInterval(iv); return; }
-    const r = stageEl.getBoundingClientRect();
-    if (r.bottom < 0 || r.top > innerHeight) return;
-    stageAutoIdx++;
-    setShape(stageAuto[stageAutoIdx % stageAuto.length]);
-  }, 3400);
-});
+window.__nevSetLoad = setLoad;
+window.__nevLoadDone = () => {
+  setLoad(100);
+  setTimeout(() => animate('#loadBox', { opacity: [1, 0], duration: 600,
+    onComplete: () => { $('#loadBox').style.display = 'none'; } }), 250);
+};
+window.__nevLoadError = () => {
+  $('#loadBox').style.display = 'none';
+  $('#errBox').style.display = 'flex';
+};
+setTimeout(() => { if (!window.__nevLoaded) window.__nevLoadError(); }, 45000);
 
 /* ================= LAB 01 — RACE ================= */
 const racers = [
@@ -526,42 +315,7 @@ function race() {
 }
 $('#raceBtn').addEventListener('click', race);
 
-/* ================= LAB 02 — THEATER ================= */
-function act() {
-  animate('#actor', {
-    y: [ { to: 16, duration: 200, ease: 'easeOutQuad' },
-         { to: -180, duration: 560, ease: 'easeOutCubic' },
-         { to: 0, duration: 500, ease: 'easeInQuad' },
-         { to: 12, duration: 130, ease: 'easeOutQuad' },
-         { to: 0, duration: 220, ease: 'easeOutBack' } ],
-    scaleY: [ { to: 0.74, duration: 200 }, { to: 1.14, duration: 560 }, { to: 1, duration: 500 },
-              { to: 0.78, duration: 130 }, { to: 1, duration: 220 } ],
-    scaleX: [ { to: 1.22, duration: 200 }, { to: 0.9, duration: 560 }, { to: 1, duration: 500 },
-              { to: 1.2, duration: 130 }, { to: 1, duration: 220 } ],
-    rotate: [ { to: -6, duration: 760 }, { to: 8, duration: 630 }, { to: 0, duration: 220 } ],
-  });
-  animate('#shadow', {
-    scaleX: [ { to: 1.25, duration: 200 }, { to: 0.45, duration: 560 }, { to: 1, duration: 500 },
-              { to: 1.2, duration: 130 }, { to: 1, duration: 220 } ],
-    opacity: [ { to: 0.9, duration: 200 }, { to: 0.35, duration: 560 }, { to: 0.85, duration: 850 },
-               { to: 0.85, duration: 350 } ],
-  });
-}
-function morph() {
-  animate('#blob', {
-    borderRadius: [ { to: '10%', duration: 600, ease: 'easeInOutQuad' },
-                    { to: '50%', duration: 600, ease: 'easeInOutQuad' },
-                    { to: '28%', duration: 600, ease: 'easeInOutQuad' },
-                    { to: '46%', duration: 600, ease: 'easeOutBack' } ],
-    rotate: [ { to: 180, duration: 1200, ease: 'easeInOutCubic' }, { to: 360, duration: 1200, ease: 'easeOutBack' } ],
-    scale: [ { to: 0.82, duration: 800 }, { to: 1.12, duration: 800 }, { to: 1, duration: 800, ease: 'easeOutElastic' } ],
-  });
-}
-$('#actBtn').addEventListener('click', act);
-$('#blobBtn').addEventListener('click', morph);
-animate('#blob', { '--a': ['0deg', '360deg'], duration: 9000, ease: 'linear', loop: true });
-
-/* ================= LAB 03 — CINEMA ================= */
+/* ================= LAB 02 — CINEMA ================= */
 const sky = $('#sky');
 for (let i = 0; i < 42; i++) {
   const s = document.createElement('i');
@@ -603,7 +357,7 @@ $('#tlPlay').addEventListener('click', (e) => {
 $('#tlRev').addEventListener('click', () => { tl.reverse(); tlPlaying = true; $('#tlPlay').textContent = 'Jeda'; });
 $('#tlSeek').addEventListener('input', (e) => { tl.pause(); tlPlaying = false; $('#tlPlay').textContent = 'Putar'; tl.seek(+e.target.value); });
 
-/* ================= LAB 04 — DATA ================= */
+/* ================= LAB 03 — DATA ================= */
 const barsEl = $('#bars');
 [42, 68, 55, 90, 74, 100, 63, 85, 48, 77, 95, 58, 82, 70].forEach((hgt) => {
   const b = document.createElement('i');
@@ -622,7 +376,7 @@ new IntersectionObserver((es, ob) => {
   animate('#bars i', { scaleY: [0, 1], duration: 900, ease: 'easeOutBack', delay: stagger(55) });
 }, { threshold: 0.35 }).observe($('#dataSec'));
 
-/* ================= LAB 05 — PLAYGROUND ================= */
+/* ================= LAB 04 — PLAYGROUND ================= */
 const easeSel = $('#pgEase');
 Object.keys(easings).forEach((n) => easeSel.add(new Option(n, n)));
 ['spring({stiffness:120,damping:12})', 'steps(10)', 'cubicBezier(.25,.1,.25,1)'].forEach((n) => easeSel.add(new Option(n, n)));
@@ -654,7 +408,7 @@ easeSel.addEventListener('change', pgRenderCode);
 $('#pgDur').addEventListener('input', pgRenderCode);
 pgRenderCode();
 
-/* ================= section triggers ================= */
+/* ================= section reveals ================= */
 const seen = new WeakSet();
 function watch(id, fn) {
   const el = document.getElementById(id);
@@ -663,17 +417,134 @@ function watch(id, fn) {
     es.forEach((en) => {
       if (!en.isIntersecting || seen.has(en.target)) return;
       seen.add(en.target); ob.disconnect();
-      animate($$('h2, .sub, .panel, .stage, #sky, #pgTrack, pre, .row', en.target),
+      animate($$('h2, .sub, .panel, #sky, #pgTrack, pre, .row', en.target),
         { opacity: [0, 1], y: [24, 0], duration: 700, ease: 'easeOutQuad', delay: stagger(60) });
       fn && fn();
     });
   }, { threshold: 0.22 }).observe(el);
 }
 watch('race', race);
-watch('theater', () => { act(); morph(); });
 watch('cinema', () => { tl.play(); tlPlaying = true; $('#tlPlay').textContent = 'Jeda'; });
 watch('playground');
-watch('gridSec');
+</script>
+
+<script type="module">
+/* ================= PANGGUNG 3D — three.js + MMD (karakter anime asli) ================= */
+import * as THREE from 'three';
+import { MMDLoader } from 'three/addons/loaders/MMDLoader.js';
+import { MMDAnimationHelper } from 'three/addons/animation/MMDAnimationHelper.js';
+import { animate as nevAnimate } from '../packages/nevf/src/animate.js';
+
+const MODEL = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/models/mmd/miku/miku_v2.pmd';
+const VMD = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/models/mmd/vmds/wavefile_v2.vmd';
+const container = document.getElementById('stage3d');
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x0a0a0b, 55, 110);
+const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 200);
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x1a1a20, 1.15));
+const key = new THREE.DirectionalLight(0xffffff, 2.4);
+key.position.set(6, 16, 8);
+key.castShadow = true;
+key.shadow.mapSize.set(1024, 1024);
+scene.add(key);
+const rim = new THREE.PointLight(0xff4b33, 900, 60);
+rim.position.set(-10, 7, -8);
+scene.add(rim);
+const fill = new THREE.PointLight(0x7aa2ff, 260, 50);
+fill.position.set(10, 4, -6);
+scene.add(fill);
+
+const stage = new THREE.Mesh(
+  new THREE.CircleGeometry(11, 64),
+  new THREE.MeshStandardMaterial({ color: 0x141416, roughness: 0.9, metalness: 0.05 }));
+stage.rotation.x = -Math.PI / 2;
+stage.receiveShadow = true;
+scene.add(stage);
+const ringAccent = new THREE.Mesh(
+  new THREE.TorusGeometry(11, 0.08, 10, 90),
+  new THREE.MeshBasicMaterial({ color: 0xff4b33 }));
+ringAccent.rotation.x = Math.PI / 2;
+ringAccent.position.y = 0.02;
+scene.add(ringAccent);
+
+/* rig kamera = objek polos yang di-tween NevF */
+const rig = { angle: 0.6, dist: 54, height: 7, lookY: 10.5 };
+let autoCam = true, playing = true, speed = 1, helper = null;
+nevAnimate(rig, { dist: [54, 38], height: [9, 3.6], duration: 2600, ease: 'easeOutCubic', delay: 350 });
+
+const clock = new THREE.Clock();
+function tick() {
+  requestAnimationFrame(tick);
+  const delta = clock.getDelta();
+  if (helper && playing) helper.update(delta * speed);
+  if (autoCam) rig.angle += delta * 0.16;
+  camera.position.set(
+    Math.sin(rig.angle) * rig.dist,
+    rig.lookY + rig.height,
+    Math.cos(rig.angle) * rig.dist);
+  camera.lookAt(0, rig.lookY, 0);
+  renderer.render(scene, camera);
+}
+function resize() {
+  const w = container.clientWidth, h = container.clientHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(container);
+resize();
+tick();
+
+/* seret untuk orbit manual */
+let dragging = false, lastX = 0;
+container.addEventListener('pointerdown', (e) => { dragging = true; lastX = e.clientX; });
+addEventListener('pointermove', (e) => {
+  if (!dragging) return;
+  rig.angle += (e.clientX - lastX) * 0.008;
+  lastX = e.clientX;
+});
+addEventListener('pointerup', () => { dragging = false; });
+
+/* muat karakter + motion dansa asli */
+const loader = new MMDLoader();
+loader.loadWithAnimation(MODEL, VMD,
+  ({ mesh, animation }) => {
+    mesh.traverse((o) => { if (o.isMesh) { o.castShadow = true; } });
+    scene.add(mesh);
+    helper = new MMDAnimationHelper();
+    helper.add(mesh, { animation, physics: false });
+    window.__nevLoaded = true;
+    window.__nevLoadDone();
+  },
+  (xhr) => { if (xhr.total) window.__nevSetLoad(xhr.loaded / xhr.total * 100); },
+  () => window.__nevLoadError());
+
+/* kontrol UI */
+const btnPlay = document.getElementById('btnPlay');
+btnPlay.addEventListener('click', () => {
+  playing = !playing;
+  btnPlay.textContent = playing ? 'Jeda tari' : 'Tari lagi';
+});
+const btnCam = document.getElementById('btnCam');
+btnCam.addEventListener('click', () => {
+  autoCam = !autoCam;
+  btnCam.classList.toggle('on', autoCam);
+  btnCam.textContent = autoCam ? 'Kamera otomatis' : 'Kamera manual';
+});
+let far = false;
+document.getElementById('btnDist').addEventListener('click', (e) => {
+  far = !far;
+  e.target.textContent = far ? 'Sudut dekat' : 'Sudut jauh';
+  nevAnimate(rig, { dist: far ? 54 : 38, height: far ? 8 : 3.6, duration: 1400, ease: 'easeInOutCubic' });
+});
+document.getElementById('selSpeed').addEventListener('change', (e) => { speed = parseFloat(e.target.value); });
 </script>
 </body>
 </html>
