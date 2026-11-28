@@ -285,6 +285,8 @@ window.__nevLoadError = (why) => {
   $('#errBox').style.display = 'flex';
 };
 window.__nevFailReason = '';
+addEventListener('error', (e) => { if (!window.__nevLoaded && e.message) window.__nevFailReason = e.message; });
+addEventListener('unhandledrejection', (e) => { if (!window.__nevLoaded && e.reason) window.__nevFailReason = String((e.reason && e.reason.message) || e.reason); });
 setTimeout(() => { if (!window.__nevLoaded) window.__nevLoadError(window.__nevFailReason || 'timeout 60s — aset 3D tidak kunjung tiba'); }, 60000);
 
 /* ================= LAB 01 — RACE ================= */
@@ -435,17 +437,36 @@ watch('playground');
 
 <script type="module">
 /* ================= PANGGUNG 3D — three.js + MMD (karakter anime asli) ================= */
-import * as THREE from 'three';
-import { MMDLoader } from 'three/addons/loaders/MMDLoader.js';
-import { MMDAnimationHelper } from 'three/addons/animation/MMDAnimationHelper.js';
 import { animate as nevAnimate } from '../packages/nevf/src/animate.js';
+
+/* impor dinamis bertahap — kegagalan apa pun dilaporkan apa adanya, tidak diam di 0% */
+const fail3d = (stage, err) => {
+  const msg = `${stage}: ${(err && err.message) || err}`;
+  if (window.__nevLoadError) window.__nevLoadError(msg);
+  throw err instanceof Error ? err : new Error(msg);
+};
+let THREE, MMDLoader, MMDAnimationHelper;
+try {
+  THREE = await import('three');
+  ({ MMDLoader } = await import('three/addons/loaders/MMDLoader.js'));
+  ({ MMDAnimationHelper } = await import('three/addons/animation/MMDAnimationHelper.js'));
+} catch (e) { fail3d('library 3D gagal dimuat', e); }
+try {
+  const probe = document.createElement('canvas');
+  if (!probe.getContext('webgl2') && !probe.getContext('webgl')) {
+    fail3d('WebGL tidak tersedia di browser ini', new Error('canvas webgl context = null'));
+  }
+} catch (e) { fail3d('WebGL tidak tersedia di browser ini', e); }
 
 const container = document.getElementById('stage3d');
 
 const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(0x0a0a0b, 55, 110);
 const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 200);
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+} catch (e) { fail3d('renderer WebGL gagal dibuat', e); }
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
