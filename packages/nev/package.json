@@ -1,6 +1,6 @@
 {
   "name": "@adityadevid/nevjs",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Nev.js — zero-build fullstack framework: file-based routing, SSR, API routes, loaders and client-side navigation, built on NevF + NevB (+ NevG).",
   "type": "module",
   "main": "./src/index.js",
@@ -23,7 +23,7 @@
   ],
   "dependencies": {
     "@adityadevid/nevb": "^0.4.0",
-    "@adityadevid/nevf": "^0.4.0",
+    "@adityadevid/nevf": "^0.5.0",
     "@adityadevid/nevg": "^0.3.0"
   },
   "keywords": [
@@ -38,6 +38,12 @@
     "node": ">=20"
   },
   "author": "AdityaDevID",
+  "contributors": [
+    {
+      "name": "AunuHost",
+      "url": "https://github.com/AunuHost"
+    }
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/AdityaDevID/nevjs.git",

@@ -35,6 +35,12 @@
     "three": ">=0.160.0"
   },
   "author": "AdityaDevID",
+  "contributors": [
+    {
+      "name": "AunuHost",
+      "url": "https://github.com/AunuHost"
+    }
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/AdityaDevID/nevjs.git",

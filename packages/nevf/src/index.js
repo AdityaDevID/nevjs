@@ -37,3 +37,4 @@ export {
 } from './hooks.js';
 export { createForm } from './form.js';
 export { publicEnv, setPublicEnv } from './env.js';
+export { animate, createTimeline, stagger, easings, cubicBezier, steps, spring } from './animate.js';

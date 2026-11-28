@@ -83,3 +83,101 @@ export function matchPath(pattern: string, pathname: string): Record<string, str
 export function parseQuery(search: string): Record<string, string | string[]>;
 export function setLocation(url: string): void;
 export function sortRoutes<T extends { path: string }>(routes: T[]): T[];
+
+/* ---------- Animate: mesin animasi (setara Anime.js) ---------- */
+export type EasingFunction = (t: number) => number;
+export type Easing = EasingFunction | string | [number, number, number, number];
+export type AnimationTarget = Element | string | Record<string, any> | Array<Element | Record<string, any>> | NodeListOf<Element>;
+export type AnimatableValue =
+  | number
+  | string
+  | [number | string, number | string]
+  | AnimationKeyframe[]
+  | ((el: any, index: number, total: number) => number | string | [number | string, number | string]);
+export interface AnimationKeyframe {
+  to?: number | string;
+  value?: number | string;
+  duration?: number;
+  delay?: number;
+  ease?: Easing;
+}
+export interface AnimationParams {
+  duration?: number;
+  delay?: number | ((el: any, index: number, total: number) => number);
+  endDelay?: number;
+  ease?: Easing;
+  easing?: Easing;
+  loop?: boolean | number;
+  alternate?: boolean;
+  reversed?: boolean;
+  autoplay?: boolean;
+  onBegin?: (anim: Animation) => void;
+  onUpdate?: (anim: Animation) => void;
+  onLoop?: (anim: Animation) => void;
+  onComplete?: (anim: Animation) => void;
+  [prop: string]: any;
+}
+export interface Animation {
+  targets: any[];
+  /** Durasi satu iterasi (tween terpanjang, tanpa delay & loop). */
+  duration: number;
+  /** Durasi total termasuk delay, endDelay, dan semua loop (Infinity bila loop: true). */
+  totalDuration: number;
+  currentTime: number;
+  progress: number;
+  completed: boolean;
+  finished: Promise<Animation>;
+  play(): Animation;
+  pause(): Animation;
+  seek(ms: number): Animation;
+  restart(): Animation;
+  reverse(): Animation;
+  cancel(): Animation;
+  revert(): Animation;
+}
+export function animate(targets: AnimationTarget, params: AnimationParams): Animation;
+export interface TimelineParams extends AnimationParams {
+  targets?: never;
+}
+export interface Timeline {
+  duration: number;
+  totalDuration: number;
+  currentTime: number;
+  progress: number;
+  completed: boolean;
+  finished: Promise<Timeline>;
+  add(targets: AnimationTarget, params?: AnimationParams, position?: number | string): Timeline;
+  add(params: AnimationParams & { targets: AnimationTarget }, position?: number | string): Timeline;
+  add(child: Animation | Timeline, position?: number | string): Timeline;
+  set(targets: AnimationTarget, values: Record<string, number | string>, position?: number | string): Timeline;
+  label(name: string, position?: number | string): Timeline;
+  play(): Timeline;
+  pause(): Timeline;
+  seek(ms: number): Timeline;
+  restart(): Timeline;
+  reverse(): Timeline;
+  cancel(): Timeline;
+  revert(): Timeline;
+}
+export function createTimeline(params?: AnimationParams): Timeline;
+export interface StaggerOptions {
+  from?: 'first' | 'last' | 'center' | 'random' | number;
+  start?: number;
+  ease?: Easing;
+  grid?: [number, number];
+  axis?: 'x' | 'y';
+}
+export function stagger(
+  value: number | [number, number],
+  opts?: StaggerOptions,
+): (el: any, index: number, total: number) => number;
+export const easings: Record<string, EasingFunction>;
+export function cubicBezier(x1: number, y1: number, x2: number, y2: number): EasingFunction;
+export function steps(n: number, mode?: 'end' | 'start'): EasingFunction;
+export interface SpringParams {
+  stiffness?: number;
+  damping?: number;
+  mass?: number;
+  velocity?: number;
+}
+export function spring(params?: SpringParams): EasingFunction;

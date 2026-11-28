@@ -1,6 +1,6 @@
 {
   "name": "@adityadevid/nevf",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "NevF.js — tiny fine-grained reactive UI framework (signals, components, SSR, router). No build step.",
   "type": "module",
   "main": "./src/index.js",
@@ -32,6 +32,12 @@
     "node": ">=20"
   },
   "author": "AdityaDevID",
+  "contributors": [
+    {
+      "name": "AunuHost",
+      "url": "https://github.com/AunuHost"
+    }
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/AdityaDevID/nevjs.git",
