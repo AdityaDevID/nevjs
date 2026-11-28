@@ -285,7 +285,7 @@ window.__nevLoadError = (why) => {
   $('#errBox').style.display = 'flex';
 };
 window.__nevFailReason = '';
-setTimeout(() => { if (!window.__nevLoaded) window.__nevLoadError(window.__nevFailReason || 'timeout 20s — CDN lambat/terblokir dari jaringan ini'); }, 20000);
+setTimeout(() => { if (!window.__nevLoaded) window.__nevLoadError(window.__nevFailReason || 'timeout 60s — aset 3D tidak kunjung tiba'); }, 60000);
 
 /* ================= LAB 01 — RACE ================= */
 const racers = [
@@ -483,8 +483,8 @@ let autoCam = true, playing = true, speed = 1, helper = null;
 nevAnimate(rig, { dist: [54, 38], height: [9, 3.6], duration: 2600, ease: 'easeOutCubic', delay: 350 });
 
 const clock = new THREE.Clock();
-function tick() {
-  requestAnimationFrame(tick);
+function renderLoop() {
+  requestAnimationFrame(renderLoop);
   const delta = clock.getDelta();
   if (helper && playing) helper.update(delta * speed);
   if (autoCam) rig.angle += delta * 0.16;
@@ -503,7 +503,7 @@ function resize() {
 }
 new ResizeObserver(resize).observe(container);
 resize();
-tick();
+renderLoop();
 
 /* seret untuk orbit manual */
 let dragging = false, lastX = 0;
